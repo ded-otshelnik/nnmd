@@ -1,0 +1,393 @@
+
+  ___ ___ ___ _ _ _  
+ |   |   |_  | | | | 
+ | | | | | . | | | | 
+ |__ |  _|___|_____|  20.1.0
+ |___|_|             
+
+User:   romanov_av@node3
+Date:   Tue Sep 22 10:38:51 2020
+Arch:   x86_64
+Pid:    332374
+Python: 3.8.2
+gpaw:   /home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/gpaw/20.1.0/lib/python3.8/site-packages/gpaw-20.1.0-py3.8-linux-x86_64.egg/gpaw
+_gpaw:  /home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/gpaw/20.1.0/lib/python3.8/site-packages/gpaw-20.1.0-py3.8-linux-x86_64.egg/
+        _gpaw.cpython-38-x86_64-linux-gnu.so
+ase:    /beegfs/home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/ase/3.19.0/lib/python3.8/site-packages/ase-3.19.0-py3.8.egg/ase (version 3.19.0)
+numpy:  /beegfs/home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/numpy/1.18.1/lib/python3.8/site-packages/numpy-1.18.1-py3.8-linux-x86_64.egg/numpy (version 1.18.1)
+scipy:  /beegfs/home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/scipy/1.4.1/lib/python3.8/site-packages/scipy-1.4.1-py3.8-linux-x86_64.egg/scipy (version 1.4.1)
+libxc:  4.3.4
+units:  Angstrom and eV
+cores: 4
+OMP_NUM_THREADS: 1
+
+System changes: positions, numbers 
+
+Initialize ...
+
+Cu-setup:
+  name: Copper
+  id: f1c4d45d90492f1bbfdcb091e8418fdf
+  Z: 29
+  valence: 11
+  core: 18
+  charge: 0.0
+  file: /home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/gpaw-setups/0.9.20000/Cu.PBE.gz
+  compensation charges: gauss, rc=0.33, lmax=2
+  cutoffs: 2.06(filt), 2.43(core),
+  valence states:
+                energy  radius
+    4s(1.00)    -4.609   1.164
+    4p(0.00)    -0.698   1.164
+    3d(10.00)    -5.039   1.058
+    *s          22.603   1.164
+    *p          26.513   1.164
+    *d          22.172   1.058
+
+  LCAO basis set for Cu:
+    Name: dzp
+    File: /home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/gpaw-setups/0.9.20000/Cu.dzp.basis.gz
+    Number of radial functions: 5
+    Number of spherical harmonics: 15
+      l=0, rc=8.9688 Bohr: 4s-sz confined orbital
+      l=2, rc=5.1719 Bohr: 3d-sz confined orbital
+      l=0, rc=5.3281 Bohr: 4s-dz split-valence wave
+      l=2, rc=3.1406 Bohr: 3d-dz split-valence wave
+      l=1, rc=8.9688 Bohr: p-type Gaussian polarization
+
+H-setup:
+  name: Hydrogen
+  id: d65de229564ff8ea4db303e23b6d1ecf
+  Z: 1
+  valence: 1
+  core: 0
+  charge: 0.0
+  file: /home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/gpaw-setups/0.9.20000/H.PBE.gz
+  compensation charges: gauss, rc=0.15, lmax=2
+  cutoffs: 0.85(filt), 0.53(core),
+  valence states:
+                energy  radius
+    1s(1.00)    -6.494   0.476
+    *s          20.717   0.476
+    *p           0.000   0.476
+
+  LCAO basis set for H:
+    Name: dzp
+    File: /home/romanov_av/bin/gcc/4.8.5/openmpi/4.0.3/gpaw-setups/0.9.20000/H.dzp.basis.gz
+    Number of radial functions: 3
+    Number of spherical harmonics: 5
+      l=0, rc=6.4219 Bohr: 1s-sz confined orbital
+      l=0, rc=3.6094 Bohr: 1s-dz split-valence wave
+      l=1, rc=6.4219 Bohr: p-type Gaussian polarization
+
+Reference energy: -2025977.823013
+
+Spin-paired calculation
+
+Occupation numbers:
+  Fermi-Dirac: width=0.1000 eV
+
+Convergence criteria:
+  Maximum total energy change: 0.0005 eV / electron
+  Maximum integral of absolute density change: 1e-05 electrons
+  Maximum integral of absolute eigenstate change: 4e-08 eV^2
+  Maximum number of iterations: 333
+
+Symmetries present (total): 1
+
+  ( 1  0  0)
+  ( 0  1  0)
+  ( 0  0  1)
+
+16 k-points: 4 x 4 x 1 Monkhorst-Pack grid + [1/8,1/8,0.000000]
+10 k-points in the irreducible part of the Brillouin zone
+       k-points in crystal coordinates                weights
+   0:     0.00000000    0.00000000    0.00000000          1/16
+   1:     0.00000000    0.25000000    0.00000000          2/16
+   2:     0.00000000    0.50000000    0.00000000          1/16
+   3:     0.25000000   -0.25000000    0.00000000          2/16
+   4:     0.25000000    0.00000000    0.00000000          2/16
+   5:     0.25000000    0.25000000    0.00000000          2/16
+   6:     0.25000000    0.50000000    0.00000000          2/16
+   7:     0.50000000    0.00000000    0.00000000          1/16
+   8:     0.50000000    0.25000000    0.00000000          2/16
+   9:     0.50000000    0.50000000    0.00000000          1/16
+
+Wave functions: LCAO
+  Diagonalizer: BLACS / ScaLAPACK, 2 x 1 grid with 64 x 64 blocksize
+  Atomic Correction: sparse using scipy
+  Datatype: complex
+ 
+
+Eigensolver
+   LCAO using direct dense diagonalizer 
+
+Densities:
+  Coarse grid: 40*40*240 grid
+  Fine grid: 80*80*480 grid
+  Total Charge: 0.000000 
+
+Density mixing:
+  Method: separate
+  Backend: pulay
+  Linear mixing parameter: 0.05
+  Mixing with 5 old densities
+  Damping of long wave oscillations: 50 
+
+Hamiltonian:
+  XC and Coulomb potentials evaluated on a 80*80*480 grid
+  Using the PBE Exchange-Correlation functional
+  Interpolation: tri-quintic (5. degree polynomial)
+  Poisson solver: FastPoissonSolver using
+    8*3+1=25 point O(h^6) finite-difference Laplacian stencil;
+    FFT axes: [0, 1];
+    FST axes: [2].
+
+Dipole correction along z-axis 
+
+XC parameters: PBE with 2 nearest neighbor stencil
+
+Memory estimate:
+  Process memory now: 713.93 MiB
+  Calculator: 350.79 MiB
+    Density: 181.26 MiB
+      Arrays: 37.92 MiB
+      Localized functions: 128.82 MiB
+      Mixer: 14.53 MiB
+    Hamiltonian: 34.50 MiB
+      Arrays: 24.79 MiB
+      XC: 0.00 MiB
+      Poisson: 0.00 MiB
+      vbar: 9.70 MiB
+    Wavefunctions: 135.03 MiB
+      C [qnM]: 15.67 MiB
+      S, T [2 x qmm]: 37.35 MiB
+      P [aqMi]: 1.32 MiB
+      BasisFunctions: 80.68 MiB
+      Eigensolver: 0.00 MiB
+
+Total number of cores used: 4
+Parallelization over k-points: 2
+Domain decomposition: 1 x 1 x 2
+
+Number of atoms: 46
+Number of atomic orbitals: 680
+Number of bands in calculation: 302
+Number of valence electrons: 496
+Bands to converge: occupied
+
+... initialized
+
+Initializing position-dependent things.
+
+Density initialized from atomic densities
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                Cu    Cu     Cu           
+             H                            
+            Cu   CCu   CCu    Cu          
+       Cu    Cu    CCu   Cu               
+                                          
+        Cu    Cu    CCu   Cu    Cu        
+               Cu     Cu    Cu            
+                                          
+           Cu   CCu   CCu    Cu           
+            Cu    Cu    Cu                
+                 Cu    Cu     Cu          
+       Cu    Cu    CCu   Cu               
+        Cu    Cu     Cu                   
+                                          
+                                          
+                                          
+                                          
+                                          
+
+Positions:
+   0 Cu     0.000000    1.485616   15.000000    ( 0.0000,  0.0000,  0.0000)
+   1 Cu     2.573162    1.485616   15.000000    ( 0.0000,  0.0000,  0.0000)
+   2 Cu     5.146323    1.485616   15.000000    ( 0.0000,  0.0000,  0.0000)
+   3 Cu     1.286581    3.714039   15.000000    ( 0.0000,  0.0000,  0.0000)
+   4 Cu     3.859742    3.714039   15.000000    ( 0.0000,  0.0000,  0.0000)
+   5 Cu     6.432904    3.714039   15.000000    ( 0.0000,  0.0000,  0.0000)
+   6 Cu     2.573162    5.942462   15.000000    ( 0.0000,  0.0000,  0.0000)
+   7 Cu     5.146323    5.942462   15.000000    ( 0.0000,  0.0000,  0.0000)
+   8 Cu     7.719485    5.942462   15.000000    ( 0.0000,  0.0000,  0.0000)
+   9 Cu     0.000000    0.000000   17.100978    ( 0.0000,  0.0000,  0.0000)
+  10 Cu     2.573162    0.000000   17.100978    ( 0.0000,  0.0000,  0.0000)
+  11 Cu     5.146323    0.000000   17.100978    ( 0.0000,  0.0000,  0.0000)
+  12 Cu     1.286581    2.228423   17.100978    ( 0.0000,  0.0000,  0.0000)
+  13 Cu     3.859742    2.228423   17.100978    ( 0.0000,  0.0000,  0.0000)
+  14 Cu     6.432904    2.228423   17.100978    ( 0.0000,  0.0000,  0.0000)
+  15 Cu     2.573162    4.456847   17.100978    ( 0.0000,  0.0000,  0.0000)
+  16 Cu     5.146323    4.456847   17.100978    ( 0.0000,  0.0000,  0.0000)
+  17 Cu     7.719485    4.456847   17.100978    ( 0.0000,  0.0000,  0.0000)
+  18 Cu     1.286581    0.742808   19.174024    ( 0.0000,  0.0000,  0.0000)
+  19 Cu     3.859742    0.742808   19.174535    ( 0.0000,  0.0000,  0.0000)
+  20 Cu     6.432904    0.742808   19.191682    ( 0.0000,  0.0000,  0.0000)
+  21 Cu     2.573162    2.971231   19.185860    ( 0.0000,  0.0000,  0.0000)
+  22 Cu     5.146323    2.971231   19.191815    ( 0.0000,  0.0000,  0.0000)
+  23 Cu     7.719485    2.971231   19.192097    ( 0.0000,  0.0000,  0.0000)
+  24 Cu     3.859742    5.199654   19.185999    ( 0.0000,  0.0000,  0.0000)
+  25 Cu     6.432904    5.199654   19.174978    ( 0.0000,  0.0000,  0.0000)
+  26 Cu     9.006066    5.199654   19.186543    ( 0.0000,  0.0000,  0.0000)
+  27 Cu     0.000000    1.485616   21.275666    ( 0.0000,  0.0000,  0.0000)
+  28 Cu     2.573162    1.485616   21.258142    ( 0.0000,  0.0000,  0.0000)
+  29 Cu     5.146323    1.485616   21.276579    ( 0.0000,  0.0000,  0.0000)
+  30 Cu     1.286581    3.714039   21.280678    ( 0.0000,  0.0000,  0.0000)
+  31 Cu     3.859742    3.714039   21.281038    ( 0.0000,  0.0000,  0.0000)
+  32 Cu     6.432904    3.714039   21.276457    ( 0.0000,  0.0000,  0.0000)
+  33 Cu     2.573162    5.942462   21.280199    ( 0.0000,  0.0000,  0.0000)
+  34 Cu     5.146323    5.942462   21.258493    ( 0.0000,  0.0000,  0.0000)
+  35 Cu     7.719485    5.942462   21.258859    ( 0.0000,  0.0000,  0.0000)
+  36 Cu     0.000000    0.000000   23.365089    ( 0.0000,  0.0000,  0.0000)
+  37 Cu     2.573162    0.000000   23.352785    ( 0.0000,  0.0000,  0.0000)
+  38 Cu     5.146323    0.000000   23.365899    ( 0.0000,  0.0000,  0.0000)
+  39 Cu     1.286581    2.228423   23.365459    ( 0.0000,  0.0000,  0.0000)
+  40 Cu     3.859742    2.228423   23.367263    ( 0.0000,  0.0000,  0.0000)
+  41 Cu     6.432904    2.228423   23.365963    ( 0.0000,  0.0000,  0.0000)
+  42 Cu     2.573162    4.456847   23.368892    ( 0.0000,  0.0000,  0.0000)
+  43 Cu     5.146323    4.456847   23.366152    ( 0.0000,  0.0000,  0.0000)
+  44 Cu     7.719485    4.456847   23.366771    ( 0.0000,  0.0000,  0.0000)
+  45 H      2.573000    0.000000   24.886131    ( 0.0000,  0.0000,  0.0000)
+
+Unit cell:
+           periodic     x           y           z      points  spacing
+  1. axis:    yes    7.719485    0.000000    0.000000    40     0.1671
+  2. axis:    yes    3.859742    6.685270    0.000000    40     0.1671
+  3. axis:    no     0.000000    0.000000   38.403911   240     0.1600
+
+  Lengths:   7.719485   7.719485  38.403911
+  Angles:   90.000000  90.000000  60.000000
+
+Effective grid spacing dv^(1/3) = 0.1728
+
+                     log10-error:    total        iterations:
+           time      wfs    density  energy       fermi  poisson
+iter:   1  10:39:12                -204.649308    3      1      
+iter:   2  10:39:44         -1.11  -192.852999    35     1      
+iter:   3  10:40:16         -1.17  -529.370934    39     1      
+iter:   4  10:40:48         -0.77  -366.004217    37     1      
+iter:   5  10:41:20         -0.96  -429.192731    37     1      
+iter:   6  10:41:52         -0.93  -323.179877    37     1      
+iter:   7  10:42:24         -1.08  -211.964030    37     1      
+iter:   8  10:42:56         -1.36  -156.476846    36     1      
+iter:   9  10:43:28         -1.69  -160.792160    4      1      
+iter:  10  10:44:00         -1.62  -165.703949    4      1      
+iter:  11  10:44:32         -1.59  -169.798069    3      1      
+iter:  12  10:45:04         -1.56  -166.246900    4      1      
+iter:  13  10:45:35         -1.68  -157.777741    2      1      
+iter:  14  10:46:07         -1.83  -153.951877    3      1      
+iter:  15  10:46:39         -1.84  -152.134782    3      1      
+iter:  16  10:47:11         -1.91  -154.094476    34     1      
+iter:  17  10:47:43         -1.84  -153.076544    32     1      
+iter:  18  10:48:15         -1.86  -149.841348    3      1      
+iter:  19  10:48:47         -2.20  -149.650445    3      1      
+iter:  20  10:49:19         -2.30  -149.767129    2      1      
+iter:  21  10:49:51         -2.28  -149.397896    3      1      
+iter:  22  10:50:23         -2.48  -149.376146    3      1      
+iter:  23  10:50:55         -2.52  -149.382318    3      1      
+iter:  24  10:51:27         -2.65  -149.346398    4      1      
+iter:  25  10:51:59         -3.10  -149.338934    2      1      
+iter:  26  10:52:31         -3.23  -149.337674    3      1      
+iter:  27  10:53:03         -3.27  -149.336284    3      1      
+iter:  28  10:53:35         -3.41  -149.334241    2      1      
+iter:  29  10:54:06         -3.70  -149.334196    2      1      
+iter:  30  10:54:38         -3.73  -149.333864    3      1      
+iter:  31  10:55:11         -4.05  -149.333859    2      1      
+iter:  32  10:55:42         -4.07  -149.333764    2      1      
+iter:  33  10:56:14         -4.15  -149.333767    2      1      
+iter:  34  10:56:46         -4.50  -149.333776    2      1      
+iter:  35  10:57:18         -4.80  -149.333805    2      1      
+iter:  36  10:57:50         -4.91  -149.333795    2      1      
+iter:  37  10:58:22         -4.98  -149.333793    2      1      
+iter:  38  10:58:54         -5.04  -149.333796    2      1      
+
+Converged after 38 iterations.
+
+Dipole moment: (9.005414, 4.667015, -0.074101) |e|*Ang
+
+Energy contributions relative to reference atoms: (reference = -2025977.823013)
+
+Kinetic:       -875.790924
+Potential:     +747.423478
+External:        +0.000000
+XC:             -22.179940
+Entropy (-ST):   -0.501271
+Local:           +1.464224
+--------------------------
+Free energy:   -149.584432
+Extrapolated:  -149.333796
+
+Dipole-layer corrected work functions: 4.391670, 4.651500 eV
+
+Fermi level: -4.52159
+
+Showing only first 2 kpts
+ Kpt  Band  Eigenvalues  Occupancy
+  0   246     -5.76658    0.12500
+  0   247     -5.60770    0.12500
+  0   248     -4.81992    0.11898
+  0   249     -4.21578    0.00561
+
+  1   246     -4.96684    0.24712
+  1   247     -4.94590    0.24646
+  1   248     -4.71609    0.21873
+  1   249     -4.57315    0.15653
+
+
+No gap
+
+Forces in eV/Ang:
+  0 Cu    0.01808   -0.00951    0.03212
+  1 Cu   -0.00531   -0.03344    0.03941
+  2 Cu   -0.01286   -0.01355    0.03278
+  3 Cu   -0.00396   -0.00635    0.02638
+  4 Cu    0.00742    0.00177    0.02600
+  5 Cu   -0.00359    0.01890    0.03317
+  6 Cu   -0.00093    0.00814    0.02538
+  7 Cu    0.02712    0.01471    0.03884
+  8 Cu   -0.02632    0.01924    0.03979
+  9 Cu   -0.01651   -0.00287   -0.03718
+ 10 Cu    0.00307   -0.00103   -0.05304
+ 11 Cu    0.01354   -0.00345   -0.03171
+ 12 Cu   -0.00531    0.01830   -0.03267
+ 13 Cu    0.00595    0.01525   -0.03766
+ 14 Cu   -0.00079    0.00262   -0.01350
+ 15 Cu   -0.00192   -0.00167   -0.06048
+ 16 Cu   -0.00851   -0.01469   -0.03156
+ 17 Cu    0.01027   -0.01256   -0.03538
+ 18 Cu   -0.02315    0.01224    0.00904
+ 19 Cu    0.02320    0.00842    0.00857
+ 20 Cu    0.00282   -0.01224   -0.00134
+ 21 Cu   -0.00241    0.02632    0.00671
+ 22 Cu   -0.00759    0.00592    0.00184
+ 23 Cu    0.00902    0.00627   -0.00182
+ 24 Cu   -0.02074   -0.00944    0.00466
+ 25 Cu   -0.00234   -0.02460    0.00459
+ 26 Cu    0.02110   -0.01203    0.00215
+ 27 Cu    0.04732   -0.03114   -0.00302
+ 28 Cu   -0.00101   -0.05059   -0.00362
+ 29 Cu   -0.04910   -0.02637   -0.00468
+ 30 Cu   -0.00231   -0.00109   -0.00362
+ 31 Cu    0.00199   -0.00381   -0.00494
+ 32 Cu    0.00005    0.05487   -0.00433
+ 33 Cu    0.00324    0.00427   -0.00214
+ 34 Cu    0.04300    0.02508   -0.00609
+ 35 Cu   -0.04266    0.02659   -0.00711
+ 36 Cu   -0.04389   -0.00186    0.00648
+ 37 Cu    0.00314    0.00053    0.00097
+ 38 Cu    0.04110   -0.00229    0.00461
+ 39 Cu   -0.01832    0.04185    0.00503
+ 40 Cu    0.01964    0.03837    0.00184
+ 41 Cu   -0.00129    0.00295   -0.00384
+ 42 Cu   -0.00211   -0.00268   -0.00808
+ 43 Cu   -0.02180   -0.03984    0.00408
+ 44 Cu    0.02378   -0.03666    0.00532
+ 45 H     0.00548    0.00056   -0.01484
+
+Writing to 2.573_0.000.gpw (mode='all')
+
