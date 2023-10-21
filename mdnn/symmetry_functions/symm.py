@@ -2,25 +2,52 @@ import math
 
 from .cutoff import cutf, dcutf
 
-def g2(eta: float, rij: float, rc:float):
+def g1(rij: float, rc: float):
+    """Radial symmetric function. Returns g and its derivative value
+
+    Args:
+        rij: distance between atoms i and j
+        rc: cutoff radius
+    """
+    return cutf(rij, rc), dcutf(rij, rc)
+
+def g2(eta: float, rij: float, rs: float, rc: float):
     """Radial symmetric function. Returns g and its derivative value
 
     Args:
         eta: width of Gaussian function
         rij: distance between atoms i and j
+        rs: shift of Gaussian function
         rc: cutoff radius
     """
     # radial component
-    g = math.exp(-eta * (rij - rc) ** 2)
+    g = math.exp(-eta * (rij - rs) ** 2)
     # derivative of g
-    dg = g * (-2 * eta * (rij - rc) * cutf(rij, rc) + dcutf(rij, rc))
+    dg = g * (-2 * eta * (rij - rs) * cutf(rij, rc) + dcutf(rij, rc))
+    # use the cutoff to g
+    g *= cutf(rij, rc)
+
+    return g, dg
+
+def g3(k: float, rij: float, rc: float):
+    """Radial symmetric function. Returns g and its derivative value
+
+    Args:
+        k: adjustment of cosine function
+        rij: distance between atoms i and j
+        rc: cutoff radius
+    """
+    # radial component
+    g = math.cos(k * rij)
+    # derivative of g
+    dg =  - k * math.sin(k * rij) * cutf(rij, rc) + g * dcutf(rij, rc)
     # use the cutoff to g
     g *= cutf(rij, rc)
 
     return g, dg
 
 def g4(eta: float, xi: float, lambda_: float, rij: float, rik: float, rjk: float, cos_v: float, dcos_v: list, rc: float):
-    """First angular symmetric function. Returns g and its derivatives values
+    """Angular symmetric function. Returns g and its derivatives values
 
     Args:
         eta: width of Gaussian function  
