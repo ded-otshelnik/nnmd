@@ -1,119 +1,111 @@
 import numpy as np
-# get diiferent activations functions 
-from scipy.special import expit, softmax
 
-def relu(x):
-    return np.where(x < 0, np.zeros(x.shape), x)
+from collections.abc import Iterable
+
+from ..util.gdf import gdf
+from ..symmetry_functions.sf import calculate_sf, G_TYPE
+from ..symmetry_functions.pair_g import PairG
+
+def expit(x):
+    """Sigmoid function
+
+    Args:
+        x: array of values 
+    """
+    return 1 / (1 + np.exp(-x))
+
+def expit_mod(x, A, b, c):
+    """Modified sigmoid function
+
+    Args:
+        x: array of values 
+        A: normalization constant
+        b, c: constants what determine the function shape
+    """
+    return A * x / (1 + np.exp(- b * (x - c)))
 
 class NeuralNetwork:
-    def __init__(self, inputnodes, hiddennodes, outputnodes, eta=0.05, n_iter=1, h_activation=expit, o_activation=expit):
+    def __init__(self, n_atoms, g_init, g_iter,
+                hidden_nodes,
+                eta=0.05, n_iter=1, activation=expit):
         """Create neural network instance
 
         Args:
-            inputnodes (int): input neurons amount
-            hiddennodes (int): hidden neurons amount
-            outputnodes (int): output neurons amount
+            n_atoms: 
+            g_init:
+            g_iter:
+            input_nodes (int): input neurons amount
+            hidden_nodes (int | Iterable): hidden neurons amount
+            output_nodes (int): output neurons amount
             eta (float, optional): training speed. Defaults to 0.05.
             n_iter (int, optional): epochs number. Defaults to 1.
-            h_activation: activation func on the hidden layer. Defaults to expit func
-            o_activation: activation func on the output layer. Defaults to expit func
+            activation (optional): activation func on the hidden layer. Defaults to sigmoid function
+            
         """
-        # input neurons amount
-        self.inodes = inputnodes
-        # hidden neurons amount
-        self.hnodes = hiddennodes
-        # output neurons amount
-        self.onodes = outputnodes
+
+        # TODO: config init parameters of nn
+        # number of atoms
+        self.n_atoms = n_atoms
+
+        # input neurons amount - g and dg
+        self.inodes = 2
+        # output neurons amount - energy
+        self.onodes = 1
         # weights between input and hidden layers
-        self.wih = np.random.normal(0.0 , pow(self.hnodes, -0.5), (self.hnodes, self.inodes))
-        # weights between two hidden layers
-        # self.whh = np.random.normal(0.0 , pow(self.hnodes, -0.5), (self.hnodes, self.hnodes))
-        # weights between hidden and output layers
-        self.who = np.random.normal(0.0 , pow(self.onodes, -0.5), (self.onodes, self.hnodes))
+        sigma = 0.001
+        self.wih = np.array(gdf(n_atoms, g_init, g_iter, sigma))
+
+        # hidden layers configuration
+        self.hnodes = hidden_nodes
+        self.whh = None
+        # if 2 or more hidden layers
+        if isinstance(self.hnodes, list | np.ndarray | Iterable):
+            self.whh = []
+            for i in range(len(self.hnodes) - 1):
+                # weights between hidden layers
+                self.whh.append(np.random.normal(0.0, pow(self.hnodes[i + 1], -0.5), (self.hnodes[i + 1], self.hnodes[i])))
+            # weights between last hidden and output layers
+            self.who = np.random.normal(0.0 , pow(self.onodes, -0.5), (self.onodes, self.hnodes[len(self.hnodes) - 1]))
+        # if only 1 hidden layer
+        elif isinstance(self.hnodes, int):
+            # weights between hidden and output layers
+            self.who = np.random.normal(0.0 , pow(self.onodes, -0.5), (self.onodes, self.hnodes))
+        else:
+            raise ValueError("Hidden layers configuration must be consided by integer value \
+                              or an iterable object of integers")
+
         # training speed
         self.eta = eta
-        # activation functions 
-        self.h_activation_function = h_activation
-        self.o_activation_function = o_activation
+        # activation function
+        self.activation_function = activation 
         # epochs number
         self.n_iter = n_iter
 
-    def train(self, X, y):
-        """Training neural network method
+    def train(self, cartesians_train, E_train, eps, r_cutoff):
+        # parameters in symmetric functions: eta, rs, k, lambda, xi 
+        eta, rs, k, lambda_, xi  = 1, 1, 1, 1, 1, 1
+        loss = 10e1
+        while loss > eps:
+            for cartesians, energy_dft in zip(cartesians_train, E_train):
+                energy_nn = 0
+                for cartesian in cartesians:
+                    pair = PairG(0, 0)
+                    pair += calculate_sf(cartesian, cartesians, g_type=1,
+                                        r_cutoff=r_cutoff)
+                    pair += calculate_sf(cartesian, cartesians, g_type=2,
+                                        r_cutoff=r_cutoff, eta=eta, rs = rs)
+                    pair += calculate_sf(cartesian, cartesians, g_type=3,
+                                        r_cutoff=r_cutoff, k = k)
+                    pair += calculate_sf(cartesian, cartesians, g_type=4,
+                                        r_cutoff=r_cutoff, eta = eta, xi = xi, lambda_ = lambda_)
+                    pair += calculate_sf(cartesian, cartesians, g_type=5,
+                                        r_cutoff=r_cutoff, eta = eta, xi = xi, lambda_ = lambda_)
+                    for _ in range(self.n_iter):
+                        hidden_inputs = np.dot(self.wih, pair.T) 
+                
+        pass
 
-        Args:
-            X: features
-            y: targets
-        """
+    def predict():
+        pass       
+            
 
-        # convert features and targets to 2-d arrays
-        X = np.array(X, ndmin=2).T
-        y = np.array(y, ndmin=2).T
-
-        # # compute input signals of the 1st hidden layer
-        # h2h_inputs = np.dot(self.wih, X)
-        # # compute output signals of the 1st hidden layer
-        # h2h_outputs = self.h_activation_function(h2h_inputs)
-
-        # # compute input signals of the 2nd hidden layer
-        # hidden_inputs = np.dot(self.whh, h2h_outputs)
-        # # compute output signals of the 2nd hidden layer
-        # hidden_outputs = self.h_activation_function(hidden_inputs)
-
-        # compute input signals of the 2nd hidden layer
-        hidden_inputs = np.dot(self.wih, X)
-        # compute output signals of the 2nd hidden layer
-        hidden_outputs = self.h_activation_function(hidden_inputs)
-
-        # compute input signals of the output layer
-        final_inputs = np.dot(self.who, hidden_outputs)
-        # compute output signals of the network
-        final_outputs = self.o_activation_function(final_inputs)
-
-        # count output errors: target - output
-        output_errors = y - final_outputs
-        # # compute errors of the 1st hidden layer
-        # h2h_errors = np.dot(self.who.T, output_errors)
-        # # compute errors of the 2nd hidden layer
-        # hidden_errors = np.dot(self.whh.T, h2h_errors)
-
-        # compute errors of the 2nd hidden layer
-        hidden_errors = np.dot(self.who.T, output_errors)
-
-        # update weights between hidden and output layers
-        self.who += self.eta * np.dot(output_errors * final_outputs * (1.0 - final_outputs), np.transpose(hidden_outputs))
-        # # update weights between 1st hidden and 2nd hidden layers
-        # self.whh += self.eta * np.dot(h2h_errors * h2h_outputs * (1.0 - h2h_outputs), np.transpose(h2h_outputs))
-        # update weights between input and hidden layers
-        self.wih += self.eta * np.dot(hidden_errors * hidden_outputs * (1.0 - hidden_outputs), np.transpose(X))
-
-    def predict(self, X):
-        """Prediction method. Return predicted target values according to train data
-
-        Args:
-            X: features
-        """
-        # convert inputs to 2-d arrays
-        inputs = np.array(X, ndmin = 2).T
-
-        # # compute input signals of the hidden layer
-        # h2h_inputs = np.dot(self.wih, inputs)
-        # # compute output signals of the hidden layer
-        # h2h_outputs = self.h_activation_function(h2h_inputs)
-
-        # # compute input signals of the hidden layer
-        # hidden_inputs = np.dot(self.whh, h2h_outputs)
-        # # compute output signals of the hidden layer
-        # hidden_outputs = self.h_activation_function(hidden_inputs)
-
-        # compute input signals of the hidden layer
-        hidden_inputs = np.dot(self.wih, inputs)
-        # compute output signals of the hidden layer
-        hidden_outputs = self.h_activation_function(hidden_inputs)
-    
-        # compute output signals of the hidden layer
-        final_inputs = np.dot(self.who, hidden_outputs)
-        # compute output signals of the network
-        final_outputs = self.o_activation_function(final_inputs)
-
-        return final_outputs
