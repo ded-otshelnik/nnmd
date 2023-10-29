@@ -6,10 +6,11 @@ class PairG(object):
         self.g = g
         self.dg = dg
 
-    def __add__(self, pair) :
+    def __add__(self, pair): 
         self.g += pair.g
-        self.dg += pair.dg
+        for i in range(3):
+            self.dg[i] += pair.dg[i]
+        return self
 
-    @property
-    def T(self):
-        return [[self.g], [self.dg]]
+    def __repr__(self) -> str:
+        return f"PairG(g: {self.g}, dg: {self.dg})"

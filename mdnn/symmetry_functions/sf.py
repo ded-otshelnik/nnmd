@@ -1,8 +1,19 @@
 import numpy as np
 import math
 
+from enum import Enum
+
 from .symm import g1, g2, g3, g4, g5
-from pair_g import PairG
+from .pair_g import PairG
+
+class G_TYPE(Enum):
+    """Class implements an enumeration of types of g functions
+    """
+    G1 = 1
+    G2 = 2
+    G3 = 3
+    G4 = 4
+    G5 = 5
 
 def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
                 eta: float = None,rs: float = None, k: float = None,
@@ -30,8 +41,8 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
     # match by type of symmetric func
     match g_type:
         # calculate g1
-        case 1:
-            g, dg = 0, 0
+        case G_TYPE.G1:
+            g, dg = 0, [0, 0, 0]
             for rj in cartesians:
                 # if i = j
                 if np.equal(ri, rj).all():
@@ -40,12 +51,13 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
                 # distance between centers of atoms
                 rij = math.sqrt(sum((i - j) ** 2 for i, j in zip(ri, rj)))
                 # g1 and its derivatives
-                output = g1(rij, r_cutoff)
-                g += output[0]
-                dg += output[1]
+                output_g, output_dg = g1(rij, r_cutoff)
+                g += output_g
+                for i in range(3):
+                    dg[i] += output_dg[i]
         # calculate g2
-        case 2:
-            g, dg = 0, 0
+        case G_TYPE.G2:
+            g, dg = 0, [0, 0, 0]
             for rj in cartesians:
                 # if i = j
                 if np.equal(ri, rj).all():
@@ -54,12 +66,13 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
                 # distance between centers of atoms
                 rij = math.sqrt(sum((i - j) ** 2 for i, j in zip(ri, rj)))
                 # g2 and its derivatives
-                output = g2(eta, rij, rs, r_cutoff)
-                g += output[0]
-                dg += output[1]
+                output_g, output_dg  = g2(eta, rij, rs, r_cutoff)
+                g += output_g
+                for i in range(3):
+                    dg[i] += output_dg[i]
         # calculate g3
-        case 3:
-            g, dg = 0, 0
+        case G_TYPE.G3:
+            g, dg = 0, [0, 0, 0]
             for rj in cartesians:
                 # if i = j
                 if np.equal(ri, rj).all():
@@ -68,12 +81,13 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
                 # distance between centers of atoms
                 rij = math.sqrt(sum((i - j) ** 2 for i, j in zip(ri, rj)))
                 # g3 and its derivatives
-                output = g3(k, rij, r_cutoff)
-                g += output[0]
-                dg += output[1]
+                output_g, output_dg = g3(k, rij, r_cutoff)
+                g += output_g
+                for i in range(3):
+                    dg[i] += output_dg[i]
         # calculate g4
-        case 4:
-            g, dg = 0, 0
+        case G_TYPE.G4:
+            g, dg = 0, [0, 0, 0]
             for rj in cartesians:
                 for rk in cartesians:
                     # if j = k, i = j or i = k
@@ -99,11 +113,12 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
                     dcos_v[1] = 0.5 * (1 / rij + 1 / rik / rik * (rjk * rjk / rij - rij))
                     dcos_v[2] = -rjk / rij / rik
                     # g4 and its derivatives
-                    output = g4(eta, xi, lambda_, rij, rik, rjk, cos_v, r_cutoff)
-                    g += output[0]
-                    dg += output[1, 0] * drij + output[1, 1] * drik + output[1, 2] * drjk
+                    output_g, output_dg = g4(eta, xi, lambda_, rij, rik, rjk, cos_v, dcos_v, r_cutoff)
+                    g += output_g
+                    for i in range(3):
+                        dg[i] += output_dg[i]
         # calculate g5
-        case 5:
+        case G_TYPE.G5:
             g, dg = 0, [0, 0, 0]
             for rj in cartesians:
                 for rk in cartesians:
@@ -130,9 +145,10 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
                     dcos_v[1] = 0.5 * (1 / rij + 1 / rik / rik * (rjk * rjk / rij - rij))
                     dcos_v[2] = -rjk / rij / rik
                     # g5 and its derivatives
-                    output = g5(eta, xi, lambda_, rij, rik, cos_v, r_cutoff)
-                    g += output[0]
-                    dg += output[1, 0] * drij + output[1, 1] * drik + output[1, 2] * drjk
+                    output_g, output_dg = g5(eta, xi, lambda_, rij, rik, cos_v, dcos_v, r_cutoff)
+                    g += output_g
+                    for i in range(3):
+                        dg[i] += output_dg[i]
         case _ :
             raise ValueError("Incorrect type of symmetric func")
     # return values

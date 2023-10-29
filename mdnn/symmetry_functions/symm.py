@@ -9,7 +9,7 @@ def g1(rij: float, rc: float):
         rij: distance between atoms i and j
         rc: cutoff radius
     """
-    return cutf(rij, rc), dcutf(rij, rc)
+    return cutf(rij, rc), [dcutf(rij, rc), 0, 0]
 
 def g2(eta: float, rij: float, rs: float, rc: float):
     """Radial symmetric function. Returns g and its derivative value
@@ -23,7 +23,8 @@ def g2(eta: float, rij: float, rs: float, rc: float):
     # radial component
     g = math.exp(-eta * (rij - rs) ** 2)
     # derivative of g
-    dg = g * (-2 * eta * (rij - rs) * cutf(rij, rc) + dcutf(rij, rc))
+    dg = [0, 0, 0]
+    dg[0] = g * (-2 * eta * (rij - rs) * cutf(rij, rc) + dcutf(rij, rc))
     # use the cutoff to g
     g *= cutf(rij, rc)
 
@@ -39,8 +40,9 @@ def g3(k: float, rij: float, rc: float):
     """
     # radial component
     g = math.cos(k * rij)
-    # derivative of g
-    dg =  - k * math.sin(k * rij) * cutf(rij, rc) + g * dcutf(rij, rc)
+    # derivatives of g
+    dg = [0, 0, 0]
+    dg[0] =  - k * math.sin(k * rij) * cutf(rij, rc) + g * dcutf(rij, rc)
     # use the cutoff to g
     g *= cutf(rij, rc)
 
