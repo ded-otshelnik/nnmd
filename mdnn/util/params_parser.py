@@ -1,11 +1,8 @@
-from collections import namedtuple
 import re 
 import traceback
 
-def parser(filename, encoding='utf-8')-> (list, list):
-    # TODO: develop parser
-    Point = namedtuple('Point', ['x', 'y', 'z'])
-
+def parser(filename, encoding='utf-8')-> (list, list, list):
+    n_atoms_iter = []
     with open(filename, encoding=encoding) as file:
         positions_marker, energies, forces_marker = False, False, False
         cartesians, forces = [], []
@@ -25,11 +22,14 @@ def parser(filename, encoding='utf-8')-> (list, list):
 
                 if positions_marker:
                     cartesians_iter = []
+                    n_atoms = 0
                     while line.strip('\n ') != '':
                         coord = re.findall(r'[^(,][-+]?\d+.\d+[^,)]', line)[:-3]
                         cartesians_iter.append([float(i) for i in coord])
                         line = file.readline() 
-                    cartesians.append(cartesians_iter)    
+                        n_atoms += 1
+                    cartesians.append(cartesians_iter)
+                    n_atoms_iter.append(n_atoms)
                     positions_marker = False
                 elif forces_marker:
                     forces_iter = []
@@ -43,11 +43,12 @@ def parser(filename, encoding='utf-8')-> (list, list):
                 line = file.readline()    
             except Exception:
                 traceback.print_exc()
-                break
+                exit(1)
         
-        return cartesians, forces
+        return n_atoms, cartesians, forces
 
 if __name__ == '__main__':
-    cartesians, forces = parser('test.txt')
+    n_atoms, cartesians, forces = parser('test.txt')
+    print(n_atoms)
     print(cartesians)
     print(forces)
