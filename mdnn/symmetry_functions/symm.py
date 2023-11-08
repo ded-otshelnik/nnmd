@@ -66,7 +66,7 @@ def g4(eta: float, xi: float, lambda_: float, rij: float, rik: float, rjk: float
     expv = math.exp(-eta * (rij ** 2 + rik ** 2 + rjk ** 2))
     # cosine part of formula
     cosv = 1 + lambda_ * cos_v
-    powcos = math.pow(cosv, xi) 
+    powcos = 0 if abs(cosv) < 10e-4 else math.pow(cosv, xi) 
 
     # angular g component
     g = math.pow(2, 1 - xi) * powcos * expv * \
@@ -111,7 +111,7 @@ def g5(eta: float, xi: float, lambda_: float, rij: float, rik: float, cos_v: flo
     expv = math.exp(-eta * (rij ** 2 + rik ** 2))
     # cosine part of g formula
     cosv = 1 + lambda_ * cos_v
-    powcos = math.pow(cosv, xi) 
+    powcos = 0 if abs(cosv) < 10e-4 else math.pow(cosv, xi)  
 
     # angular component
     g = math.pow(2, 1 - xi) * powcos * expv * \

@@ -60,7 +60,7 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
             g, dg = 0, [0, 0, 0]
             for rj in cartesians:
                 # if i = j
-                if np.equal(ri, rj).all():
+                if np.isclose(ri, rj).all():
                     # do not use in calculations
                     continue
                 # distance between centers of atoms
@@ -75,7 +75,7 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
             g, dg = 0, [0, 0, 0]
             for rj in cartesians:
                 # if i = j
-                if np.equal(ri, rj).all():
+                if np.isclose(ri, rj).all():
                     # do not use in calculations
                     continue
                 # distance between centers of atoms
@@ -91,7 +91,7 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
             for rj in cartesians:
                 for rk in cartesians:
                     # if j = k, i = j or i = k
-                    if np.equal(rj, rk).all() or np.equal(ri, rj).all() or np.equal(ri, rk).all():
+                    if np.isclose(rj, rk).all() or np.isclose(ri, rj).all() or np.isclose(ri, rk).all():
                         # do not use in calculations
                         continue 
                   
@@ -123,7 +123,7 @@ def calculate_sf(ri, cartesians, g_type: int, r_cutoff: float,
             for rj in cartesians:
                 for rk in cartesians:
                     # if j = k, i = j or i = k
-                    if np.equal(rj, rk).all() or np.equal(ri, rj).all() or np.equal(ri, rk).all():
+                    if np.isclose(rj, rk).all() or np.isclose(ri, rj).all() or np.isclose(ri, rk).all():
                         # do not use in calculations
                         continue 
 

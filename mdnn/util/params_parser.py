@@ -1,11 +1,10 @@
 import re 
 import traceback
 
-def parser(filename, encoding='utf-8')-> (list, list, list):
-    n_atoms_iter = []
+def parser(filename, encoding='utf-8') -> (list, list, list):
     with open(filename, encoding=encoding) as file:
-        positions_marker, energies, forces_marker = False, False, False
-        cartesians, forces = [], []
+        positions_marker, forces_marker = False, False
+        cartesians, forces, energies, n_atoms = [], [], [], []
 
         line = file.readline() 
         while line:
@@ -18,18 +17,23 @@ def parser(filename, encoding='utf-8')-> (list, list, list):
                     forces_marker = True
                     line = file.readline()   
                     continue
+                elif line.startswith('Extrapolated'):
+                    energies.append(float(re.findall(r'[-+]?\d+.\d+', line)[0]))   
+                    line = file.readline() 
+                    continue
+                elif line.startswith('Number of atoms:'):
+                    n_atoms.append(int(re.findall(r'\d+', line)[0]))
+                    line = file.readline()   
+                    continue
 
 
                 if positions_marker:
                     cartesians_iter = []
-                    n_atoms = 0
                     while line.strip('\n ') != '':
                         coord = re.findall(r'[^(,][-+]?\d+.\d+[^,)]', line)[:-3]
                         cartesians_iter.append([float(i) for i in coord])
                         line = file.readline() 
-                        n_atoms += 1
                     cartesians.append(cartesians_iter)
-                    n_atoms_iter.append(n_atoms)
                     positions_marker = False
                 elif forces_marker:
                     forces_iter = []
@@ -45,10 +49,11 @@ def parser(filename, encoding='utf-8')-> (list, list, list):
                 traceback.print_exc()
                 exit(1)
         
-        return n_atoms, cartesians, forces
+        return n_atoms, cartesians, forces, energies
 
 if __name__ == '__main__':
-    n_atoms, cartesians, forces = parser('test.txt')
+    n_atoms, cartesians, forces, energies = parser('test.txt')
     print(n_atoms)
     print(cartesians)
     print(forces)
+    print(energies)
