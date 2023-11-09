@@ -52,7 +52,7 @@ def parser(filename, encoding='utf-8') -> (list, list, list):
         return n_atoms, cartesians, forces, energies
 
 if __name__ == '__main__':
-    n_atoms, cartesians, forces, energies = parser('test.txt')
+    n_atoms, cartesians, forces, energies = parser('Cu111.txt')
     print(n_atoms)
     print(cartesians)
     print(forces)
