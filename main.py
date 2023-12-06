@@ -1,4 +1,4 @@
-from mdnn.nn.atomic_nn import AtomicNN
+from mdnn.nn.neural_network import NeuralNetwork
 
 from mdnn.util.params_parser import parser
 
@@ -22,8 +22,6 @@ hidden_nodes = 30
 rc = 12.0
 
 params = []
-
-for n_atoms_struct, struct, e_struct, f_struct in zip(n_atoms, cartesians, energies, forces):
-    net = AtomicNN(n_atoms_struct, log=open('nn.txt','w+'), hidden_nodes=hidden_nodes, r_cutoff=rc)
-    net.fit(struct, e_struct, f_struct)
-    params.append(net.get_params())
+# n_struct, n_atoms, r_cutoff, hidden_nodes, learning_rate, epochs, mu
+net = NeuralNetwork(len(cartesians), n_atoms[0], rc, 30)
+net.fit(cartesians, energies, forces)

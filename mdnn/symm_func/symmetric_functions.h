@@ -21,4 +21,12 @@ double G5(const double rij, const double rik, const double rjk, const double rc,
 vector< vector<double> > calculate_sf(const vector< vector<double> > &cartesians, const double& r_cutoff,
                 const double& eta, const double& rs, const double& k_param,
                 const int& lambda, const double& xi, vector< vector<double> > &dg_total);
+
+vector< vector<double> > calculate_forces(const vector< vector<double> > &cartesians, const double& r_cutoff,
+                const double& eta, const double& rs, const double& k,
+                const int& lambda, const double& xi, const double& h);
+
+double calculate_energy(const vector< vector<double> > &cartesians, const double& r_cutoff,
+                const double& eta, const double& rs, const double& k_param,
+                const int& lambda, const double& xi);
 #endif

@@ -1,6 +1,6 @@
 import time
 
-def timer(func, file):
+def timer(func):
     def wrapper(*args, **kwargs):
         # start the timer
         start_time = time.time()
@@ -10,7 +10,7 @@ def timer(func, file):
         end_time = time.time()
         # compute the elapsed time and print it
         execution_time = end_time - start_time
-        print(f"Execution time: {execution_time} seconds", file=file)
+        print(f"Execution time: {execution_time} seconds")
         # return the result of the decorated function execution
         return result
     # return reference to the wrapper function
