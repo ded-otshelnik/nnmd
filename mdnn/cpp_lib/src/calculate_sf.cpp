@@ -1,4 +1,4 @@
-#include "symmetric_functions.h"
+#include "symm_func/symmetric_functions.h"
 
 vector< vector<double> > calculate_sf(const vector< vector<double> > &cartesians, const double& r_cutoff,
                 const double& eta, const double& rs, const double& k_param,

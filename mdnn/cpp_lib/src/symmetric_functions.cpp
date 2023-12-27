@@ -1,4 +1,4 @@
-#include "symmetric_functions.h"
+#include "symm_func/symmetric_functions.h"
 
 double cutf(const double rij, const double rc){
     if (rij < rc){

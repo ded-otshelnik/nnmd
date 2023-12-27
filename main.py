@@ -1,3 +1,5 @@
+import time
+
 from mdnn.nn.neural_network import Neural_Network
 
 from mdnn.util.params_parser import parser
@@ -13,4 +15,9 @@ eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
 net = Neural_Network(len(cartesians), n_atoms[0], rc, hidden_nodes)
 
 net.compile(cartesians, eta, rs, k, _lambda, xi)
+
+start = time.time()
 net.fit(energies, forces)
+end = time.time()
+
+print("Time: ", end - start)
