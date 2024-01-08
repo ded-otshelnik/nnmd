@@ -5,12 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: main.py",
-            "type": "python",
+            "name": "Python/C++ app",
+            "type": "pythoncpp",
             "request": "launch",
-            "program": "main.py",
-            "console": "integratedTerminal",
-            "justMyCode": true
+            "pythonConfig": "default",
+            "cppConfig": "default (gdb) Attach",
         }
     ]
 }

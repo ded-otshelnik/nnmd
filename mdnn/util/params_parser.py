@@ -1,7 +1,8 @@
 import re 
 import traceback
+from typing import Tuple
 
-def parser(filename, encoding='utf-8') -> (list, list, list):
+def parser(filename, encoding='utf-8') -> Tuple[list, list, list, list]:
     with open(filename, encoding=encoding) as file:
         positions_marker, forces_marker = False, False
         cartesians, forces, energies, n_atoms = [], [], [], []

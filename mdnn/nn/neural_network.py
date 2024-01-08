@@ -1,6 +1,5 @@
 import torch
 import mdnn_cpp
-
 class Neural_Network(torch.nn.Module):
     """Class implement high-dimentional NN for system of atoms. \n
     For each atom defined special Atomic NN which provide machine-trained potentials.
@@ -23,31 +22,29 @@ class Neural_Network(torch.nn.Module):
         self.epochs = epochs
         self.criterion = torch.nn.MSELoss()
         
-        self.log = open('log.out', 'w+', encoding='utf-8')
+        # self.log = open('log.out', 'w+', encoding='utf-8')
         self.double()
     
-    def preprocess_g(self, cartesians, eta, rs, k, _lambda, xi):
-        
-        # arrays of g and dg values
+    def preprocess_g(self, cartesians, eta: float, rs: float, k: float, _lambda: int, xi: float):
+        # arrays of g and their derivatives
         self.g = []
         self.dg = []
         # params of symmetric functions
         self.eta, self.rs, self.k, self._lambda, self.xi = eta, rs, k, _lambda, xi
 
-        # calculate symmetric functions for each struct of atoms
-        for struct in cartesians:
-            dg_struct = []
+        self.cartesians = torch.tensor(cartesians, dtype=torch.double)
+        # calculate symmetric functions values for each struct of atoms
+        for struct in self.cartesians:
+            dg_struct = torch.zeros(self.n_atoms, 5, 3, dtype=torch.double)
             g_struct = mdnn_cpp.calculate_sf(struct, self.r_cutoff, eta, rs, k, _lambda, xi, dg_struct)
             self.g.append(g_struct)
             self.dg.append(dg_struct)
-
-        # convert to tensors
-
+        
         # g values - inputs of Atomic NNs
-        # so we require gradient for backpropagation
-        self.g = torch.tensor(self.g, requires_grad=True)
-        self.dg = torch.tensor(self.dg)
-        self.cartesians = torch.as_tensor(cartesians)
+        # so we need to store gradient for backpropagation
+        self.g = torch.stack(self.g).to(torch.float)
+        self.g.requires_grad = True
+        self.dg = torch.stack(self.dg).to(torch.double)
 
     def compile(self, cartesians, eta, rs, k, _lambda, xi):
         # pre-define g values
@@ -76,13 +73,13 @@ class Neural_Network(torch.nn.Module):
             # calculate energies by NN
             for atom in range(self.n_atoms):
                 nn = self.atomic_nn_set[atom]
-                assert isinstance(nn, torch.nn.Module)
-                temp = nn(self.g[struct_index][atom])
-                e_nn[struct_index][atom] = temp
-                f_nn[struct_index][atom] = nn.calculate_forces(self.cartesians[struct_index], e_nn[struct_index], atom,
+                e_nn[struct_index][atom] = nn(self.g[struct_index][atom])
+            # calculate forces per struct
+            temp = mdnn_cpp.calculate_forces(self.cartesians[struct_index], e_nn[struct_index], self.atomic_nn_set,
                                                          self.r_cutoff, self.h, 
                                                          self.eta, self.rs, self.k,
                                                          self._lambda, self.xi)
+            f_nn[struct_index] = temp
 
         # get loss
         loss = self.loss(epoch, e_nn, self.e_dft, f_nn, self.f_dft)
@@ -95,7 +92,6 @@ class Neural_Network(torch.nn.Module):
              
     def loss(self, epoch, e_nn: torch.Tensor, e_dft: torch.Tensor, f_nn: torch.Tensor, f_dft: torch.Tensor):
         E_loss = self.criterion(e_nn.sum(dim=1), e_dft) / (self.n_struct * self.n_atoms)
-        print(f_nn)
         F_loss = self.criterion(f_nn, f_dft) * self.mu / 3
         # print(f"iter: {epoch + 1}, RMSE E = {E_loss}")
         print(f"iter: {epoch + 1}, RMSE E = {E_loss}, RMSE F = {F_loss}")

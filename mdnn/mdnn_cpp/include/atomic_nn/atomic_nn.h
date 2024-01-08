@@ -1,7 +1,8 @@
-#include "bind_src.h"
+#include "head.h"
+
+#include "symm_func/symmetric_functions.h"
 
 #pragma once
-
 class AtomicNetImpl: public torch::nn::Module {
     private:
         vector<Linear> layers;
@@ -9,10 +10,6 @@ class AtomicNetImpl: public torch::nn::Module {
         AtomicNetImpl(int input_nodes, vector<int> hidden_nodes);
         ~AtomicNetImpl() {};
         Tensor forward(Tensor g);
-        Tensor calculate_forces(Tensor cartesians, Tensor e_nn, int atom,
-                const double& r_cutoff, const double& h, 
-                const double& eta, const double& rs, const double& k,
-                const int& lambda, const double& xi);
 };
 
 TORCH_MODULE(AtomicNet);
@@ -26,3 +23,7 @@ class AtomicNN: public AtomicNetImpl{
 
         AtomicNN(const AtomicNN&) = default;
 };
+
+Tensor calculate_forces(const Tensor cartesians, Tensor e_nn, const py::list& nets, const double& r_cutoff,
+                const double& eta, const double& rs, const double& k,
+                const int& lambda, const double& xi, const double& h);
