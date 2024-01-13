@@ -49,8 +49,8 @@ Tensor calculate_forces(const Tensor& cartesians, const Tensor& e_nn, const Tens
                     // AtomicNN of i atom
                     py::object obj = nets[i];
                     // recalculate energies according new g values
-                    auto temp = obj(g_new[i].to(torch::kFloat));
-                    e_new[i] = temp.cast<Tensor>().to(torch::kDouble).squeeze();
+                    auto temp = obj(g_new[i]);
+                    e_new[i] = temp.cast<Tensor>().squeeze();
                 }
                 // difference between new and actual energies
                 auto dE = torch::sub(e_new, e_nn[atom_struct]);

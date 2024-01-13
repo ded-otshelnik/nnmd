@@ -6,7 +6,6 @@ class AtomicNN(nn.Module):
     def __init__(self, r_cutoff, hidden_nodes, input_nodes = 5, learning_rate = 0.5):
         super().__init__()
 
-        self.log = open('log.out', 'w+', encoding='utf-8')
         self.r_cutoff = r_cutoff
 
         self.model = nn.Sequential()
