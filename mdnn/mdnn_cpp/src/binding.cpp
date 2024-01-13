@@ -1,18 +1,10 @@
 #include "head.h"
 
-#include "atomic_nn/atomic_nn.h"
 #include "symm_func/symmetric_functions.h"
+#include "calculate_forces.h"
 
 PYBIND11_MODULE(mdnn_cpp, module){
     module.doc() = R"pbdoc(PyTorch extention with Python/C++ bindings.)pbdoc";
-
-    torch::python::bind_module<AtomicNN>(module, "AtomicNN")
-        .def(py::init<const int &, const vector<int>>(),
-                         py::arg("input_layers"),
-                         py::arg("hidden_layers"))
-        .def("forward", &AtomicNN::forward,
-                        py::arg("inputs")    
-    );
         
     module.def("calculate_sf", &calculate_sf, R"pbdoc(
         Calculates symmetric descriptors of atom structure
@@ -45,6 +37,7 @@ PYBIND11_MODULE(mdnn_cpp, module){
         Args
             cartesians: atomic positions
             e_nn: actual calculated energies
+            g: actual g values
             nets: list of AtomicNNs
             r_cutoff: cutoff radius
             eta: parameter of symmetric functions
@@ -55,6 +48,7 @@ PYBIND11_MODULE(mdnn_cpp, module){
         )pbdoc",
         py::arg("cartesians"),
         py::arg("e_nn"),
+        py::arg("g"),
         py::arg("nets"),
         py::arg("r_cutoff"),
         py::arg("eta"),

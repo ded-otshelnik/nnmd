@@ -1,11 +1,12 @@
 import torch
 import mdnn_cpp
+from mdnn.nn.atomic_nn import AtomicNN
 class Neural_Network(torch.nn.Module):
     """Class implement high-dimentional NN for system of atoms. \n
     For each atom it defines special Atomic NN which provide machine-trained potentials.
     """
     def __init__(self, n_struct: int, n_atoms: int, r_cutoff: float, hidden_nodes: list[int], 
-                       input_nodes = 5, learning_rate = 0.5, epochs = 1000, h = 1, mu = 3) -> None:
+                       input_nodes = 5, learning_rate = 0.01, epochs = 1, h = 1, mu = 30) -> None:
         """Initiats neural network.
 
         Args:
@@ -69,7 +70,7 @@ class Neural_Network(torch.nn.Module):
         self.g.requires_grad = True
         self.dg = torch.stack(self.dg).to(torch.double)
 
-    def compile(self, cartesians, eta, rs, k, _lambda, xi):
+    def compile(self, cartesians, eta, rs, k, _lambda, xi, load_models = False, path: str = ""):
         # pre-define g values
         self.preprocess_g(cartesians, eta, rs, k, _lambda, xi)
 
@@ -77,10 +78,14 @@ class Neural_Network(torch.nn.Module):
         self.atomic_nn_set = []
         self.nn_optims = []
         # for each atom make Atomic NN and its optimizer
-        for _ in range(self.n_atoms):
-            nn = mdnn_cpp.AtomicNN(self.input_nodes, self.hidden_nodes)
+        for i in range(self.n_atoms):
+            nn = AtomicNN(self.input_nodes, self.hidden_nodes)
+            if load_models:
+                nn.load_state_dict(torch.load(path + f"/atomic_nn_{i}.pt"))
             self.atomic_nn_set.append(nn)
-            self.nn_optims.append(torch.optim.Adam(nn.parameters(), lr = self.learning_rate))
+            optim = torch.optim.Adam(nn.parameters(), lr = self.learning_rate)
+            optim.zero_grad(set_to_none=True)
+            self.nn_optims.append(optim)
     
     def fit(self, e_dft, f_dft):
         """Train method of neural network.
@@ -111,11 +116,12 @@ class Neural_Network(torch.nn.Module):
             for atom in range(self.n_atoms):
                 nn = self.atomic_nn_set[atom]
                 e_nn[struct_index][atom] = nn(self.g[struct_index][atom])
-            # calculate forces per struct
-            f_nn[struct_index] = mdnn_cpp.calculate_forces(self.cartesians[struct_index], e_nn[struct_index], self.atomic_nn_set,
-                                                         self.r_cutoff, self.h, 
-                                                         self.eta, self.rs, self.k,
-                                                         self._lambda, self.xi)
+
+        # calculate forces per struct
+        f_nn = mdnn_cpp.calculate_forces(self.cartesians, e_nn, self.g,
+                                         self.atomic_nn_set, self.r_cutoff,
+                                         self.h, self.eta, self.rs,
+                                         self.k, self._lambda, self.xi)
 
         # get loss
         loss = self.loss(epoch, e_nn, self.e_dft, f_nn, self.f_dft)
@@ -145,19 +151,24 @@ class Neural_Network(torch.nn.Module):
         print(info, file=self.log)
         return loss
     
-    #TODO: implement method for next iterations
     def predict(self, cartesians):
         n_structs = len(cartesians)
         e_nn = torch.zeros((n_structs, self.n_atoms), dtype=torch.double)
         f_nn = torch.zeros((n_structs, self.n_atoms, 3), dtype=torch.double)
-        for struct_index in range(self.n_struct):
-            # calculate energies by NN
-            for atom in range(self.n_atoms):
-                nn = self.atomic_nn_set[atom]
-                e_nn[struct_index][atom] = nn(self.g[struct_index][atom])
-            # calculate forces per struct
-            f_nn[struct_index] = mdnn_cpp.calculate_forces(self.cartesians[struct_index], e_nn[struct_index], self.atomic_nn_set,
-                                                         self.r_cutoff, self.h, 
-                                                         self.eta, self.rs, self.k,
-                                                         self._lambda, self.xi)
+        with torch.no_grad():
+            for struct_index in range(self.n_struct):
+                # calculate energies by NN
+                for atom in range(self.n_atoms):
+                    nn = self.atomic_nn_set[atom]
+                    e_nn[struct_index][atom] = nn(self.g[struct_index][atom])
+                # calculate forces per struct
+            f_nn = mdnn_cpp.calculate_forces(self.cartesians, e_nn, self.g,
+                                             self.atomic_nn_set, self.r_cutoff,
+                                             self.h, self.eta, self.rs,
+                                             self.k, self._lambda, self.xi)
         return e_nn, f_nn
+
+    def save_model(self):
+        for i, nn in enumerate(self.atomic_nn_set):
+            assert isinstance(nn, torch.nn.Module)
+            torch.save(nn.state_dict(), f'models/atomic_nn_{i}.pt')

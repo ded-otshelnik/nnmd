@@ -1,5 +1,5 @@
-import time
-
+import os
+import shutil
 from mdnn.nn.neural_network import Neural_Network
 
 from mdnn.util.params_parser import parser
@@ -14,10 +14,10 @@ eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
 # n_struct, n_atoms, r_cutoff, hidden_nodes, learning_rate, epochs, mu - params
 
 net = Neural_Network(len(cartesians), n_atoms[0], rc, hidden_nodes)
-net.compile(cartesians, eta, rs, k, _lambda, xi)
+net.compile(cartesians, eta, rs, k, _lambda, xi, load_models = False, path = 'models')
 
-start = time.time()
 net.fit(energies, forces)
-end = time.time()
-
-print("Time: ", end - start)
+if os.path.exists('models'):
+    shutil.rmtree('models', ignore_errors=True)
+os.mkdir('models')
+net.save_model()
