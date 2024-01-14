@@ -1,12 +1,9 @@
-import torch
 import torch.nn as nn
 
 class AtomicNN(nn.Module):
 
-    def __init__(self, r_cutoff, hidden_nodes, input_nodes = 5, learning_rate = 0.5):
+    def __init__(self, hidden_nodes, input_nodes = 5, learning_rate = 0.5):
         super().__init__()
-
-        self.r_cutoff = r_cutoff
 
         self.model = nn.Sequential()
         if isinstance(hidden_nodes, list):
@@ -19,9 +16,6 @@ class AtomicNN(nn.Module):
             self.model.append(nn.Linear(5, hidden_nodes))
             self.model.append(nn.Sigmoid())
             self.model.append(nn.Linear(hidden_nodes, 1))
-
-        self.learning_rate = learning_rate
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
     def forward(self, x):
         logits = self.model(x)

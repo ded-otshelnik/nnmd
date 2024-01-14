@@ -12,17 +12,19 @@ hidden_nodes = [n_atoms[0], 15, 10]
 rc = 12.0
 
 eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
-# n_struct, n_atoms, r_cutoff, hidden_nodes, learning_rate, epochs, mu - params
 
-net = Neural_Network(len(cartesians) - 1, n_atoms[0], rc, hidden_nodes, epochs=1)
-net.compile(cartesians[:len(cartesians) - 1], eta, rs, k, _lambda, xi, load_models = False, path = 'models')
+net = Neural_Network(len(cartesians), n_atoms[0], rc, hidden_nodes, epochs=300)
+net.compile(cartesians, eta, rs, k, _lambda, xi, load_models = False, path = 'models')
 
-train = False
-save = False
-predict = True
+# train models
+train = True
+# save models as files
+save = True
+# try to predict energy and forces
+predict = False
 
 if train:
-    net.fit(e_dft[:len(cartesians) - 1], f_dft[:len(cartesians) - 1])
+    net.fit(e_dft, f_dft)
 
 if predict:
     e_nn, f_nn = net.predict(cartesians[-1])

@@ -1,12 +1,13 @@
 import torch
 import mdnn_cpp
 from mdnn.nn.atomic_nn import AtomicNN
+
 class Neural_Network(torch.nn.Module):
     """Class implement high-dimentional NN for system of atoms. \n
     For each atom it defines special Atomic NN which provide machine-trained potentials.
     """
     def __init__(self, n_struct: int, n_atoms: int, r_cutoff: float, hidden_nodes: list[int], 
-                       input_nodes = 5, learning_rate = 0.01, epochs = 1000, h = 1, mu = 30) -> None:
+                       input_nodes = 5, learning_rate = 0.1, epochs = 1000, h = 1, mu = 30) -> None:
         """Initiats neural network.
 
         Args:
@@ -36,7 +37,7 @@ class Neural_Network(torch.nn.Module):
         self.epochs = epochs
         self.criterion = torch.nn.MSELoss()
         
-        self.log = open('log.out', 'w+', encoding='utf-8')
+        self._log = open('log.out', 'w+', encoding='utf-8')
         self._train = False
     
     def _preprocess_g(self, cartesians: torch.Tensor, eta: float, rs: float, k: float, _lambda: int, xi: float):
@@ -170,7 +171,7 @@ class Neural_Network(torch.nn.Module):
         info = (f"iter: {epoch + 1},"  if self._train else "")+ f" RMSE E = {E_loss}, RMSE F = {F_loss}, total = {loss}"
         print(info)
         if self._train:
-            print(info, file=self.log)
+            print(info, file=self._log)
         return loss
     
     def predict(self, cartesians):
