@@ -12,8 +12,10 @@ hidden_nodes = [n_atoms[0], 15, 10]
 rc = 12.0
 
 eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
-
+device = torch.device('cuda') if not torch.cuda.is_available() else torch.device('cpu')
 net = Neural_Network(len(cartesians), n_atoms[0], rc, hidden_nodes, epochs=300)
+net.to(device=device)
+
 net.compile(cartesians, eta, rs, k, _lambda, xi, load_models = False, path = 'models')
 
 # train models

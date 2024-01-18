@@ -8,35 +8,29 @@
 // @param rs: parameter of symmetric functions
 // @param lambda: parameter of symmetric functions
 // @param xi: parameter of symmetric functions
-// @param dg_total: storage of output derivatives
-Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
-                const double& eta, const double& rs, const double& k_param,
-                const int& lambda, const double& xi, Tensor &dg_total){
+Tensor calculate_sf(const Tensor &cartesians, const float& r_cutoff,
+                const float& eta, const float& rs, const float& k_param,
+                const int& lambda, const float& xi){
 
         auto opts = torch::TensorOptions()
-            .dtype(torch::kDouble);
+            .dtype(torch::kFloat);
         // atoms amount
         int n_atoms = cartesians.sizes()[0];
 
         // output g values
         Tensor g_total = torch::zeros({n_atoms, 5}, opts);
 
-        // get accessors to tensor that  
-
-        auto cartesians_accessor = cartesians.accessor<double, 2>();
-        auto g_total_accessor = g_total.accessor<double, 2>();
-        auto dg_total_accessor = dg_total.accessor<double, 3>();
+        // get accessors to tensors 
+        auto cartesians_accessor = cartesians.accessor<float, 2>();
 
         // current g value
-        double g;
+        float g;
 
         // loop by atoms
         for (int i = 0; i < n_atoms; i++){
             // loop by symmetric functions type
             for (int g_type = 1; g_type <= 5; g_type++){
                 g = 0;
-                // derivative of current symm func i for atom
-                double dg[3] = {0, 0, 0};
                 switch (g_type){
                     // G1
                     case 1:{
@@ -46,13 +40,13 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                             }
                             auto ri = cartesians_accessor[i];
                             auto rj = cartesians_accessor[j];
-                            double rij = 0;
+                            float rij = 0;
                             for (int dim = 0; dim < 3; dim++){
                                 rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                             }
 
                             rij = sqrt(rij);
-                            g += G1(rij, r_cutoff, dg);
+                            g += G1(rij, r_cutoff);
                         }
                         break;
                     }
@@ -65,12 +59,12 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                             }
                             auto ri = cartesians_accessor[i];
                             auto rj = cartesians_accessor[j];
-                            double rij = 0;
+                            float rij = 0;
                             for (int dim = 0; dim < 3; dim++){
                                 rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                             }
                             rij = sqrt(rij);
-                            g += G2(rij, r_cutoff, eta, rs, dg);
+                            g += G2(rij, r_cutoff, eta, rs);
                         }
                         break;
                     }
@@ -83,12 +77,12 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                             }
                             auto ri = cartesians_accessor[i];
                             auto rj = cartesians_accessor[j];
-                            double rij = 0;
+                            float rij = 0;
                             for (int dim = 0; dim < 3; dim++){
                                 rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                             }
                             rij = sqrt(rij);
-                            g += G3(rij, r_cutoff, k_param, dg);
+                            g += G3(rij, r_cutoff, k_param);
                         }
                         break;
                     }
@@ -104,9 +98,9 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                                 auto rj = cartesians_accessor[j];
                                 auto rk = cartesians_accessor[k];
 
-                                double rij = 0;
-                                double rik = 0;
-                                double rjk = 0;
+                                float rij = 0;
+                                float rik = 0;
+                                float rjk = 0;
 
                                 for (int dim = 0; dim < 3; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
@@ -118,14 +112,9 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                                 rik = sqrt(rik);
                                 rjk = sqrt(rjk);
 
-                                double cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
-                                double dcos_v[3] = {0, 0, 0};
-                                
-                                dcos_v[0] += (0.5 * (1 / rik + 1 / rij / rij * (rjk * rjk / rik - rik)));
-                                dcos_v[1] += (0.5 * (1 / rij + 1 / rik / rik * (rjk * rjk / rij - rij)));
-                                dcos_v[2] += (-rjk / rij / rik);
+                                float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
 
-                                g += G4(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v, dcos_v, dg);
+                                g += G4(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v);
                             }
                         }
                         break;
@@ -143,9 +132,9 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                                 auto rj = cartesians_accessor[j];
                                 auto rk = cartesians_accessor[k];
 
-                                double rij = 0;
-                                double rik = 0;
-                                double rjk = 0;
+                                float rij = 0;
+                                float rik = 0;
+                                float rjk = 0;
                                 for (int dim = 0; dim < 3; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                     rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
@@ -154,12 +143,9 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                                 rij = sqrt(rij);
                                 rik = sqrt(rik);
                                 rjk = sqrt(rjk);
-                                double cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
-                                double dcos_v[3] = {0, 0, 0};
-                                dcos_v[0] += (0.5 * (1 / rik + 1 / rij / rij * (rjk * rjk / rik - rik)));
-                                dcos_v[1] += (0.5 * (1 / rij + 1 / rik / rik * (rjk * rjk / rij - rij)));
-                                dcos_v[2] += (-rjk / rij / rik);
-                                g += G5(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v, dcos_v, dg);
+                                float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
+
+                                g += G5(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v);
                             }
                         }
                         break;
@@ -167,18 +153,11 @@ Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
                 }
                 // pass g and dg values of atom
                 g_total[i][g_type - 1] = g;
-                for (int dim = 0; dim < 3; dim++){
-                    dg_total[i][g_type - 1][dim] = dg[dim];
-                }
             }
         }
         // normalize g values
         g_total = torch::nn::functional::normalize(g_total,
                                          torch::nn::functional::NormalizeFuncOptions()
-                                                                .p(2.0)
-                                                                .dim(1));
-        // normalize dg values
-        dg_total = torch::nn::functional::normalize(dg_total, torch::nn::functional::NormalizeFuncOptions()
                                                                 .p(2.0)
                                                                 .dim(1));
 

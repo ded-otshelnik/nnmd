@@ -1,7 +1,8 @@
-#include "head.h"
-
-#include "symm_func/symmetric_functions.h"
 #include "calculate_forces.h"
+
+#define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
+#define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
+#define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
 // @brief Calculates forces of atomic system on iteration using AtomicNNs.
 // TODO: check forces formula
@@ -18,30 +19,32 @@ Tensor calculate_forces(const Tensor& cartesians, const Tensor& e_nn, const Tens
                 const py::list& nets, const float& r_cutoff,
                 const float& eta, const float& rs, const float& k,
                 const int& lambda, const float& xi, const float& h){
-    
+    CHECK_INPUT(cartesians);
+    CHECK_INPUT(e_nn);
+    CHECK_INPUT(g);
+
     auto opts = torch::TensorOptions()
-            .dtype(torch::kFloat);
+            .dtype(torch::kFloat)
+            .device(torch::kCUDA);
+
+    Tensor cartesians_copy = cartesians.clone();
     // atoms amount
     int n_structs = cartesians.size(0);
     int n_atoms = cartesians.size(1);
 
-    Tensor cartesians_copy = cartesians;
-
     // output forces
     Tensor forces = torch::zeros(cartesians.sizes(), opts);
-    // loop by atom structs
+
     for (int atom_struct = 0; atom_struct < n_structs; atom_struct++){
-        // loop by atoms
         for (int atom = 0; atom < n_atoms; atom++){
-            // loop by dimentions
-            for (int dim = 0; dim < 3; dim++){
+            for(int dim = 0; dim < 3; dim++){
                 // move atom along the dim in step h
                 cartesians_copy[atom_struct][atom][dim] += h;
 
                 // calculate new symmetric functions values
                 Tensor g_new = calculate_sf(cartesians_copy[atom_struct], r_cutoff,
-                                                eta, rs, k, lambda, xi);
-                
+                                                    eta, rs, k, lambda, xi);
+                        
                 Tensor e_new = torch::zeros(n_atoms, opts);
                 for (int i = 0; i < n_atoms; i++){
                     // AtomicNN of i atom
@@ -59,10 +62,10 @@ Tensor calculate_forces(const Tensor& cartesians, const Tensor& e_nn, const Tens
                     }
                 }
                 // back to initial state
-                cartesians_copy[atom_struct][atom][dim] -= h;            
+                cartesians_copy[atom_struct][atom][dim] -= h; 
             }
         }
-    
     }
+
     return forces;
 }

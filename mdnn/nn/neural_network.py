@@ -1,13 +1,30 @@
+# must be imported first
+# for compatibility with custom extensions
 import torch
-import mdnn_cpp
+
+import torch.distributed as dist
+import torch.multiprocessing as mp
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+from torchviz import make_dot
+
 from mdnn.nn.atomic_nn import AtomicNN
+# C++ extention
+import mdnn_cpp
+# C++/CUDA extention
+import mdnn_cuda
+
+import time
+
+mdnn, device = (mdnn_cuda, torch.device('cuda')) if not torch.cuda.is_available() else (mdnn_cpp, torch.device('cpu'))
+cuda = True if mdnn == mdnn_cuda else False
 
 class Neural_Network(torch.nn.Module):
     """Class implement high-dimentional NN for system of atoms. \n
     For each atom it defines special Atomic NN which provide machine-trained potentials.
     """
     def __init__(self, n_struct: int, n_atoms: int, r_cutoff: float, hidden_nodes: list[int], 
-                       input_nodes = 5, learning_rate = 0.1, epochs = 1000, h = 1, mu = 30) -> None:
+                       input_nodes: int = 5, learning_rate: float = 0.1, epochs: int = 2, h: float = 1, mu: float = 30) -> None:
         """Initiats neural network.
 
         Args:
@@ -35,7 +52,7 @@ class Neural_Network(torch.nn.Module):
         self.hidden_nodes = hidden_nodes
         self.learning_rate = learning_rate
         self.epochs = epochs
-        self.criterion = torch.nn.MSELoss()
+        self.criterion = torch.nn.MSELoss().to(device=device)
         
         self._log = open('log.out', 'w+', encoding='utf-8')
         self._train = False
@@ -53,24 +70,19 @@ class Neural_Network(torch.nn.Module):
         """
         # arrays of g and their derivatives
         g = []
-        dg = []
         # params of symmetric functions
         self.eta, self.rs, self.k, self._lambda, self.xi = eta, rs, k, _lambda, xi
-
+        
         # calculate symmetric functions values for each struct of atoms and its derivatives
         for struct in cartesians:
-            dg_struct = torch.zeros(self.n_atoms, 5, 3, dtype=torch.double)
-            g_struct = mdnn_cpp.calculate_sf(struct, self.r_cutoff, eta, rs, k, _lambda, xi, dg_struct)
+            g_struct = mdnn.calculate_sf(struct, self.r_cutoff, eta, rs, k, _lambda, xi)
             g.append(g_struct)
-            dg.append(dg_struct)
         
         # g values - inputs of Atomic NNs
         # so we need to store gradient for backpropagation
-        
-        g = torch.stack(g).to(torch.double)
+        g = torch.stack(g).to(device=device, dtype=torch.float32)
         g.requires_grad = True
-        dg = torch.stack(dg).to(torch.double)
-        return g, dg
+        return g
 
     def compile(self, cartesians, eta, rs, k, _lambda, xi, load_models = False, path: str = None):
         """Configurates parameters related to calculations and AtomicNNs
@@ -86,8 +98,9 @@ class Neural_Network(torch.nn.Module):
             path (str, optional): path to pre-trained models. Defaults to None.
         """
         # pre-define g values
-        self.cartesians = torch.tensor(cartesians, dtype=torch.double)
-        self.g, self.dg = self._preprocess_g(self.cartesians, eta, rs, k, _lambda, xi)
+        self.cartesians = torch.tensor(cartesians, device=device, dtype=torch.float32)
+        
+        self.g = self._preprocess_g(self.cartesians, eta, rs, k, _lambda, xi)
 
         # sets of atomic nn and their optimizers
         self.atomic_nn_set = []
@@ -98,8 +111,8 @@ class Neural_Network(torch.nn.Module):
             # if need only use pre-trained models
             if load_models:
                 # load from path
-                nn.load_state_dict(torch.load(path + f"/atomic_nn_{i}.pt"))
-            nn.double()
+                nn.load_state_dict(torch.load(path + f"/atomic_nn_{i}.pt"))         
+            nn = nn.to(device=device)
             self.atomic_nn_set.append(nn)
             optim = torch.optim.Adam(nn.parameters(), lr = self.learning_rate)
             optim.zero_grad(set_to_none=True)
@@ -114,46 +127,62 @@ class Neural_Network(torch.nn.Module):
         """
         self._train = True
         # data preparation
-        self.e_dft = torch.tensor(e_dft, dtype=torch.double)
-        self.f_dft = torch.tensor(f_dft, dtype=torch.double)
-        
+        self.e_dft = torch.tensor(e_dft, device=device, dtype=torch.float32)
+        self.f_dft = torch.tensor(f_dft, device=device, dtype=torch.float32)
         # run training
         for epoch in range(self.epochs):
+            start = time.time()
             self._train_loop(epoch)
+            end = time.time()
+            print("CUDA train:" if cuda else "CPU train:", (end - start), end="\n\n")
         self._train = False
-
+    
     def _train_loop(self, epoch):
         """Train loop method.
 
         Args:
             epoch: current training epoch
         """
-        e_nn = torch.zeros((self.n_struct, self.n_atoms), dtype=torch.double)
-        f_nn = torch.zeros((self.n_struct, self.n_atoms, 3), dtype=torch.double)
+        e_nn = torch.empty((self.n_struct, self.n_atoms), device=device, dtype=torch.float32)
+        
+        start = time.time()
         # loop by struct
         for struct_index in range(self.n_struct):
             # calculate energy by NN for each atom
             for atom in range(self.n_atoms):
                 nn = self.atomic_nn_set[atom]
                 e_nn[struct_index][atom] = nn(self.g[struct_index][atom])
-
+        end = time.time()
+        print("Energies:", (end - start))
+        start = time.time()
         # calculate forces per struct
-        f_nn = mdnn_cpp.calculate_forces(self.cartesians, e_nn, self.g,
-                                         self.atomic_nn_set, self.r_cutoff,
-                                         self.h, self.eta, self.rs,
-                                         self.k, self._lambda, self.xi)
+        f_nn = mdnn.calculate_forces(self.cartesians, e_nn, self.g,
+                                     self.atomic_nn_set, self.r_cutoff,
+                                     self.h, self.eta, self.rs,
+                                     self.k, self._lambda, self.xi)
+        end = time.time()
+        print("Forces:", (end - start))
 
+        start = time.time()
         # get loss
         loss = self.loss(e_nn, self.e_dft, f_nn, self.f_dft, epoch)
+        end = time.time()
+        print("Get loss:", (end - start))
 
+        start = time.time()
         # run backpropagation
         loss.backward()
-        
+        end = time.time()
+        print("Backpropagation:", (end - start))
+
+        start = time.time()
         # get optimizers and do optimization step
         for i in range(self.n_atoms):
             optim = self.nn_optims[i]
             optim.step()
             optim.zero_grad(set_to_none=True)
+        end = time.time()
+        print("Optimizers:", (end - start))
              
     def loss(self, e_nn: torch.Tensor, e_dft: torch.Tensor, f_nn: torch.Tensor, f_dft: torch.Tensor, epoch: int = None):
         """Get loss of training by criterion.
@@ -180,11 +209,12 @@ class Neural_Network(torch.nn.Module):
         Args:
             cartesians: structs of atoms (atomic system in certain time moment)
         """
-        cartesians_ = torch.tensor(cartesians, dtype=torch.double).unsqueeze(0)
+        cartesians_ = torch.tensor(cartesians).unsqueeze(0) \
+                                              .to(device=torch.device('cuda'), dtype=torch.float32)
         n_structs = len(cartesians_)
         g, _ = self._preprocess_g(cartesians_, self.eta, self.rs, self.k, self._lambda, self.xi)
-        e_nn = torch.zeros((n_structs, self.n_atoms), dtype=torch.double)
-        f_nn = torch.zeros((n_structs, self.n_atoms, 3), dtype=torch.double)
+        e_nn = torch.empty((n_structs, self.n_atoms)).to(device=torch.device('cuda'), dtype=torch.float32)
+
         with torch.no_grad():
             for struct_index in range(n_structs):
                 # calculate energies by NN

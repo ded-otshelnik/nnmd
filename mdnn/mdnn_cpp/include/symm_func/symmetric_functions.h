@@ -7,21 +7,17 @@
 
 #include <cmath>
 
-double G1(const double rij, const double rc, double* out_dg);
-double G2(const double rij, const double rc, const double eta, const double rs, double* out_dg);
-double G3(const double rij, const double rc, const double k, double* out_dg);
-double G4(const double rij, const double rik, const double rjk, const double rc,
-          const double eta, const double lambda, const double xi,
-          const double cos_v, const double* dcos_v, double* out_dg);
-double G5(const double rij, const double rik, const double rjk, const double rc,
-          const double eta, const double lambda, const double xi,
-          const double cos_v, const double* dcos_v, double* out_dg);
+float G1(const float rij, const float rc);
+float G2(const float rij, const float rc, const float eta, const float rs);
+float G3(const float rij, const float rc, const float k);
+float G4(const float rij, const float rik, const float rjk, const float rc,
+          const float eta, const float lambda, const float xi,
+          const float cos_v);
+float G5(const float rij, const float rik, const float rjk, const float rc,
+          const float eta, const float lambda, const float xi,
+          const float cos_v);
 
-Tensor calculate_sf(const Tensor &cartesians, const double& r_cutoff,
-                const double& eta, const double& rs, const double& k_param,
-                const int& lambda, const double& xi, Tensor &dg_total);
-
-// vector< vector<double> > calculate_sf(const vector< vector<double> > &cartesians, const double& r_cutoff,
-//                 const double& eta, const double& rs, const double& k_param,
-//                 const int& lambda, const double& xi, vector< vector<double> > &dg_total);
+Tensor calculate_sf(const Tensor &cartesians, const float& r_cutoff,
+                const float& eta, const float& rs, const float& k_param,
+                const int& lambda, const float& xi);
 #endif
