@@ -9,7 +9,7 @@ you have compatible versions of C++ library and Python module.
 
 ## Installation
 
-Go to mdnn_cpp folder and run command
+Go to mdnn_cpp/mdnn_cuda folder and run command
 ```
     python setup.py install
 ```
