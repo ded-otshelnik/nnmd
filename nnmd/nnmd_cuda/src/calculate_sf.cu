@@ -36,7 +36,7 @@ Tensor calculate_sf(const Tensor& cartesians, const float& r_cutoff,
                 const float& eta, const float& rs, const float& k_param,
                 const int& lambda, const float& xi){
     CHECK_INPUT(cartesians);
-
+    
     torch::TensorOptions opts = torch::TensorOptions()
                                      .dtype(torch::kFloat)
                                      .device(torch::kCUDA);
@@ -47,6 +47,7 @@ Tensor calculate_sf(const Tensor& cartesians, const float& r_cutoff,
 
     int threads = 512;
     dim3 blocks(N, 5, N);
+    
     calculate_sf_kernel<<<blocks, threads>>>(
             cartesians.packed_accessor64<float, 2, torch::RestrictPtrTraits>(),
             g_total.packed_accessor64<float, 2, torch::RestrictPtrTraits>(),

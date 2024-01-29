@@ -1,29 +1,20 @@
-import multiprocessing
-import os
-import platform
-import subprocess
-import sys
+import glob
+import os.path as osp
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension
 
-import glob
-import os.path as osp
-from setuptools import setup
-from torch.utils.cpp_extension import CUDAExtension, BuildExtension
-
+TORCH_EXTENSION_NAME = "nnmd_cpp"
 
 ROOT_DIR = osp.dirname(osp.abspath(__file__))
 include_dirs = [osp.join(ROOT_DIR, "include")]
 
-sources = glob.glob('src/*.cpp', recursive=True) + glob.glob('src/*.cu', recursive=True)
-
-TORCH_EXTENSION_NAME = "mdnn_cuda"
+sources = glob.glob('src/*.cpp') + glob.glob('src/symm_func/*.cpp')
 
 setup(
     name = TORCH_EXTENSION_NAME,
     # version = VERSION,
-    version = "0.0.1",
+    version = "0.0.0dev0",
     description = "Extension implementation with PyTorch C++ (Libtorch) and Python bindings",
     # long_description = README,
     author = "Andrey Budnikov",
@@ -32,14 +23,14 @@ setup(
     packages=find_packages(exclude=["tests"]),
     package_data={"": ["*.so"]},
     test_suite="tests",
-    ext_modules = [CUDAExtension(
+    ext_modules = [CppExtension(
         name = TORCH_EXTENSION_NAME,
         sources = sources,
         include_dirs = include_dirs,
-        extra_compile_args = {'cxx': ['-O2'],
-                              'nvcc': ['-O2', '-lcudnn']}
+        extra_compile_args = {'cxx': ['-O2']}
     )],
     cmdclass = {
         "build_ext": BuildExtension
-    }
+    },
+    platforms = ["linux_x86_64"]
 )

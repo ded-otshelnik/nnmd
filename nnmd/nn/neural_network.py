@@ -3,17 +3,17 @@
 import torch
 
 # C++ extention
-import mdnn_cpp
+import nnmd_cpp
 # C++/CUDA extention
-import mdnn_cuda
+import nnmd_cuda
 
 # Atomic neural network
-from mdnn.nn.atomic_nn import AtomicNN
+from nnmd.nn.atomic_nn import AtomicNN
 
 import time
 
 cuda = True
-mdnn, device = (mdnn_cuda, torch.device('cuda')) if torch.cuda.is_available() and cuda else (mdnn_cpp, torch.device('cpu'))
+_nnmd, device = (nnmd_cuda, torch.device('cuda')) if torch.cuda.is_available() and cuda else (nnmd_cpp, torch.device('cpu'))
 
 class Neural_Network(torch.nn.Module):
     """Class implement high-dimentional NN for system of atoms. \n
@@ -70,10 +70,9 @@ class Neural_Network(torch.nn.Module):
         # params of symmetric functions
         self.r_cutoff = r_cutoff
         self.eta, self.rs, self.k, self._lambda, self.xi = eta, rs, k, _lambda, xi
-        
         # calculate symmetric functions values for each struct of atoms and its derivatives
         for struct in cartesians:
-            g_struct = mdnn.calculate_sf(struct, self.r_cutoff, eta, rs, k, _lambda, xi)
+            g_struct = _nnmd.calculate_sf(struct, r_cutoff, eta, rs, k, _lambda, xi)
             g.append(g_struct)
         
         # g values - inputs of Atomic NNs
@@ -161,7 +160,7 @@ class Neural_Network(torch.nn.Module):
         start = time.time()
                 
         # calculate forces per struct
-        f_nn = mdnn.calculate_forces(self.cartesians, e_nn, self.g,
+        f_nn = _nnmd.calculate_forces(self.cartesians, e_nn, self.g,
                                      self.atomic_nn_set, self.r_cutoff,
                                      self.h, self.eta, self.rs,
                                      self.k, self._lambda, self.xi)
@@ -233,7 +232,7 @@ class Neural_Network(torch.nn.Module):
                     e_nn[struct_index][atom] = nn(g[struct_index][atom])
 
             # calculate forces per struct
-            f_nn = mdnn.calculate_forces(cartesians_, e_nn, g,
+            f_nn = _nnmd.calculate_forces(cartesians_, e_nn, g,
                                             self.atomic_nn_set, self.r_cutoff,
                                             self.h, self.eta, self.rs,
                                             self.k, self._lambda, self.xi)

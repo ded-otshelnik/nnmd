@@ -3,8 +3,8 @@ import shutil
 import torch
 import time 
 
-from mdnn.nn.neural_network import Neural_Network
-from mdnn.util.params_parser import parser
+from nnmd.nn.neural_network import Neural_Network
+from nnmd.util.params_parser import parser
 
 file = './samples/Cu111.txt'
 n_atoms, cartesians, f_dft, e_dft = parser(file)

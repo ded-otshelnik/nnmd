@@ -3,7 +3,7 @@
 #include "symm_func/symmetric_functions.h"
 #include "calculate_forces.h"
 
-PYBIND11_MODULE(mdnn_cpp, module){
+PYBIND11_MODULE(nnmd_cpp, module){
     module.doc() = R"pbdoc(PyTorch extention with Python/C++ bindings.)pbdoc";
         
     module.def("calculate_sf", &calculate_sf, R"pbdoc(

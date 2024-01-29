@@ -1,5 +1,5 @@
 import torch
-from mdnn.util.params_parser import parser
+from nnmd.util.params_parser import parser
 
 import time
 import mdnn_cuda

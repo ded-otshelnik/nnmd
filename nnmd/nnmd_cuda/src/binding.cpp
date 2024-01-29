@@ -3,7 +3,7 @@
 #include "symm_func/symmetric_functions.h"
 #include "calculate_forces.h"
 
-PYBIND11_MODULE(mdnn_cuda, module){
+PYBIND11_MODULE(nnmd_cuda, module){
     module.doc() = R"pbdoc(PyTorch extention with Python/C++/CUDA bindings.)pbdoc";
     
     module.def("calculate_forces", &calculate_forces, R"pbdoc(
