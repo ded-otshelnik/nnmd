@@ -4,6 +4,8 @@
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
+const int n_dims = 3;
+
 // @brief Calculates forces of atomic system on iteration using AtomicNNs.
 // TODO: check forces formula
 // @param cartesians: atomic positions
@@ -31,13 +33,12 @@ Tensor calculate_forces(const Tensor& cartesians, const Tensor& e_nn, const Tens
     // atoms amount
     int n_structs = cartesians.size(0);
     int n_atoms = cartesians.size(1);
-
     // output forces
     Tensor forces = torch::zeros(cartesians.sizes(), opts);
 
     for (int atom_struct = 0; atom_struct < n_structs; atom_struct++){
         for (int atom = 0; atom < n_atoms; atom++){
-            for(int dim = 0; dim < 3; dim++){
+            for(int dim = 0; dim < n_dims; dim++){
                 // move atom along the dim with step h
                 cartesians_copy[atom_struct][atom][dim] += h;
 

@@ -2,8 +2,8 @@ import re
 import traceback
 from typing import Tuple
 
-def parser(filename, encoding='utf-8') -> Tuple[list, list, list, list]:
-    """Parse info of gpaw simulation to lists
+def parser(filename, encoding='utf-8') -> Tuple[int, list, list, list]:
+    """Parse info of gpaw simulation
 
     Args:
         filename: file of gpaw simulation
@@ -36,7 +36,7 @@ def parser(filename, encoding='utf-8') -> Tuple[list, list, list, list]:
                     continue
                 # if atoms amount is found
                 elif line.startswith('Number of atoms:'):
-                    n_atoms.append(int(re.findall(r'\d+', line)[0]))
+                    n_atoms = int(re.findall(r'\d+', line)[0])
                     line = file.readline()   
                     continue
                 

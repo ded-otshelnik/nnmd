@@ -3,6 +3,8 @@
 #include "symm_func/symmetric_functions.h"
 #include "calculate_forces.h"
 
+const int n_dims = 3;
+
 // @brief Calculates forces of atomic system on iteration using AtomicNNs.
 // TODO: check forces formula
 // @param cartesians: atomic positions
@@ -34,7 +36,7 @@ Tensor calculate_forces(const Tensor& cartesians, const Tensor& e_nn, const Tens
         // loop by atoms
         for (int atom = 0; atom < n_atoms; atom++){
             // loop by dimentions
-            for (int dim = 0; dim < 3; dim++){
+            for (int dim = 0; dim < n_dims; dim++){
                 // move atom along the dim in step h
                 cartesians_copy[atom_struct][atom][dim] += h;
 
