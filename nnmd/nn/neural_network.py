@@ -8,7 +8,7 @@ import nnmd_cpp
 import nnmd_cuda
 
 # Atomic neural network
-from nnmd.nn.atomic_nn import AtomicNN
+from .atomic_nn import AtomicNN
 
 class Neural_Network(torch.nn.Module):
     """Class implement high-dimentional NN for system of atoms. \n
@@ -43,7 +43,7 @@ class Neural_Network(torch.nn.Module):
         self.use_cuda = use_cuda
         # if we can use cuda
         if torch.cuda.is_available() and use_cuda: 
-            # set cuda module as computational
+            # set cuda c++ module as computational
             # and GPU as device
             self._nnmd = nnmd_cuda
             self.device = torch.device('cuda')
@@ -159,9 +159,6 @@ Symmetric functions parameters:
             # create Atomic NN optimizer instance for i-th atom
             optim = torch.optim.Adam(nn.parameters(), lr = self.learning_rate)
             self.nn_optims.append(optim)
-        
-        # save info to log file
-        self._describe_env()
     
     def fit(self, e_dft: list, f_dft: list):
         """Train method of neural network.
@@ -173,6 +170,9 @@ Symmetric functions parameters:
         # data preparation
         self.e_dft = torch.tensor(e_dft, device=self.device, dtype=torch.float32)
         self.f_dft = torch.tensor(f_dft, device=self.device, dtype=torch.float32)
+        
+        # save info to log file
+        self._describe_env()
 
         # run training
         self._train = True

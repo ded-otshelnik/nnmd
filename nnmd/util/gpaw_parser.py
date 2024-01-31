@@ -2,7 +2,7 @@ import re
 import traceback
 from typing import Tuple
 
-def parser(filename, encoding='utf-8') -> Tuple[int, list, list, list]:
+def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, list, list, list]:
     """Parse info of gpaw simulation
 
     Args:
