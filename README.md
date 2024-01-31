@@ -10,18 +10,18 @@ if you need training on GPU
 2. Install Pybind11 (the simpliest way - using pip).
 3. Build Pytorch from source and download Libtorch (with compatible CPU/CUDA version).
 Make sure that you have compatible versions of C++ library and Python module.
-4. Set a few environment variables: 
+4. Set next environment variables: 
     - PYBIND11_DIR
     - TORCH_LIB
     - Torch_DIR
-   If you build with CUDA support:
+5. If you build with CUDA support, export next environment variables:
     - CMAKE_CUDA_COMPILER
     - CUDA_CUDA_LIB
     - CUDACXX
 
 ## Installation
 
-Recommendation: use virtual environments 
+Recommendation: use virtual environments.
 
 Go to nnmd_cpp/nnmd_cuda folders and run command:
 ```python
