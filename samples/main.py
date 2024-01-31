@@ -4,11 +4,11 @@ import torch
 import time 
 
 from nnmd.nn import Neural_Network
-from nnmd.util import parser
+from nnmd.util import gpaw_parser
 
 print("Getting info from GPAW simulation: ", end='')
 file = './gpaw/Cu111.txt'
-n_atoms, cartesians, f_dft, e_dft = parser(file)
+n_atoms, cartesians, f_dft, e_dft = gpaw_parser(file)
 n_structs = len(cartesians)
 print("done")
 
