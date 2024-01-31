@@ -1,4 +1,5 @@
 import glob
+import os
 import os.path as osp
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -14,7 +15,7 @@ sources = glob.glob('src/*.cpp') + glob.glob('src/symm_func/*.cpp')
 setup(
     name = TORCH_EXTENSION_NAME,
     # version = VERSION,
-    version = "0.0.0dev0",
+    version = "0.0.0.dev0",
     description = "Extension implementation with PyTorch C++ (Libtorch) and Python bindings",
     # long_description = README,
     author = "Andrey Budnikov",

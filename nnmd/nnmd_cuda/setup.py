@@ -23,7 +23,7 @@ TORCH_EXTENSION_NAME = "nnmd_cuda"
 setup(
     name = TORCH_EXTENSION_NAME,
     # version = VERSION,
-    version = "0.0.0dev0",
+    version = "0.0.0.dev0",
     description = "Extension implementation with PyTorch C++ (Libtorch) and Python bindings",
     # long_description = README,
     author = "Andrey Budnikov",
