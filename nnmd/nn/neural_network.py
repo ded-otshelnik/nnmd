@@ -3,7 +3,7 @@
 import torch
 
 # C++/CUDA extention
-import _nnmd_cpp as nnmd_cpp
+import nnmd_cpp as nnmd_cpp
 
 # Atomic neural network
 from .atomic_nn import AtomicNN

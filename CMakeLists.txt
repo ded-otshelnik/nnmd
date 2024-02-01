@@ -1,1 +1,1 @@
-add_subdirectory(nnmd/_nnmd_cpp)
+add_subdirectory(nnmd/nnmd_cpp)

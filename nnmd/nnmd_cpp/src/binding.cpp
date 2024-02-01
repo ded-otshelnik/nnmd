@@ -4,7 +4,7 @@
 #include "cuda/symmetric_functions.hpp"
 #include "cuda/calculate_forces.hpp"
 
-PYBIND11_MODULE(_nnmd_cpp, module){
+PYBIND11_MODULE(nnmd_cpp, module){
     module.doc() = R"pbdoc(PyTorch extention with CUDA/C++ bindings.)pbdoc";
     module.import("torch");
 

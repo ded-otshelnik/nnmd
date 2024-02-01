@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
-set(PROJECT_SOLUTION_NAME "_nnmd_cpp" CACHE STRING "Name of the solution" FORCE)
+set(PROJECT_SOLUTION_NAME "nnmd_cpp" CACHE STRING "Name of the solution" FORCE)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake" FORCE)
 
 include(cmake/util.cmake)
