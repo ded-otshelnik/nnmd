@@ -10,7 +10,7 @@ from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension
 
-EXTENSION_NAME = "nnmd"
+EXTENSION_NAME = "_nnmd_cpp"
 
 class CMakeBuild(BuildExtension):  #(build_ext):
 
@@ -136,34 +136,20 @@ class CMakeBuild(BuildExtension):  #(build_ext):
             subprocess.check_call(cmd, cwd=build_dir, env=env)
 
 
-with open("README.md") as f:
-    README = f.read()
-
-with open("VERSION") as ver:
-    VERSION = ver.readline().strip()
-
-with open("requirements.txt") as r:
-    REQUIRES = []
-    for line in r.readlines():
-        if line.startswith("#"):
-            continue
-        REQUIRES.append(line.strip())
-
-
-
 setup(
     name = EXTENSION_NAME,
-    version = VERSION,
+    # version = VERSION,
+    version = "0.0.0.dev0",
     description = "Extension implementation with PyTorch C++ (Libtorch) and Python bindings",
-    long_description = README,
+    # long_description = README,
     author = "Andrey Budnikov",
     # install_requires = REQUIRES,
     include_package_data=True,
-    packages=find_packages(exclude=["test"]),
+    packages=[],
     package_data={"": ["*.so"]},
     test_suite="tests",
     ext_modules = [CUDAExtension(
-        name = "_" + EXTENSION_NAME + "_cpp",
+        name = EXTENSION_NAME,
         sources = [],
         extra_compile_args = {'cxx': ['-O2']}
     )],

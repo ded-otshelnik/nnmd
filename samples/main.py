@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# example of nnmd package usage
+
 import os
 import shutil
 import torch
@@ -60,10 +64,10 @@ if train:
     net.fit(train_e_dft, train_f_dft)
     end = time.time()
     print("done")
-    print(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s", end='\n\n')
+    print(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s")
 
 if test:
-    print("Testing")
+    print("Testing: ", end='')
 
     test_e_dft, test_f_dft = torch.tensor(test_e_dft, device=device), torch.tensor(test_f_dft, device=device)
     test_e_nn, test_f_nn = net.predict(test_data)

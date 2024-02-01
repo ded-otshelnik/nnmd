@@ -23,14 +23,13 @@ Make sure that you have compatible versions of C++ library and Python module.
 
 Recommendation: use virtual environments.
 
-Go to nnmd_cpp/nnmd_cuda folders and run command:
+Go to repository folder and run command:
 ```python
 pip install .
 ```
-Then go to root dir and run the same command
 
-It installs required modules to your python environments.
+It installs required module with C++ extension to your python environment.
 
 ## Usage
 
-After setup you can use package. In samples directory there is a sample code called [main.py](https://github.com/ded-otshelnik/nnmd/blob/main/samples/main.py)
+After setup you can use package. In samples directory there is an example called [main.py](https://github.com/ded-otshelnik/nnmd/blob/main/samples/main.py)

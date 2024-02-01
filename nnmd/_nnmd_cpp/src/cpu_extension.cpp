@@ -1,12 +1,12 @@
-#include "head.h"
+#include "head.hpp"
+#include "cpu/symmetric_functions.hpp"
+#include "cpu/calculate_forces.hpp"
 
-#include "symm_func/symmetric_functions.h"
-#include "calculate_forces.h"
+using namespace cpu;
 
-PYBIND11_MODULE(nnmd_cpp, module){
-    module.doc() = R"pbdoc(PyTorch extention with Python/C++ bindings.)pbdoc";
-        
-    module.def("calculate_sf", &calculate_sf, R"pbdoc(
+void init_cpu_module(py::module_& module){
+    
+    module.def("calculate_sf", &cpu::calculate_sf, R"pbdoc(
         Calculates symmetric descriptors of atom structure
 
         Args:
@@ -29,7 +29,7 @@ PYBIND11_MODULE(nnmd_cpp, module){
     );
 
 
-    module.def("calculate_forces", &calculate_forces, R"pbdoc(
+    module.def("calculate_forces", &cpu::calculate_forces, R"pbdoc(
         Calculates forces of atomic system on iteration using AtomicNNs.
         TODO: check forces formula
 

@@ -2,10 +2,8 @@
 # for compatibility with custom extensions
 import torch
 
-# C++ extention
-import nnmd_cpp
 # C++/CUDA extention
-import nnmd_cuda
+import _nnmd_cpp as nnmd_cpp
 
 # Atomic neural network
 from .atomic_nn import AtomicNN
@@ -45,12 +43,12 @@ class Neural_Network(torch.nn.Module):
         if torch.cuda.is_available() and use_cuda: 
             # set cuda c++ module as computational
             # and GPU as device
-            self._nnmd = nnmd_cuda
+            self._nnmd = nnmd_cpp.cuda
             self.device = torch.device('cuda')
         else:
             # set pure c++ module as computational
             # and CPU as device
-            self._nnmd = nnmd_cpp
+            self._nnmd = nnmd_cpp.cpu
             self.device = torch.device('cpu')
 
         self.criterion = torch.nn.MSELoss().to(device=self.device)
@@ -91,7 +89,7 @@ class Neural_Network(torch.nn.Module):
     def _describe_env(self):
         from importlib.metadata import version
 
-        module_name = str(self._nnmd.__name__).replace('-', '_')
+        module_name = "nnmd"
 
         info = f"""NNMD v{version(module_name)} 
 

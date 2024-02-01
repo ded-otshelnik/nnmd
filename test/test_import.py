@@ -48,21 +48,6 @@ def test_import_nnmd():
     # assert
     assert out == module, err
 
-def test_import_nnmd_cuda():
-    # arrange
-    code = """
-    import torch
-    from nnmd import {MODULE}
-    print({MODULE}.__name__)
-    """
-    module = "nnmd_cuda"
-
-    # act
-    out, err = run_command(code, module)
-
-    # assert
-    assert out == module, err
-
 def test_import_nnmd_cpp():
     # arrange
     code = """
