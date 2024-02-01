@@ -1,6 +1,3 @@
-#ifndef SYMMETRIC_FUNCTIONS_H
-#define SYMMETRIC_FUNCTIONS_H
-
 #include "head.hpp"
 
 #define _USE_MATH_DEFINES
@@ -22,5 +19,3 @@ namespace cpu{
                     const float& eta, const float& rs, const float& k_param,
                     const int& lambda, const float& xi);
 }
-
-#endif

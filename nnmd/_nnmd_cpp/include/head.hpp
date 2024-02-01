@@ -1,5 +1,3 @@
-#ifndef HEAD_H
-#define HEAD_H
 // preprocessor directives
 #pragma once
 
@@ -27,5 +25,3 @@ using std::vector;
 using std::cout, std::endl;
 #include <string>
 using std::to_string;
-
-#endif

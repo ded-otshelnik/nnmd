@@ -1,6 +1,3 @@
-#ifndef CALCULATE_FORCES_H
-#define CALCULATE_FORCES_H
-
 #include "head.hpp"
 #include "cuda/symmetric_functions.hpp"
 
@@ -14,4 +11,3 @@ namespace cuda{
                     const int& lambda, const float& xi, const float& h);
 
 }
-#endif
