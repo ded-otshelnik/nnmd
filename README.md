@@ -1,6 +1,8 @@
 # nnmd
 
-Train your own atomic potentials via neural networks!
+Neural Networks for Molecular Dynamics (nnmd) - package that provides creation, training and usage
+machine-learning potentials for MD simulations.
+It uses Pytorch as ML package for both Python and C++ parts.
 
 ## Prerequisites
 

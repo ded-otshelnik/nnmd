@@ -165,7 +165,7 @@ setup(
     ext_modules = [CUDAExtension(
         name = "_" + EXTENSION_NAME + "_cpp",
         sources = [],
-        extra_compile_args = {'cxx': ['-O2']}
+        extra_compile_args = {}
     )],
     cmdclass = {
         "build_ext": CMakeBuild

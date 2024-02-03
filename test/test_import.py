@@ -57,8 +57,8 @@ def test_import_nnmd_cpp():
     """
     module = "nnmd_cpp"
 
-    # Act
+    # act
     out, err = run_command(code, module)
 
-    # Assert
+    # assert
     assert out == module, err

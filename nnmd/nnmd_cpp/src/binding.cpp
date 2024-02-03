@@ -6,7 +6,6 @@
 
 PYBIND11_MODULE(nnmd_cpp, module){
     module.doc() = R"pbdoc(PyTorch extention with CUDA/C++ bindings.)pbdoc";
-    module.import("torch");
 
     auto cpu_module = module.def_submodule("cpu", "CPU extension");
     cpu_module.def("calculate_sf", &cpu::calculate_sf, R"pbdoc(

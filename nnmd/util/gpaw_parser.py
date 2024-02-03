@@ -2,7 +2,7 @@ import re
 import traceback
 from typing import Tuple
 
-def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, list, list, list]:
+def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, int, list, list, list]:
     """Parse info of gpaw simulation
 
     Args:
@@ -66,4 +66,4 @@ def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, list, list, list]:
                 traceback.print_exc()
                 exit(1)
         
-        return n_atoms, cartesians, forces, energies
+        return len(cartesians), n_atoms, cartesians, forces, energies
