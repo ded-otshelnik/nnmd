@@ -1,0 +1,40 @@
+[project]
+name = "nnmd"
+version = "0.0.0.dev0"
+description = "ML extension with PyTorch C++ (Libtorch) and Python bindings"
+readme = "README.md"
+keywords = ["python", "pytorch", "libtorch", "pybind11"]
+authors = [
+    {name = "Andrey Budnikov"}
+]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: GPU :: NVIDIA CUDA",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C++"
+]
+
+[project.urls]
+Homepage = "https://github.com/ded-otshelnik/nnmd"
+Repository = "https://github.com/ded-otshelnik/nnmd.git"
+
+
+[build-system]
+# (!) torch must be compiled first
+# for compatibility
+requires = ["setuptools",
+            "wheel",
+            "ninja",
+            "cmake>=3.11",
+            # dependencies from torch
+            # must be added
+            # if "pip install ." are used
+            # for pyproject.toml-based project
+            "typing_extensions",
+            "sympy",
+            "numpy"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = [""]
+exclude = ["test/"]

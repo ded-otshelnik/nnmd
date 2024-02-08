@@ -4,21 +4,14 @@ import platform
 import subprocess
 import sys
 
-import glob
-import os.path as osp
-from setuptools import Extension, find_packages, setup
-from setuptools.command.build_ext import build_ext
-from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension
-
-EXTENSION_NAME = "nnmd"
+from setuptools import find_packages, setup
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 class CMakeBuild(BuildExtension):  #(build_ext):
 
     def __init__(self, *args, **kwargs):
         super(CMakeBuild, self).__init__(*args, **kwargs)
         self.python_exe = sys.executable
-        self.pytorch_dir = None
-        self.pybind11_dir = None
         self.cmake = None
 
     @property
@@ -34,52 +27,13 @@ class CMakeBuild(BuildExtension):  #(build_ext):
     def cmake(self, cmake):
         self._cmake = cmake
 
-    def find_torch_dir(self):
-        """
-        Attempts finding precompiled :mod:`torch`.
-
-        Searches with :envvar:`TORCH_DIR`, :envvar:`TORCH_LIBRARY` or reverts back to preinstalled package via ``pip``.
-        """
-        pytorch_dir = os.getenv("PYTORCH_DIR")
-        if not pytorch_dir:
-            pytorch_dir = os.getenv("TORCH_DIR")
-        pytorch_lib = os.getenv("TORCH_LIBRARY")
-        pytorch_lib_path = "lib/libtorch.so" if platform.system() != "Windows" else "lib/x64/torch.lib"
-        if pytorch_dir and os.path.isdir(pytorch_dir) and os.path.isfile(os.path.join(pytorch_dir, pytorch_lib_path)):
-            pytorch_lib = os.path.join(pytorch_dir, pytorch_lib_path)
-        elif pytorch_lib and os.path.isfile(pytorch_lib) and os.path.isdir(pytorch_lib.replace(pytorch_lib_path, "")):
-            pytorch_dir = pytorch_lib.replace(pytorch_lib_path, "")
-        else:
-            try:
-                import torch  # noqa
-                pytorch_dir = os.path.dirname(torch.__file__)
-                pytorch_lib = os.path.join(pytorch_dir, pytorch_lib_path)
-            except ImportError:
-                sys.stderr.write("Pytorch is required to build this package\n")
-                sys.exit(-1)
-        if not os.path.isdir(pytorch_dir) or not os.path.isfile(pytorch_lib):
-            sys.stderr.write("Pytorch is required to build this package. "
-                             "Set TORCH_DIR for pre-compiled from sources, or install with pip.\n")
-        self.announce("Found PyTorch dir: {}".format(pytorch_dir))
-        return pytorch_dir
-
-    def find_pybind_dir(self):
-        pybind_dir = os.getenv("PYBIND11_DIR", "")
-        if not os.path.isdir(pybind_dir):
-            raise RuntimeError("Library pybind11 required but not valid: [{}]".format(pybind_dir))
-        self.announce("Found PyBind11 dir: {}".format(pybind_dir))
-        self.pybind11_dir = pybind_dir
-        return self.pybind11_dir
-
     def run(self):
         try:
             _ = subprocess.check_output([self.cmake, "--version"])
         except OSError:
             raise RuntimeError("CMake must be installed to build the following extensions: " +
                                ", ".join(ext.name for ext in self.extensions))
-
-        self.pytorch_dir = self.find_torch_dir()
-        self.pybind11_dir = self.find_pybind_dir()
+        
         for ext in self.extensions:
             self.build_cmake(ext)
 
@@ -94,14 +48,7 @@ class CMakeBuild(BuildExtension):  #(build_ext):
 
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(ext_dir),
-            # "-DCMAKE_PREFIX_PATH={}".format(self.pytorch_dir),
             "-DPYTHON_EXECUTABLE:FILEPATH={}".format(self.python_exe),
-            "-DWITH_PYTHON=ON",
-            "-DWITH_TESTS=OFF",       # cannot be simultaneously with Python module
-            "-DWITH_TEST_BENCH=OFF",  # cannot be simultaneously with Python module
-            "-DTORCH_DIR={}".format(self.pytorch_dir),
-            "-DPYBIND11_DIR={}".format(self.pybind11_dir),
-            # "-DCMAKE_CXX_FLAGS=-D_GLIBCXX_USE_CXX11_ABI=0",  # defined by Torch CXX FLAGS directly (must match)
         ]
 
         config = "Debug" if self.debug else "Release"
@@ -135,35 +82,11 @@ class CMakeBuild(BuildExtension):  #(build_ext):
             cmd = [self.cmake, "--build", build_dir, "--", "-j{}".format(jobs)]
             subprocess.check_call(cmd, cwd=build_dir, env=env)
 
-
-with open("README.md") as f:
-    README = f.read()
-
-with open("VERSION") as ver:
-    VERSION = ver.readline().strip()
-
-with open("requirements.txt") as r:
-    REQUIRES = []
-    for line in r.readlines():
-        if line.startswith("#"):
-            continue
-        REQUIRES.append(line.strip())
-
-
-
 setup(
-    name = EXTENSION_NAME,
-    version = VERSION,
-    description = "Extension implementation with PyTorch C++ (Libtorch) and Python bindings",
-    long_description = README,
-    author = "Andrey Budnikov",
-    # install_requires = REQUIRES,
     include_package_data=True,
-    packages=find_packages(exclude=["test"]),
     package_data={"": ["*.so"]},
-    test_suite="tests",
     ext_modules = [CUDAExtension(
-        name = "_" + EXTENSION_NAME + "_cpp",
+        name = "_nnmd_cpp",
         sources = [],
         extra_compile_args = {}
     )],

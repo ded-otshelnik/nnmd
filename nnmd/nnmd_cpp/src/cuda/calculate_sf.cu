@@ -3,14 +3,9 @@
 #include "cuda/cuda_header.hpp"
 
 namespace cuda{
-
-    #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
-    #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
-    #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
-
     __global__ void calculate_sf_kernel(
-                    const torch::PackedTensorAccessor<float, 2, torch::RestrictPtrTraits> cartesians,
-                    const torch::PackedTensorAccessor<float, 2, torch::RestrictPtrTraits> g_total,
+                    const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
+                    at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
                     const float r_cutoff, const float eta, const float rs,
                     const float k_param, const float lambda, const float xi,
                     const int n_atoms
@@ -49,10 +44,12 @@ namespace cuda{
 
         int threads = 512;
         dim3 blocks(N, 5, N);
+
+        auto cartesians_accessor = cartesians.packed_accessor32<float, 2, torch::RestrictPtrTraits>();
+        auto g_total_accessor = g_total.packed_accessor32<float, 2, torch::RestrictPtrTraits>();
         
         calculate_sf_kernel<<<blocks, threads>>>(
-                cartesians.packed_accessor64<float, 2, torch::RestrictPtrTraits>(),
-                g_total.packed_accessor64<float, 2, torch::RestrictPtrTraits>(),
+                cartesians_accessor, g_total_accessor,
                 r_cutoff, eta, rs, k_param, lambda, xi, N
         );
 
@@ -64,10 +61,9 @@ namespace cuda{
         return g_total;
     }
 
-
     __global__ void calculate_sf_kernel(
-                    const torch::PackedTensorAccessor<float, 2, torch::RestrictPtrTraits> cartesians,
-                    torch::PackedTensorAccessor<float, 2, torch::RestrictPtrTraits> g_total,
+                    const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
+                    at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
                     const float r_cutoff, const float eta, const float rs,
                     const float k_param, const float lambda, const float xi,
                     const int n_atoms
@@ -77,7 +73,7 @@ namespace cuda{
             float g;
 
             int i = blockIdx.x * blockDim.x + threadIdx.x;
-            int g_type = blockIdx.y * blockDim.y + threadIdx.y;
+            int g_type = blockIdx.y;
             int j = blockIdx.z * blockDim.z + threadIdx.z;
 
             if(i < n_atoms && g_type < 5){

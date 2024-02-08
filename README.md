@@ -10,7 +10,7 @@ It uses Pytorch as ML package for both Python and C++ parts.
 if you need training on GPU
 1. Install CMake (3.1 or more) and Ninja for building C++ extentions.
 2. Install Pybind11 (the simpliest way - using pip).
-3. Build Pytorch from source and download Libtorch (with compatible CPU/CUDA version).
+3. (!!!) Build Pytorch from source and download Libtorch (with compatible CPU/CUDA version).
 Make sure that you have compatible versions of C++ library and Python module.
 4. Set next environment variables: 
     - PYBIND11_DIR
@@ -27,11 +27,12 @@ Recommendation: use virtual environments.
 
 Go to repository folder and run command:
 ```python
-pip install .
+pip install . -v
 ```
+If 
 
 It installs required module with C++ extension to your python environment.
 
 ## Usage
 
-After setup you can use package. In samples directory there is an example called [main.py](https://github.com/ded-otshelnik/nnmd/blob/main/samples/main.py)
+After setup you can use package. 

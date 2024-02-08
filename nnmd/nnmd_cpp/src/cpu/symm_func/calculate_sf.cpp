@@ -17,7 +17,7 @@ namespace cpu{
             auto opts = torch::TensorOptions()
                 .dtype(torch::kFloat);
             // atoms amount
-            int n_atoms = cartesians.sizes()[0];
+            int n_atoms = cartesians.size(0);
 
             // output g values
             Tensor g_total = torch::zeros({n_atoms, 5}, opts);

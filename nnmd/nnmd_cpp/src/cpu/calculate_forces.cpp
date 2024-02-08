@@ -4,8 +4,6 @@
 #include "cpu/calculate_forces.hpp"
 
 namespace cpu{
-    
-    const int n_dims = 3;
 
     // @brief Calculates forces of atomic system on iteration using AtomicNNs.
     // TODO: check forces formula
@@ -28,6 +26,7 @@ namespace cpu{
         // atoms amount
         int n_structs = cartesians.size(0);
         int n_atoms = cartesians.size(1);
+        int n_dims = cartesians.size(2);
 
         Tensor cartesians_copy = cartesians;
 
@@ -45,16 +44,16 @@ namespace cpu{
                     // calculate new symmetric functions values
                     Tensor g_new = calculate_sf(cartesians_copy[atom_struct], r_cutoff,
                                                     eta, rs, k, lambda, xi);
+                                                    
                     // difference between new and actual g values
                     auto dG = torch::sub(g_new, g[atom_struct]) / h;
 
                     Tensor e_new = torch::empty(n_atoms, opts);
-
                     for (int i = 0; i < n_atoms; i++){
                         // AtomicNN of i atom
                         py::object obj = nets[i];
                         // recalculate energies according new g values
-                        auto temp = obj(g_new[i]);
+                        auto temp = obj(g_new[i][0].unsqueeze(0));
                         e_new[i] = temp.cast<Tensor>().squeeze();
                     }
                     // difference between new and actual energies

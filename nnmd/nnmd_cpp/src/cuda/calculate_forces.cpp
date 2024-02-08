@@ -1,13 +1,7 @@
 #include "cuda/calculate_forces.hpp"
+#include "cuda/cuda_header.hpp"
 
 namespace cuda{
-     
-    #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
-    #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
-    #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
-
-    const int n_dims = 3;
-
     // @brief Calculates forces of atomic system on iteration using AtomicNNs.
     // TODO: check forces formula
     // @param cartesians: atomic positions
@@ -35,6 +29,7 @@ namespace cuda{
         // atoms amount
         int n_structs = cartesians.size(0);
         int n_atoms = cartesians.size(1);
+        int n_dims = cartesians.size(2);
 
         // output forces
         Tensor forces = torch::zeros(cartesians.sizes(), opts);
@@ -46,7 +41,7 @@ namespace cuda{
                     cartesians_copy[atom_struct][atom][dim] += h;
 
                     // calculate new symmetric functions values
-                    Tensor g_new = calculate_sf(cartesians_copy[atom_struct],
+                    Tensor g_new = cuda::calculate_sf(cartesians_copy[atom_struct],
                                                 r_cutoff, eta, rs, k, lambda, xi);
 
                     // difference between new and actual g values
@@ -58,7 +53,7 @@ namespace cuda{
                         // AtomicNN of i atom
                         py::object obj = nets[i];
                         // recalculate energies according new g values
-                        auto temp = obj(g_new[i]);
+                        auto temp = obj(g_new[i][0].unsqueeze(0));
                         e_new[i] = temp.cast<Tensor>().squeeze();
                     }
 
