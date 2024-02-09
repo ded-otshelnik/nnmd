@@ -6,11 +6,10 @@ It uses Pytorch as ML package for both Python and C++ parts.
 
 ## Prerequisites
 
-0. Install CUDA and CUDNN (compatible to CUDA)
-if you need training on GPU
+0. Install CUDA and CUDNN (compatible to CUDA) if you need training on GPU.
 1. Install CMake (3.11 or more) and Ninja for building C++ extentions.
 2. Install Pybind11 (the simpliest way - using pip).
-3. (!!!) Build Pytorch from source and download or build from source Libtorch (with compatible CUDA version).
+3. (!!!) Build [Pytorch](https://github.com/pytorch/pytorch?tab=readme-ov-file#from-source) from source and [download](https://pytorch.org/) or build from source Libtorch (with compatible CUDA version).
 Make sure that you have compatible versions of C++ library and Python module.
 4. Set next environment variables: 
     - PYBIND11_DIR
@@ -23,15 +22,13 @@ Make sure that you have compatible versions of C++ library and Python module.
 
 ## Installation
 
-Recommendation: use virtual environments.
+General recommendation is use virtual environments, especially Anaconda environment.
 
 Go to repository folder and run command:
 ```python
 pip install . -v
 ```
-It
-
-It installs required module with C++ extension to your python environment.
+It installs module with C++ extension to your active Python environment.
 
 ## Usage
 
