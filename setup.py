@@ -1,13 +1,25 @@
+"""
+Setup the Python/C++ extension for NNMD.
+
+Example of setup.py for Python/C++ extension:
+    https://github.com/crim-ca/crim-libtorch-extensions/blob/master/setup.py
+    
+Torch setup:
+    https://pytorch.org/tutorials/advanced/cpp_extension.html#writing-a-c-extension
+"""
 import multiprocessing
 import os
 import platform
 import subprocess
 import sys
 
-from setuptools import find_packages, setup
+from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
-class CMakeBuild(BuildExtension):  #(build_ext):
+class CMakeBuild(BuildExtension):
+    """Class provides CMake building of Python/C++ extensions
+    with customization by CMakeLists.txt
+    """
 
     def __init__(self, *args, **kwargs):
         super(CMakeBuild, self).__init__(*args, **kwargs)

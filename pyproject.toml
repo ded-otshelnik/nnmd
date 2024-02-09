@@ -18,10 +18,14 @@ classifiers = [
 Homepage = "https://github.com/ded-otshelnik/nnmd"
 Repository = "https://github.com/ded-otshelnik/nnmd.git"
 
+[project.optional-dependencies]
+test = [
+    "pytest"
+]
 
 [build-system]
 # (!) torch must be compiled first
-# for compatibility
+# for compatibility with extension
 requires = ["setuptools",
             "wheel",
             "ninja",
@@ -38,3 +42,18 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = [""]
 exclude = ["test/"]
+
+[tool.pytest.ini_options]
+testpaths = "tests"  # directory containing your tests
+norecursedirs = [
+    ".vscode",
+    "__pycache__"
+]
+# Warnings that should be ignored
+filterwarnings = [
+    "ignore::DeprecationWarning"
+]
+# custom markers that can be used using pytest.mark
+markers = [
+    "slow: lower-importance tests that take an excessive amount of time",
+]
