@@ -6,7 +6,7 @@ def lennard_jones_gen():
     """
 
     def lennard_jones_component(points, dims):
-        interatomic_vector = np.subtract(points[0], points[1])
+        interatomic_vector = np.subtract(points[1], points[0])
 
         f_distance = lambda point: (sum([coord ** 2 for coord in point])) ** 0.5
 
@@ -44,19 +44,21 @@ def lennard_jones_gen():
 
         return E, F, f_distance(interatomic_vector)
 
-    points = [[1.05, 1.05], [1.75, 1.75]]
+    points = [[1.05, 1.05], [1.35, 1.95]]
     cartesians = [copy.deepcopy(points)]
     e_new, f_new, vect_distance = lennard_jones_component(points, np.ndim(points))
     e_dft = [e_new]
     f_dft = [copy.deepcopy(f_new)]
     distances = [vect_distance]
 
-    h = 0.01
-    n_steps = 2 ** 8 - 1
-    for i in range(n_steps):
+    h = 0.005
+    n_steps = 2 ** 6
+    for _ in range(n_steps):
         # move 2nd atom by const distances
-        points[1][0] += h
-        points[1][1] += h
+        points[0][0] -= h / 2
+        points[0][1] -= h / 2
+        points[1][0] += h / 2
+        points[1][1] += h / 2
         cartesians.append(copy.deepcopy(points))
 
         e_new, f_new, vect_distance = lennard_jones_component(points, np.ndim(points))
