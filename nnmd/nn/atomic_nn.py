@@ -1,8 +1,16 @@
 import torch.nn as nn
 
 class AtomicNN(nn.Module):
+    """Model implements a multilayer perceprton
+    with sigmoid activation function for one atom
+    """
+    def __init__(self, hidden_nodes: list | int, input_nodes: int):
+        """Create an instance of AtomicNN
 
-    def __init__(self, hidden_nodes, input_nodes = 5, learning_rate = 0.5):
+        Args:
+            hidden_nodes (list | int): configuration of hidden layers nodes
+            input_nodes (int): inputs amount of NN
+        """
         super().__init__()
 
         self.model = nn.Sequential()

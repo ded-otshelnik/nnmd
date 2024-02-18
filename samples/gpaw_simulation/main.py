@@ -38,7 +38,7 @@ print("done")
 
 print("Create an instance of NN:", end = ' ')
 # Global parameters of HDNN 
-epochs = 40
+epochs = 10
 batch_size = 16
 # Atomic NN, nodes amount in hidden layers
 hidden_nodes = [16, 8]
@@ -94,9 +94,9 @@ if test:
     test_e_nn, test_f_nn = net.predict(test_data)
 
     end = time.time()
-    net.net_log.info(f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s")
+    net.net_log.info(f"\nTesting time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s")
     
-    test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, test_e_dft, test_f_nn, test_f_dft, n_structs)
+    test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, test_e_dft, test_f_nn, test_f_dft)
 
     test_e_loss = test_e_loss.cpu().detach().numpy()
     test_f_loss = test_f_loss.cpu().detach().numpy()

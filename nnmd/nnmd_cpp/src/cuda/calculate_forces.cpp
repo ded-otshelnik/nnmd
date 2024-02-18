@@ -1,3 +1,5 @@
+#include "head.hpp"
+
 #include "cuda/calculate_forces.hpp"
 #include "cuda/cuda_header.hpp"
 
@@ -25,6 +27,7 @@ namespace cuda{
                 .dtype(torch::kFloat)
                 .device(torch::kCUDA);
         Tensor cartesians_copy = cartesians;
+        Tensor g_new, e_new, dG, dE;
 
         // atoms amount
         int n_structs = cartesians.size(0);
@@ -36,31 +39,54 @@ namespace cuda{
 
         for (int atom_struct = 0; atom_struct < n_structs; atom_struct++){
             for (int atom = 0; atom < n_atoms; atom++){
-                for(int dim = 0; dim < n_dims; dim++){
+                for (int dim = 0; dim < n_dims; dim++){
                     // move atom along the dim with step h
                     cartesians_copy[atom_struct][atom][dim] += h;
 
+                    // cout << "calculate sf: ";
+                    // auto start = high_resolution_clock::now();
+
                     // calculate new symmetric functions values
-                    Tensor g_new = cuda::calculate_sf(cartesians_copy[atom_struct],
+                    g_new = cuda::calculate_sf(cartesians_copy[atom_struct],
                                                 r_cutoff, eta, rs, k, lambda, xi);
 
-                    // difference between new and actual g values
-                    auto dG = torch::sub(g_new, g[atom_struct]) / h;
+                    // std::chrono::duration<double> time = high_resolution_clock::now() - start;
+                    // cout << time.count() << "sec" << endl;
 
+                    // cout << "calculate dG: ";
+                    // start = high_resolution_clock::now();   
+
+                    // difference between new and actual g values
+                    dG = torch::sub(g_new, g[atom_struct]);
+
+                    // time = high_resolution_clock::now() - start;
+                    // cout << time.count() << "sec" << endl;
+
+
+                    // cout << "calculate e_new: ";
+                    // start = high_resolution_clock::now();
                     // compute new energies
-                    Tensor e_new = torch::empty(n_atoms, opts);
+                    e_new = torch::empty({n_atoms, 1}, opts);
                     for (int i = 0; i < n_atoms; i++){
                         // AtomicNN of i atom
                         py::object obj = nets[i];
                         // recalculate energies according new g values
-                        auto temp = obj(g_new[i][0].unsqueeze(0));
-                        e_new[i] = temp.cast<Tensor>().squeeze();
+                        e_new[i] = obj(g_new[i]).cast<Tensor>();
                     }
+                    
+                    // time = high_resolution_clock::now() - start;
+                    // cout << time.count() << " sec" << endl;
+
+                    // cout << "calculate force: ";
+                    // start = high_resolution_clock::now();
 
                     // difference between new and actual energies
-                    auto dE = torch::sub(e_new, e_nn[atom_struct]);
-
+                    dE = torch::sub(e_new, e_nn[atom_struct]);
+                    
                     forces[atom_struct][atom][dim] -= torch::sum(torch::matmul(dE, dG));
+
+                    // time = high_resolution_clock::now() - start;
+                    // cout << time.count() << "sec" << endl;
 
                     // back to initial state
                     cartesians_copy[atom_struct][atom][dim] -= h; 
