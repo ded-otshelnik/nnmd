@@ -33,3 +33,7 @@ It installs module with C++ extension to your active Python environment.
 ## Usage
 
 After setup you can use package. 
+
+## References
+
+Python/C++ hybrid extension are taken on code from [this repository](https://github.com/crim-ca/crim-libtorch-extensions/tree/master)

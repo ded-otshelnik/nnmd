@@ -1,10 +1,10 @@
 #include "cuda/symmetric_functions.hpp"
 
 #include "cuda/cuda_header.hpp"
-
 namespace cuda{
     __global__ void calculate_sf_kernel(
                     const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
+                    const int n_dims,
                     at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
                     const float r_cutoff, const float eta, const float rs,
                     const float k_param, const float lambda, const float xi,
@@ -38,18 +38,19 @@ namespace cuda{
                                         .dtype(torch::kFloat)
                                         .device(torch::kCUDA);
         int N = cartesians.size(0);
+        int n_dims = cartesians.size(1);
 
         // output g values
-        Tensor g_total = torch::zeros({N, 5}, opts);
+        Tensor g_total = torch::zeros({N, 1}, opts);
 
-        int threads = 512;
-        dim3 blocks(N, 5, N);
+        int threads = 4;
+        dim3 blocks(N, 1, N);
 
         auto cartesians_accessor = cartesians.packed_accessor32<float, 2, torch::RestrictPtrTraits>();
         auto g_total_accessor = g_total.packed_accessor32<float, 2, torch::RestrictPtrTraits>();
         
         calculate_sf_kernel<<<blocks, threads>>>(
-                cartesians_accessor, g_total_accessor,
+                cartesians_accessor, n_dims, g_total_accessor, 
                 r_cutoff, eta, rs, k_param, lambda, xi, N
         );
 
@@ -63,6 +64,7 @@ namespace cuda{
 
     __global__ void calculate_sf_kernel(
                     const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
+                    const int n_dims,
                     at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
                     const float r_cutoff, const float eta, const float rs,
                     const float k_param, const float lambda, const float xi,
@@ -76,9 +78,9 @@ namespace cuda{
             int g_type = blockIdx.y;
             int j = blockIdx.z * blockDim.z + threadIdx.z;
 
-            if(i < n_atoms && g_type < 5){
+            if(i < n_atoms && g_type < 1){
                     g = 0;
-                    switch (g_type){
+                    switch (g_type + 1){
                         // G1
                         case 1:{
                             if(j < n_atoms){
@@ -88,7 +90,7 @@ namespace cuda{
                                 auto ri = cartesians[i];
                                 auto rj = cartesians[j];
                                 float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
+                                for (int dim = 0; dim < n_dims; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
 
@@ -197,9 +199,15 @@ namespace cuda{
                             }
                             break;
                         }
+                        default:
+                        {
+                            // construction that falls a prog
+                            // in case of incorrect g type
+                            asm("trap;");
+                        }
                     }
                     // pass g and dg values of atom
-                    g_total[i][g_type - 1] = g;
+                    g_total[i][g_type] = g;
                 }
     }
 

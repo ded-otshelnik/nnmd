@@ -22,11 +22,15 @@ namespace py = pybind11;
 #include <vector>
 using std::vector;
 
-// IO headers (will be removed later)
+// IO headers/usings (will be removed later)
 #include <iostream>
 using std::cout, std::endl;
 #include <string>
 using std::to_string;
+
+// time headers/usings
 #include <chrono>
 #include <ratio>
 using namespace std::chrono;
+
+#include <exception>

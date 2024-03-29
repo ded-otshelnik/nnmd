@@ -13,7 +13,7 @@ def python_code_as_command(python_code, module_name):
         module_name: module that must be imported
     """
     python_code = inspect.cleandoc(python_code) \
-                         .format(MODULE=module_name)
+                         .format(MODULE = module_name)
     return python_code.replace("\n", ";")
 
 def run_command(code: list, module: str):
@@ -23,7 +23,7 @@ def run_command(code: list, module: str):
 
     # run code in new process
     res = subprocess.Popen(["python", "-c", formatted_code],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        stdout = subprocess.PIPE, stderr = subprocess.PIPE, text = True
     )
 
     # get out and errors from the process

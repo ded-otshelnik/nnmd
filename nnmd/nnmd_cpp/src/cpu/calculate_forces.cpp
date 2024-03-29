@@ -3,7 +3,6 @@
 #include "cpu/calculate_forces.hpp"
 
 namespace cpu{
-
     // @brief Calculates forces of atomic system on iteration using AtomicNNs.
     // TODO: check forces formula
     // @param cartesians: atomic positions
@@ -16,7 +15,7 @@ namespace cpu{
     // @param xi: parameter of symmetric functions
     // @param h: step of coordinate-wise atom moving
     Tensor calculate_forces(const Tensor& cartesians, const Tensor& e_nn, const Tensor& g,
-                    const py::list& nets, const float& r_cutoff,
+                    const py::list& nets, const vector<float>& r_cutoff,
                     const float& eta, const float& rs, const float& k,
                     const int& lambda, const float& xi, const float& h){
         
@@ -41,23 +40,27 @@ namespace cpu{
                     // move atom along the dim in step h
                     cartesians_copy[atom_struct][atom][dim] += h;
 
-                    // calculate new symmetric functions values
-                    g_new = calculate_sf(cartesians_copy[atom_struct], r_cutoff,
-                                                    eta, rs, k, lambda, xi);
+                    vector<Tensor> g_temp; 
+                    for (auto rc: r_cutoff){
+                        auto temp = cpu::calculate_sf(cartesians_copy[atom_struct],
+                                                rc, eta, rs, k, lambda, xi).t();
+                        g_temp.push_back(temp);
+                    }
+                    g_new = torch::stack(g_temp);
                     // difference between new and actual g values
-                    dG = torch::sub(g_new, g[atom_struct]);
+                    dG = torch::sub(g_new, g[atom_struct]) / h;
 
                     // compute new energies
-                    e_new = torch::empty({n_atoms, 1}, opts);
+                    e_new = torch::empty(n_atoms, opts);
                     for (int i = 0; i < n_atoms; i++){
                         // AtomicNN of i atom
                         py::object obj = nets[i];
                         // recalculate energies according new g values
-                        e_new[i] = obj(g_new[i]).cast<Tensor>();
+                        e_new[i] = obj(g_new[i]).cast<Tensor>().squeeze();
                     }
 
                     // difference between new and actual energies
-                    dE = torch::sub(e_new, e_nn[atom_struct]);
+                    dE = torch::sub(e_new, e_nn[atom_struct]).unsqueeze(1);
                     
                     forces[atom_struct][atom][dim] -= torch::sum(torch::matmul(dE, dG));
 

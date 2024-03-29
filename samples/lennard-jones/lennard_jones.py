@@ -22,14 +22,16 @@ def lennard_jones_gen():
 
             force_deriv = lambda r: 4 * eps * ((12 * (teta / r) ** 13) - ( 6 * (teta / r) ** 7))
             forces = []
-            for point in points:
-                distance_actual = f_distance(interatomic_vector)
-                point_moved = np.copy(point)
+            for i in range(len(points)):
+                distance_actual = f_distance(points[i])
+                point_moved = np.copy(points[i])
                 force_atom = []
-                for i in range(dims):
-                    point_moved[i] += h 
-                    dr = np.vdot(point, point_moved) / distance_actual
-                    force_atom.append(force_deriv(distance_actual) * dr)
+                for j in range(dims):
+                    point_moved[j] += h 
+                    dr = np.vdot(points[i], point_moved) / distance_actual
+                    temp =  - force_deriv(distance_actual) * dr
+                    force_atom.append(- force_deriv(distance_actual) * dr)
+
                     point_moved[i] -= h 
                 forces.append(force_atom)
             return forces
@@ -37,28 +39,28 @@ def lennard_jones_gen():
         # parameters related to LJ potential
         teta = 1.0
         eps = 1.0
-        h = 1.0
+        h = 0.1
 
         E = calculate_energy(eps, teta, interatomic_vector)
         F = calculate_forces(eps, teta, interatomic_vector, h, points, dims)
 
         return E, F, f_distance(interatomic_vector)
 
-    points = [[1.05, 1.05], [1.35, 1.95]]
+    points = [[1.6, 1.6], [2.4, 2.1]]
     cartesians = [copy.deepcopy(points)]
     e_new, f_new, vect_distance = lennard_jones_component(points, np.ndim(points))
     e_dft = [e_new]
     f_dft = [copy.deepcopy(f_new)]
     distances = [vect_distance]
 
-    h = 0.005
-    n_steps = 2 ** 6
+    h = 0.001
+    n_steps = 2 ** 6 - 1
     for _ in range(n_steps):
         # move 2nd atom by const distances
-        points[0][0] -= h / 2
-        points[0][1] -= h / 2
-        points[1][0] += h / 2
-        points[1][1] += h / 2
+        points[0][0] -= h
+        points[0][1] -= h
+        points[1][0] += h
+        points[1][1] += h
         cartesians.append(copy.deepcopy(points))
 
         e_new, f_new, vect_distance = lennard_jones_component(points, np.ndim(points))

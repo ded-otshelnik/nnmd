@@ -16,7 +16,7 @@ namespace cuda{
     // @param xi: parameter of symmetric functions
     // @param h: step of coordinate-wise atom moving
     Tensor calculate_forces(const Tensor& cartesians, const Tensor& e_nn, const Tensor& g,
-                    const py::list& nets, const float& r_cutoff,
+                    const py::list& nets, const vector<float>& r_cutoff,
                     const float& eta, const float& rs, const float& k,
                     const int& lambda, const float& xi, const float& h){
         CHECK_INPUT(cartesians);
@@ -30,6 +30,7 @@ namespace cuda{
         Tensor g_new, e_new, dG, dE;
 
         // atoms amount
+
         int n_structs = cartesians.size(0);
         int n_atoms = cartesians.size(1);
         int n_dims = cartesians.size(2);
@@ -37,62 +38,50 @@ namespace cuda{
         // output forces
         Tensor forces = torch::zeros(cartesians.sizes(), opts);
 
+        // main loops
         for (int atom_struct = 0; atom_struct < n_structs; atom_struct++){
             for (int atom = 0; atom < n_atoms; atom++){
                 for (int dim = 0; dim < n_dims; dim++){
                     // move atom along the dim with step h
+                    // cout << "Get cartesians" << endl;
                     cartesians_copy[atom_struct][atom][dim] += h;
-
-                    // cout << "calculate sf: ";
-                    // auto start = high_resolution_clock::now();
-
                     // calculate new symmetric functions values
-                    g_new = cuda::calculate_sf(cartesians_copy[atom_struct],
-                                                r_cutoff, eta, rs, k, lambda, xi);
+                    // cout << "Get G" << endl;
+                    vector<Tensor> g_temp; 
+                    for (auto rc: r_cutoff){
+                        auto temp = cuda::calculate_sf(cartesians_copy[atom_struct],
+                                                rc, eta, rs, k, lambda, xi).t();
+                        g_temp.push_back(temp);
+                    }
+                    g_new = torch::stack(g_temp);
 
-                    // std::chrono::duration<double> time = high_resolution_clock::now() - start;
-                    // cout << time.count() << "sec" << endl;
-
-                    // cout << "calculate dG: ";
-                    // start = high_resolution_clock::now();   
-
+                    //cout << "Get dG" << endl;
                     // difference between new and actual g values
-                    dG = torch::sub(g_new, g[atom_struct]);
-
-                    // time = high_resolution_clock::now() - start;
-                    // cout << time.count() << "sec" << endl;
-
-
-                    // cout << "calculate e_new: ";
-                    // start = high_resolution_clock::now();
+                    dG = torch::sub(g_new, g[atom_struct]) / h;
+                    //cout << "Get E" << endl;
                     // compute new energies
-                    e_new = torch::empty({n_atoms, 1}, opts);
+                    e_new = torch::empty(n_atoms, opts);
                     for (int i = 0; i < n_atoms; i++){
                         // AtomicNN of i atom
                         py::object obj = nets[i];
                         // recalculate energies according new g values
-                        e_new[i] = obj(g_new[i]).cast<Tensor>();
+                        e_new[i] = obj(g_new[i]).cast<Tensor>().squeeze();
                     }
-                    
-                    // time = high_resolution_clock::now() - start;
-                    // cout << time.count() << " sec" << endl;
-
-                    // cout << "calculate force: ";
-                    // start = high_resolution_clock::now();
+                    //cout << "Get dE" << endl;
 
                     // difference between new and actual energies
-                    dE = torch::sub(e_new, e_nn[atom_struct]);
-                    
+                    dE = torch::sub(e_new, e_nn[atom_struct]).unsqueeze(1);
+                    //cout << "Get force" << endl;
                     forces[atom_struct][atom][dim] -= torch::sum(torch::matmul(dE, dG));
-
-                    // time = high_resolution_clock::now() - start;
-                    // cout << time.count() << "sec" << endl;
 
                     // back to initial state
                     cartesians_copy[atom_struct][atom][dim] -= h; 
                 }
+                // loop by atom dimentions
             }
+            // loop by atoms
         }
+        // loop over iterations
         return forces;
     }
 }

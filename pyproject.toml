@@ -44,12 +44,19 @@ where = [""]
 exclude = ["test/"]
 
 [tool.pytest.ini_options]
-testpaths = "tests"  # directory containing your tests
+addopts = [
+    "--import-mode=importlib",
+    "-v"
+]
+# directory containing your tests
+testpaths = [
+    "test"
+]
 norecursedirs = [
     ".vscode",
     "__pycache__"
 ]
-# Warnings that should be ignored
+# warnings that should be ignored
 filterwarnings = [
     "ignore::DeprecationWarning"
 ]

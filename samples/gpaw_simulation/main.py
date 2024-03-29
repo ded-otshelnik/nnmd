@@ -27,7 +27,6 @@ use_cuda = (args.use_cuda is not None) and torch.cuda.is_available()
 if use_cuda:
     print("GPU usage is enabled")
 elif args.use_cuda and not torch.cuda.is_available():
-# elif use_cuda and not torch.cuda.is_available():
     print("Pytorch compiled/downloaded without CUDA support. GPU is disabled")
 else:
     print("GPU usage is disabled")
@@ -39,7 +38,7 @@ print("done")
 print("Create an instance of NN:", end = ' ')
 # Global parameters of HDNN 
 epochs = 10
-batch_size = 16
+batch_size = 1
 # Atomic NN, nodes amount in hidden layers
 hidden_nodes = [16, 8]
 # create an instance
@@ -61,6 +60,7 @@ train_data, test_data = cartesians[:sep], cartesians[sep:]
 train_e_dft, test_e_dft = e_dft[:sep], e_dft[sep:]
 train_f_dft, test_f_dft = f_dft[:sep], f_dft[sep:]
 print("done")
+
 # params that define what NN will do 
 # train model
 train = True
@@ -87,7 +87,7 @@ if train:
     net.net_log.info(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
 
 if test:
-    print("Testing:")
+    print("Testing:", end = ' ')
     test_e_dft, test_f_dft = torch.tensor(test_e_dft, device = device), torch.tensor(test_f_dft, device = device)
     start = time.time()
 
@@ -104,6 +104,7 @@ if test:
 
     test_loss_info = f"test: RMSE E = {test_e_loss:.4f}, RMSE F = {test_f_loss:.4f}, RMSE total = {test_loss:.4f} eV"
     net.net_log.info(test_loss_info)
+    print("done")
 
 if save:
     print("Saving model: ", end = '')

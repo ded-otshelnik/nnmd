@@ -18,9 +18,10 @@ namespace cpu{
                 .dtype(torch::kFloat);
             // atoms amount
             int n_atoms = cartesians.size(0);
+            int n_dims = cartesians.size(1);
 
             // output g values
-            Tensor g_total = torch::zeros({n_atoms, 5}, opts);
+            Tensor g_total = torch::zeros({n_atoms, 1}, opts);
 
             // get accessors to tensors 
             auto cartesians_accessor = cartesians.accessor<float, 2>();
@@ -31,7 +32,7 @@ namespace cpu{
             // loop by atoms
             for (int i = 0; i < n_atoms; i++){
                 // loop by symmetric functions type
-                for (int g_type = 1; g_type <= 5; g_type++){
+                for (int g_type = 1; g_type <= 1; g_type++){
                     g = 0;
                     switch (g_type){
                         // G1
@@ -43,7 +44,7 @@ namespace cpu{
                                 auto ri = cartesians_accessor[i];
                                 auto rj = cartesians_accessor[j];
                                 float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
+                                for (int dim = 0; dim < n_dims; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
 
@@ -62,7 +63,7 @@ namespace cpu{
                                 auto ri = cartesians_accessor[i];
                                 auto rj = cartesians_accessor[j];
                                 float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
+                                for (int dim = 0; dim < n_dims; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
@@ -80,7 +81,7 @@ namespace cpu{
                                 auto ri = cartesians_accessor[i];
                                 auto rj = cartesians_accessor[j];
                                 float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
+                                for (int dim = 0; dim < n_dims; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
@@ -104,7 +105,7 @@ namespace cpu{
                                     float rik = 0;
                                     float rjk = 0;
 
-                                    for (int dim = 0; dim < 3; dim++){
+                                    for (int dim = 0; dim < n_dims; dim++){
                                         rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                         rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
                                         rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);
@@ -137,7 +138,7 @@ namespace cpu{
                                     float rij = 0;
                                     float rik = 0;
                                     float rjk = 0;
-                                    for (int dim = 0; dim < 3; dim++){
+                                    for (int dim = 0; dim < n_dims; dim++){
                                         rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                         rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
                                         rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);

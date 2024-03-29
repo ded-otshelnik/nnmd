@@ -3,7 +3,8 @@
 
 # example of nnmd package usage with lennard-jones potentials
 
-
+import os
+import shutil
 import time 
 import argparse
 
@@ -37,16 +38,29 @@ cartesians, e_dft, f_dft, distances = lennard_jones_gen()
 print("done")
 
 print("Create an instance of NN:", end = ' ')
-# Global parameters of HDNN 
-epochs = 100
-batch_size = len(distances)
+
+# prepare data for nets and its subnets
+rc = [2.0, 2.5]
+eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
+n_structs = len(cartesians)
+n_atoms = len(cartesians[0]) 
+
+# global parameters of HDNN 
+epochs = 10000
+batch_size = 10
+learning_rate = 10e-5
+h = 0.1
+path = 'models'
 # Atomic NN, nodes amount in hidden layers
 hidden_nodes = [10, 10]
+
 # create an instance
-net = Neural_Network(input_nodes = 1, 
+net = Neural_Network(input_nodes = len(rc), 
                      hidden_nodes = hidden_nodes,
                      epochs = epochs,
-                     use_cuda = use_cuda)
+                     use_cuda = use_cuda,
+                     learning_rate = learning_rate,
+                     h = h)
 print("done")
 
 device = torch.device('cuda') if use_cuda else torch.device('cpu')
@@ -56,34 +70,26 @@ net.to(device = device)
 print("done")
 
 print("Config subnets and prepare dataset:", end = ' ')
-# prepare data for nets and its subnets
-rc = 2.5
-eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
-n_structs = len(cartesians)
-n_atoms = len(cartesians[0])
 
-# sep = int(0.8 * n_structs)
-# batch_size = sep 
-
-net.compile(cartesians, len(cartesians), n_atoms, rc, eta, rs, k, _lambda, xi)
+net.compile(cartesians, distances, len(distances), n_atoms, rc, eta, rs, k, _lambda, xi,
+            load_models = False, path = path)
 
 print("done")
 
 print("Training:")
 start = time.time()
 
-net.fit(e_dft, batch_size)
+net.fit(e_dft, f_dft, batch_size)
 
 end = time.time()
 train_time = (end - start)
 net.net_log.info(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
 
-import matplotlib.pyplot as plt
+print("Saving model: ", end = '')
 
-e_train = net.predict(cartesians).cpu()
-print(e_dft)
-print(e_train)
+if os.path.exists(path):
+    shutil.rmtree(path, ignore_errors = True)
+os.mkdir(path)
 
-plt.plot(distances, e_dft)
-plt.plot(distances, e_train.sum(1))
-plt.show()
+net.save_model(path)
+print("done")

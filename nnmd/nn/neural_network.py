@@ -1,11 +1,11 @@
 #TODO: total refactoring & clean-up
 # must be imported first
 # for compatibility with custom extensions
+from traceback import print_tb
 import torch
 torch.manual_seed(0)
 
 from torch.utils.data import DataLoader
-from torchviz import make_dot
 
 # C++/CUDA extention
 import nnmd_cpp
@@ -26,21 +26,22 @@ class RMSELoss(torch.nn.Module):
         return torch.sqrt(self.mse(yhat, y))
 
 class Neural_Network(torch.nn.Module):
-    # amount of nn instances
-    _count: int = 0
-
     """Class implement high-dimentional NN for system of atoms. \n
     For each atom it defines special Atomic NN which provide machine-trained potentials.
     """
+
+    # amount of nn instances
+    _count: int = 0
+
     def __init__(self, hidden_nodes: list[int], use_cuda: bool,
-                       input_nodes: int = 5, learning_rate: float = 0.2,
-                       epochs: int = 100, h: float = 0.1, mu: float = 30) -> None:
+                       input_nodes: int = 5, learning_rate: float = 0.001,
+                       epochs: int = 100, h: float = 0.2, mu: float = 30) -> None:
         """Initializes a neural network instance.
 
         Args:
+            input_nodes (int, optional): configuration of AtomicNNs input layer. Defaults to 5.
             hidden_nodes (list[int]): configuration of AtomicNNs internal layers
             use_cuda (bool): enable/disable CUDA support
-            input_nodes (int, optional): configuration of AtomicNNs input layer. Defaults to 5.
             learning_rate (float, optional): Defaults to 0.5.
             epochs (int, optional): number of training epochs. Defaults to 1000.
             h (int, optional): step of coordinate-wise moving (used in forces caclulations). Defaults to 1.
@@ -78,7 +79,7 @@ class Neural_Network(torch.nn.Module):
             self.device = torch.device('cpu')
 
         # loss function
-        self.criterion = RMSELoss().to(device = self.device)
+        self.criterion = torch.nn.MSELoss().to(device = self.device)
         
         # output log files
         self.net_log = Logger.get_logger("net train info", "net.log")
@@ -87,34 +88,67 @@ class Neural_Network(torch.nn.Module):
     def __del__(self):
         Neural_Network._count -= 1
 
-    def _calculate_g(self, cartesians: torch.Tensor, r_cutoff: float, eta: float, rs: float, k: float, _lambda: int, xi: float):
-        """Calculates symmetric functions for each structs of atoms with specified parameters.
+    # def _calculate_g(self, cartesians: torch.Tensor, r_cutoff: float, eta: float, rs: float, k: float, _lambda: int, xi: float):
+    #     """Calculates symmetric functions for each structs of atoms with specified parameters.
 
-        Args:
-            cartesians (torch.Tensor): structs of atoms (atomic systems in certain time moment)
-            r_cutoff (float): cutoff radius
-            eta (float): parameter of symmetric functions
-            rs (float): parameter of symmetric functions
-            k (float): parameter of symmetric functions
-            _lambda (int): parameter of symmetric functions
-            xi (float): parameter of symmetric functions
+    #     Args:
+    #         cartesians (torch.Tensor): structs of atoms (atomic systems in certain time moment)
+    #         r_cutoff (float): cutoff radius
+    #         eta (float): parameter of symmetric functions
+    #         rs (float): parameter of symmetric functions
+    #         k (float): parameter of symmetric functions
+    #         _lambda (int): parameter of symmetric functions
+    #         xi (float): parameter of symmetric functions
             
-        """
-        # arrays of g and their derivatives
-        g = []
-        # params of symmetric functions
-        self.r_cutoff = r_cutoff
-        self.eta, self.rs, self.k, self._lambda, self.xi = eta, rs, k, _lambda, xi
-        # calculate symmetric functions values for each struct of atoms and its derivatives
-        for struct in cartesians:
-            g_struct = self._nnmd.calculate_sf(struct, r_cutoff, eta, rs, k, _lambda, xi)
-            g.append(g_struct)
-        
-        # g values - inputs of Atomic NNs
-        # so we need to store gradient for backpropagation
-        g = torch.stack(g).to(device=self.device, dtype=torch.float32)
+    #     """
+    #     # arrays of g and their derivatives
+    #     g = []
+    #     # params of symmetric functions
+    #     self.r_cutoff = r_cutoff
+    #     self.eta, self.rs, self.k, self._lambda, self.xi = eta, rs, k, _lambda, xi
+    #     # calculate symmetric functions values for each struct of atoms and its derivatives
+    #     for struct in cartesians:
+    #         g_struct = []
+    #         for rc in r_cutoff:
+    #             g_i = self._nnmd.calculate_sf(struct, rc, eta, rs, k, _lambda, xi)
+    #             g_struct.append(g_i[0][0])
+    #         g_struct = torch.stack(g_struct)
 
+    #         g.append(g_struct)
+        
+    #     # g values - inputs of Atomic NNs
+    #     # so we need to store gradient for backpropagation
+    #     g = torch.stack(g).to(device = self.device, dtype = torch.float32)
+    #     print(g)
+    #     g.requires_grad = True
+
+    #     return g
+    def _calculate_g(self, distances: torch.Tensor, r_cutoff: float):
+        import math
+        def cutoff(rc, rij):
+            if rc >= rij:
+                return 0.5 * (math.cos((math.pi * rij) / rc) + 1)
+            return 0
+
+        def G1(rc, rij):
+            return cutoff(rc, rij)
+
+        def calculate_G1(distances, rc):
+            g = []
+            for distance in distances:
+                gi = []
+                for rc in r_cutoff:
+                    gi.append(G1(rc, distance))
+                g.append(gi)
+            return g
+
+        g = torch.tensor(calculate_G1(distances, r_cutoff)).unsqueeze(1)
+        g_min, _ = torch.min(g, dim = 0, keepdim = True)
+        g_max, _ = torch.max(g, dim = 0, keepdim = True)
+        g = (g - g_min) / (g_max - g_min)
         g.requires_grad = True
+        g = g.to(device = self.device, dtype = torch.float32)
+        
         return g
     
     def _describe_env(self, batch_size):
@@ -146,7 +180,7 @@ Symmetric functions parameters:
         self.net_log.info(info)
 
 
-    def compile(self, cartesians: list, n_structs: int, n_atoms: int, r_cutoff: float, eta: float, rs: float, k: float, _lambda: float,
+    def compile(self, cartesians: list, distances: list, n_structs: int, n_atoms: int, r_cutoff: float, eta: float, rs: float, k: float, _lambda: float,
                               xi: float, load_models: bool = False, path: str = None):
         """Configurates parameters related to calculations and AtomicNNs
 
@@ -162,17 +196,20 @@ Symmetric functions parameters:
             load_models (bool, optional): load pre-trained models or not. Defaults to False.
             path (str, optional): path to pre-trained models. Defaults to None.
         """
+        # params of symmetric functions
+        self.r_cutoff = r_cutoff
+        self.eta, self.rs, self.k, self._lambda, self.xi = eta, rs, k, _lambda, xi
         if isinstance(cartesians, torch.Tensor):
-            self.cartesians = cartesians.to(device=self.device, dtype=torch.float32)
+            self.cartesians = cartesians.to(device = self.device, dtype = torch.float32)
         else:
-            self.cartesians = torch.tensor(cartesians, device=self.device, dtype=torch.float32)
+            self.cartesians = torch.as_tensor(cartesians, device = self.device, dtype = torch.float32)
 
         # characteristics of training set
         self.n_structs = n_structs
         self.n_atoms = n_atoms
 
         # pre-define g values
-        self.g = self._calculate_g(self.cartesians, r_cutoff, eta, rs, k, _lambda, xi)
+        self.g = self._calculate_g(distances, r_cutoff)
 
         # sets of atomic nn and their optimizers
         self.atomic_nn_set = []
@@ -242,27 +279,26 @@ Symmetric functions parameters:
             # g values (nn inputs),
             # energies and forces (nn targets)
             cartesians, g, e_dft, f_dft = data
-            e_nn = torch.empty((len(cartesians), self.n_atoms),
-                                device=self.device, dtype=torch.float32)
+            e_nn = torch.empty((len(cartesians), len(cartesians[0])),
+                                device = self.device, dtype = torch.float32)
             
             start = time.time()
             # calculate energies using NN
             for struct_index in range(len(cartesians)):
                 for atom in range(self.n_atoms):
                     nn = self.atomic_nn_set[atom]
-                    e_nn[struct_index][atom] = nn(g[struct_index][atom])
-
+                    e_nn[struct_index][atom] = nn(g[struct_index])
             # calculate forces per batch
             f_nn = self._nnmd.calculate_forces(cartesians, e_nn, g,
                                         self.atomic_nn_set, self.r_cutoff,
-                                        self.h, self.eta, self.rs,
-                                        self.k, self._lambda, self.xi)
+                                        self.eta, self.rs, self.k, 
+                                        self._lambda, self.xi, self.h)
             end = time.time()
             self.time_log.info(f"Epoch {epoch}, batch {batch}, forward: {(end - start):.5f} s")
 
             # get loss (detalized for logging)
             batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn, e_dft, f_nn, f_dft)
-
+            # batch_loss = self.loss(e_nn, e_dft)
             # run backpropagation
             start = time.time()
             batch_loss.backward()
@@ -278,7 +314,7 @@ Symmetric functions parameters:
         f_loss /= num_batches
         e_loss /= num_batches
         loss /= num_batches
-
+        
         # get optimizers and do the optimization step
         start = time.time()
         for i in range(self.n_atoms):
@@ -299,7 +335,8 @@ Symmetric functions parameters:
         loss = loss.cpu().detach().numpy()
 
         # make info message about losses and write to log file
-        loss_info = f"iter: {epoch + 1}: RMSE E = {e_loss:e}, RMSE F = {f_loss:e}, RMSE total = {loss:e} eV"
+        loss_info = f"iter: {epoch + 1}: RMSE E = {e_loss:.3f}, RMSE F = {f_loss:.3f}, RMSE total = {loss:.3f} eV"
+        #loss_info = f"iter: {epoch + 1}: RMSE total = {loss:.3f} eV"
         self.net_log.info(loss_info)
              
     def loss(self, e_nn: torch.Tensor, e_dft: torch.Tensor,
@@ -312,10 +349,22 @@ Symmetric functions parameters:
             f_nn (torch.Tensor): calculated forces
             f_dft (torch.Tensor): target forces
         """
-        E_loss = self.criterion(e_nn.sum(dim = 1), e_dft)
+        E_loss = self.criterion(e_nn.sum(1), e_dft)
         F_loss = self.criterion(f_nn, f_dft) * self.mu / 3
         loss = E_loss + F_loss
         return loss, E_loss, F_loss
+    
+    # def loss(self, e_nn: torch.Tensor, e_dft: torch.Tensor) -> torch.Tensor:
+    #     """Gets RMSE loss of training.
+
+    #     Args:
+    #         e_nn (torch.Tensor): calculated energy
+    #         e_dft (torch.Tensor): target energy
+    #         f_nn (torch.Tensor): calculated forces
+    #         f_dft (torch.Tensor): target forces
+    #     """
+    #     loss = self.criterion(e_dft, e_nn)
+    #     return loss
 
     def predict(self, cartesians: list):
         """Calculates energy and forces for structs of atoms
@@ -324,11 +373,11 @@ Symmetric functions parameters:
             cartesians: structs of atoms (atomic system in certain time moment)
         """
         # data preparing: convert to tensors, calculate g values, etc.
-        cartesians_ = torch.as_tensor(cartesians, device = self.device, dtype=torch.float32)
+        cartesians_ = torch.as_tensor(cartesians, device = self.device, dtype = torch.float32)
         n_structs = len(cartesians_)
         e_nn = torch.empty((n_structs, self.n_atoms), device = self.device, dtype = torch.float32)
-        g = self._calculate_g(cartesians_, self.r_cutoff,
-                              self.eta, self.rs, self.k, self._lambda, self.xi)
+        g = self._calculate_g(cartesians_, self.r_cutoff)
+        
 
         # disable gradient computation (we don't train NN)
         with torch.no_grad():
@@ -336,15 +385,14 @@ Symmetric functions parameters:
             for struct_index in range(n_structs):
                 for atom in range(self.n_atoms):
                     nn = self.atomic_nn_set[atom]
-                    e_nn[struct_index][atom] = nn(g[struct_index][atom])
+                    e_nn[struct_index][atom] = nn(g[struct_index])
 
-            # calculate forces for whole dataset
+            # # calculate forces for whole dataset
             f_nn = self._nnmd.calculate_forces(cartesians_, e_nn, g,
                                                self.atomic_nn_set, self.r_cutoff,
                                                self.h, self.eta, self.rs,
                                                self.k, self._lambda, self.xi)
-        
-        return e_nn, f_nn
+        return e_nn
             
     def save_model(self, path: str):
         """Saves trained models to files.
