@@ -5,7 +5,6 @@ import torch
 torch.manual_seed(0)
 
 from torch.utils.data import DataLoader
-from torchviz import make_dot
 
 # C++/CUDA extention
 import nnmd_cpp
@@ -13,7 +12,7 @@ import nnmd_cpp
 from . import AtomicNN
 
 from ..util._logger import Logger
-from ._dataset import TrainAtomicDataset
+from ._dataset import TrainAtomicDataset, AtomicDataset
 
 import time
 
@@ -185,7 +184,7 @@ Symmetric functions parameters:
             # if using pre-trained models only is needed
             if load_models:
                 # load from path
-                nn.load_state_dict(torch.load(path + f"/atomic_nn_{i}.pt"))         
+                nn.load_state_dict(torch.load(path + f"/atomic_nn_0.pt"))         
             nn = nn.to(device = self.device)
             self.atomic_nn_set.append(nn)
 
@@ -218,7 +217,9 @@ Symmetric functions parameters:
         for epoch in range(self.epochs):
             start = time.time()
             print(f"epoch {epoch + 1}:" , end = ' ')
+
             self._train_loop(epoch, train_loader, num_batches)
+
             self.time_log.info(f"epoch {epoch + 1} elapsed: {(time.time() - start):.3f} s")
             print("done")
 
@@ -317,28 +318,34 @@ Symmetric functions parameters:
         loss = E_loss + F_loss
         return loss, E_loss, F_loss
 
-    def predict(self, cartesians: list):
+    def predict(self, cartesians: list | torch.Tensor, batch_size: int):
         """Calculates energy and forces for structs of atoms
 
         Args:
-            cartesians: structs of atoms (atomic system in certain time moment)
+            cartesians (list | torch.Tensor): structs of atoms (atomic system in certain time moment)
+            batch_size (int): data split number
         """
         # data preparing: convert to tensors, calculate g values, etc.
         cartesians_ = torch.as_tensor(cartesians, device = self.device, dtype=torch.float32)
         n_structs = len(cartesians_)
         e_nn = torch.empty((n_structs, self.n_atoms), device = self.device, dtype = torch.float32)
+
         g = self._calculate_g(cartesians_, self.r_cutoff,
-                              self.eta, self.rs, self.k, self._lambda, self.xi)
+                              self.eta, self.rs, self.k, self._lambda, self.xi) 
+
+        dataset = AtomicDataset(cartesians_, self.g)
+        train_loader = DataLoader(dataset, batch_size = batch_size)
 
         # disable gradient computation (we don't train NN)
         with torch.no_grad():
             # calculate energies using NN
+            print("energies")
             for struct_index in range(n_structs):
                 for atom in range(self.n_atoms):
                     nn = self.atomic_nn_set[atom]
                     e_nn[struct_index][atom] = nn(g[struct_index][atom])
 
-            # calculate forces for whole dataset
+            print("forces")
             f_nn = self._nnmd.calculate_forces(cartesians_, e_nn, g,
                                                self.atomic_nn_set, self.r_cutoff,
                                                self.h, self.eta, self.rs,

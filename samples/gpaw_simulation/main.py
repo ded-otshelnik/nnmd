@@ -38,7 +38,7 @@ print("done")
 
 print("Create an instance of NN:", end = ' ')
 # Global parameters of HDNN 
-epochs = 10
+epochs = 100
 batch_size = 16
 # Atomic NN, nodes amount in hidden layers
 hidden_nodes = [16, 8]
@@ -63,18 +63,19 @@ train_f_dft, test_f_dft = f_dft[:sep], f_dft[sep:]
 print("done")
 # params that define what NN will do 
 # train model
-train = True
+train = False
 # test model
 test = True
 # save model params as files in <path> directory
-save = True
+save = False
 path = 'models'
 
 print("Config subnets and prepare dataset:", end = ' ')
 # prepare data for nets and its subnets
 rc = 12.0
 eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
-net.compile(train_data, len(train_data), len(train_data[0]), rc, eta, rs, k, _lambda, xi)
+net.compile(cartesians, len(cartesians) - 1, len(cartesians[0]), rc, eta, rs, k, _lambda, xi,
+            load_models = True, path = 'models')
 print("done")
 if train:
     print("Training:")
@@ -91,12 +92,12 @@ if test:
     test_e_dft, test_f_dft = torch.tensor(test_e_dft, device = device), torch.tensor(test_f_dft, device = device)
     start = time.time()
 
-    test_e_nn, test_f_nn = net.predict(test_data)
+    test_e_nn, test_f_nn = net.predict(cartesians[:-1], batch_size = batch_size)
 
     end = time.time()
     net.net_log.info(f"\nTesting time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s")
     
-    test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, test_e_dft, test_f_nn, test_f_dft)
+    test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, torch.as_tensor(e_dft[:-1], device = device), test_f_nn, torch.as_tensor(f_dft, device = device))
 
     test_e_loss = test_e_loss.cpu().detach().numpy()
     test_f_loss = test_f_loss.cpu().detach().numpy()
@@ -104,6 +105,7 @@ if test:
 
     test_loss_info = f"test: RMSE E = {test_e_loss:.4f}, RMSE F = {test_f_loss:.4f}, RMSE total = {test_loss:.4f} eV"
     net.net_log.info(test_loss_info)
+    print("done")
 
 if save:
     print("Saving model: ", end = '')

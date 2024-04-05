@@ -44,7 +44,7 @@ def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, int, list, list, list]
                 if positions_marker:
                     cartesians_iter = []
                     while line.strip('\n ') != '':
-                        coord = re.findall(r'[^(,][-+]?\d+.\d+[^,)]', line)[:-3]
+                        coord = re.findall(r'[^(,][-+]?\d+.\d+[^,)]', line[4:])[:-3]
                         cartesians_iter.append([float(i) for i in coord])
                         line = file.readline() 
                     cartesians.append(cartesians_iter)
@@ -54,7 +54,7 @@ def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, int, list, list, list]
                 elif forces_marker:
                     forces_iter = []
                     while line.strip('\n ') != '':
-                        force = re.findall(r'[-+]?\d+.\d+', line)
+                        force = re.findall(r'[-+]?\d+.\d+', line[4:])
                         forces_iter.append([float(i) for i in force])
                         line = file.readline() 
                     forces.append(forces_iter)    
