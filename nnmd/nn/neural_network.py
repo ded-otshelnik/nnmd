@@ -33,7 +33,7 @@ class Neural_Network(torch.nn.Module):
     """
     def __init__(self, hidden_nodes: list[int], use_cuda: bool,
                        input_nodes: int = 5, learning_rate: float = 0.2,
-                       epochs: int = 100, h: float = 0.1, mu: float = 30) -> None:
+                       epochs: int = 100, h: float = 0.1, mu: float = 3) -> None:
         """Initializes a neural network instance.
 
         Args:
@@ -161,10 +161,11 @@ Symmetric functions parameters:
             load_models (bool, optional): load pre-trained models or not. Defaults to False.
             path (str, optional): path to pre-trained models. Defaults to None.
         """
+        # convert to tensors because 
         if isinstance(cartesians, torch.Tensor):
-            self.cartesians = cartesians.to(device=self.device, dtype=torch.float32)
+            self.cartesians = cartesians.to(device = self.device, dtype = torch.float32)
         else:
-            self.cartesians = torch.tensor(cartesians, device=self.device, dtype=torch.float32)
+            self.cartesians = torch.tensor(cartesians, device = self.device, dtype = torch.float32)
 
         # characteristics of training set
         self.n_structs = n_structs
@@ -184,7 +185,7 @@ Symmetric functions parameters:
             # if using pre-trained models only is needed
             if load_models:
                 # load from path
-                nn.load_state_dict(torch.load(path + f"/atomic_nn_0.pt"))         
+                nn.load_state_dict(torch.load(path + f"/atomic_nn_{i}.pt"))         
             nn = nn.to(device = self.device)
             self.atomic_nn_set.append(nn)
 
@@ -244,7 +245,7 @@ Symmetric functions parameters:
             # energies and forces (nn targets)
             cartesians, g, e_dft, f_dft = data
             e_nn = torch.empty((len(cartesians), self.n_atoms),
-                                device=self.device, dtype=torch.float32)
+                                device = self.device, dtype = torch.float32)
             
             start = time.time()
             # calculate energies using NN
@@ -318,7 +319,7 @@ Symmetric functions parameters:
         loss = E_loss + F_loss
         return loss, E_loss, F_loss
 
-    def predict(self, cartesians: list | torch.Tensor, batch_size: int):
+    def predict(self, cartesians: list | torch.Tensor):
         """Calculates energy and forces for structs of atoms
 
         Args:
@@ -333,19 +334,14 @@ Symmetric functions parameters:
         g = self._calculate_g(cartesians_, self.r_cutoff,
                               self.eta, self.rs, self.k, self._lambda, self.xi) 
 
-        dataset = AtomicDataset(cartesians_, self.g)
-        train_loader = DataLoader(dataset, batch_size = batch_size)
-
         # disable gradient computation (we don't train NN)
         with torch.no_grad():
             # calculate energies using NN
-            print("energies")
             for struct_index in range(n_structs):
                 for atom in range(self.n_atoms):
                     nn = self.atomic_nn_set[atom]
                     e_nn[struct_index][atom] = nn(g[struct_index][atom])
 
-            print("forces")
             f_nn = self._nnmd.calculate_forces(cartesians_, e_nn, g,
                                                self.atomic_nn_set, self.r_cutoff,
                                                self.h, self.eta, self.rs,
