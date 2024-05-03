@@ -1,6 +1,6 @@
 [project]
 name = "nnmd"
-version = "0.0.0.dev0"
+version = "0.1.0"
 description = "ML extension with PyTorch C++ (Libtorch) and Python bindings"
 readme = "README.md"
 keywords = ["python", "pytorch", "libtorch", "pybind11"]
@@ -8,10 +8,13 @@ authors = [
     {name = "Andrey Budnikov"}
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
-    "Environment :: GPU :: NVIDIA CUDA",
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: GPU :: NVIDIA CUDA :: 12 :: 12.1",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: C++"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: Implementation :: CPython"
 ]
 
 [project.urls]
@@ -44,12 +47,13 @@ where = [""]
 exclude = ["test/"]
 
 [tool.pytest.ini_options]
-testpaths = "tests"  # directory containing your tests
+# directory containing your tests
+testpaths = "tests"  
 norecursedirs = [
     ".vscode",
     "__pycache__"
 ]
-# Warnings that should be ignored
+# warnings that should be ignored
 filterwarnings = [
     "ignore::DeprecationWarning"
 ]

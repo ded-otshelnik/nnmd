@@ -1,18 +1,21 @@
-#TODO: total refactoring & clean-up
+#TODO:
+# 1. total refactoring & clean-up
+# 2. 'config' method must be rebuilded (done)
+# 3. parameters of all methods must be checked
+# 4. enable/disable logging (done: moved to 'fit' method)
+
 # must be imported first
 # for compatibility with custom extensions
 import torch
 torch.manual_seed(0)
-
 from torch.utils.data import DataLoader
 
 # C++/CUDA extention
 import nnmd_cpp
 
 from . import AtomicNN
-
+from .dataset import AtomicDataset
 from ..util._logger import Logger
-from ._dataset import TrainAtomicDataset, AtomicDataset
 
 import time
 
@@ -25,9 +28,6 @@ class RMSELoss(torch.nn.Module):
         return torch.sqrt(self.mse(yhat, y))
 
 class Neural_Network(torch.nn.Module):
-    # amount of nn instances
-    _count: int = 0
-
     """Class implement high-dimentional NN for system of atoms. \n
     For each atom it defines special Atomic NN which provide machine-trained potentials.
     """
@@ -78,45 +78,8 @@ class Neural_Network(torch.nn.Module):
 
         # loss function
         self.criterion = RMSELoss().to(device = self.device)
-        
-        # output log files
-        self.net_log = Logger.get_logger("net train info", "net.log")
-        self.time_log = Logger.get_logger("net time info", "time.log")
     
-    def __del__(self):
-        Neural_Network._count -= 1
-
-    def _calculate_g(self, cartesians: torch.Tensor, r_cutoff: float, eta: float, rs: float, k: float, _lambda: int, xi: float):
-        """Calculates symmetric functions for each structs of atoms with specified parameters.
-
-        Args:
-            cartesians (torch.Tensor): structs of atoms (atomic systems in certain time moment)
-            r_cutoff (float): cutoff radius
-            eta (float): parameter of symmetric functions
-            rs (float): parameter of symmetric functions
-            k (float): parameter of symmetric functions
-            _lambda (int): parameter of symmetric functions
-            xi (float): parameter of symmetric functions
-            
-        """
-        # arrays of g and their derivatives
-        g = []
-        # params of symmetric functions
-        self.r_cutoff = r_cutoff
-        self.eta, self.rs, self.k, self._lambda, self.xi = eta, rs, k, _lambda, xi
-        # calculate symmetric functions values for each struct of atoms and its derivatives
-        for struct in cartesians:
-            g_struct = self._nnmd.calculate_sf(struct, r_cutoff, eta, rs, k, _lambda, xi)
-            g.append(g_struct)
-        
-        # g values - inputs of Atomic NNs
-        # so we need to store gradient for backpropagation
-        g = torch.stack(g).to(device=self.device, dtype=torch.float32)
-
-        g.requires_grad = True
-        return g
-    
-    def _describe_env(self, batch_size):
+    def _describe_training(self, dataset, batch_size):
         from importlib.metadata import version
 
         module_name = "nnmd"
@@ -135,57 +98,39 @@ Atomic NNs parameters:
     batch size: {batch_size}
         
 Symmetric functions parameters:
-    cutoff radius rc = {self.r_cutoff},
-    eta = {self.eta},
-    rs = {self.rs},
-    k = {self.k},
-    lambda = {self._lambda},
-    xi = {self.xi},
+    cutoff radius rc = {dataset.r_cutoff},
+    eta = {dataset.eta},
+    rs = {dataset.rs},
+    k = {dataset.k},
+    lambda = {dataset._lambda},
+    xi = {dataset.xi},
 """
         self.net_log.info(info)
 
-
-    def compile(self, cartesians: list, n_structs: int, n_atoms: int, r_cutoff: float, eta: float, rs: float, k: float, _lambda: float,
-                              xi: float, load_models: bool = False, path: str = None):
+    def config(self, n_atoms: int, load_models: bool = False, path: str = None):
         """Configurates parameters related to calculations and AtomicNNs
 
         Args:
-            cartesians: structs of atoms (atomic system in certain time moment)
-            n_structs (int): number of atoms structs
             n_atoms (int): number of atoms
-            eta (float): parameter of symmetric functions
-            rs (float): parameter of symmetric functions
-            k (float): parameter of symmetric functions
-            _lambda (int): parameter of symmetric functions
-            xi (float): parameter of symmetric functions
             load_models (bool, optional): load pre-trained models or not. Defaults to False.
             path (str, optional): path to pre-trained models. Defaults to None.
         """
-        # convert to tensors because 
-        if isinstance(cartesians, torch.Tensor):
-            self.cartesians = cartesians.to(device = self.device, dtype = torch.float32)
-        else:
-            self.cartesians = torch.tensor(cartesians, device = self.device, dtype = torch.float32)
-
-        # characteristics of training set
-        self.n_structs = n_structs
+        # amount of subnets = amount of atoms 
         self.n_atoms = n_atoms
 
-        # pre-define g values
-        self.g = self._calculate_g(self.cartesians, r_cutoff, eta, rs, k, _lambda, xi)
-
-        # sets of atomic nn and their optimizers
+        # sets of atomic nn, their optimizers and schedulers of learning rate
         self.atomic_nn_set = []
         self.nn_optims = []
+        self.nn_scheds = []
 
         # for each atom make Atomic NN and its optimizer
-        for i in range(self.n_atoms):
+        for _ in range(self.n_atoms):
             # create Atomic NN instance for i-th atom
             nn = AtomicNN(input_nodes = self.input_nodes, hidden_nodes = self.hidden_nodes)
-            # if using pre-trained models only is needed
+            # if using pre-trained models is needed only
             if load_models:
                 # load from path
-                nn.load_state_dict(torch.load(path + f"/atomic_nn_{i}.pt"))         
+                nn.load_state_dict(torch.load(path + f"/atomic_nn_0.pt"))         
             nn = nn.to(device = self.device)
             self.atomic_nn_set.append(nn)
 
@@ -193,44 +138,48 @@ Symmetric functions parameters:
             optim = torch.optim.Adam(nn.parameters(), lr = self.learning_rate)
             self.nn_optims.append(optim)
     
-    def fit(self, e_dft: list, f_dft: list, batch_size: int):
+    def fit(self, dataset: AtomicDataset, batch_size: int):
         """Train method of neural network.
 
         Args:
-            e_dft: target energy
-            f_dft: target forces
+            dataset (nnmd.nn.AtomicDataset): input dataset with data about atoms
             batch_size: size of batch
         """
-
-        # data preparation/convert
-        e_dft = torch.as_tensor(e_dft, device = self.device, dtype = torch.float32)
-        f_dft = torch.as_tensor(f_dft, device = self.device, dtype = torch.float32)
-        num_batches = len(self.cartesians) // batch_size if len(self.cartesians) > batch_size else 1
-        
-        # create prepared dataset and dataloader for training
-        dataset = TrainAtomicDataset(self.cartesians, self.g, e_dft, f_dft)
+        num_batches = len(dataset.cartesians) // batch_size if len(dataset.cartesians) > batch_size else 1
         train_loader = DataLoader(dataset, batch_size = batch_size)
+        r_cutoff, eta, rs, k, _lambda, xi = dataset.r_cutoff, dataset.eta, dataset.rs, dataset.k, dataset._lambda, dataset.xi
+
+        # output log files
+        self.net_log = Logger.get_logger("net train info", "net.log")
+        self.time_log = Logger.get_logger("net time info", "time.log")
 
         # save package/environment info to log file
-        self._describe_env(batch_size)
+        self._describe_training(dataset, batch_size)
 
         # run training
         for epoch in range(self.epochs):
             start = time.time()
             print(f"epoch {epoch + 1}:" , end = ' ')
 
-            self._train_loop(epoch, train_loader, num_batches)
+            self._train_loop(epoch, train_loader, num_batches, r_cutoff, eta, rs, k, _lambda, xi)
 
             self.time_log.info(f"epoch {epoch + 1} elapsed: {(time.time() - start):.3f} s")
             print("done")
 
-    def _train_loop(self, epoch: int, train_loader: DataLoader, num_batches: int):
+    def _train_loop(self, epoch: int, train_loader: DataLoader, num_batches: int,
+                    r_cutoff: float, eta: float, rs: float, k: float, _lambda: float, xi: float):
         """Train loop method. 
 
         Args:
             epoch (int): current training epoch
             train_loader (DataLoader): loads data into the pipeline for training
             batch_size (int): size of batch
+            r_cutoff (float): cutoff radius
+            eta (float): parameter of symmetric functions
+            rs (float): parameter of symmetric functions
+            k (float): parameter of symmetric functions
+            _lambda (int): parameter of symmetric functions
+            xi (float): parameter of symmetric functions
         """
         # epoch losses: energies, forces and total
         e_loss = torch.zeros(1, device = self.device).squeeze()
@@ -255,10 +204,8 @@ Symmetric functions parameters:
                     e_nn[struct_index][atom] = nn(g[struct_index][atom])
 
             # calculate forces per batch
-            f_nn = self._nnmd.calculate_forces(cartesians, e_nn, g,
-                                        self.atomic_nn_set, self.r_cutoff,
-                                        self.h, self.eta, self.rs,
-                                        self.k, self._lambda, self.xi)
+            f_nn = self._nnmd.calculate_forces(cartesians, e_nn, g, self.atomic_nn_set,
+                                               r_cutoff, eta, rs, k, _lambda, xi, self.h)
             end = time.time()
             self.time_log.info(f"Epoch {epoch}, batch {batch}, forward: {(end - start):.5f} s")
 
@@ -271,7 +218,7 @@ Symmetric functions parameters:
             end = time.time()
             self.time_log.info(f"Epoch {epoch}, batch {batch}, backpropagation: {(end - start):.3f} s")
 
-            # collect batch losses to total storages
+            # collect batch losses to total ones
             loss += batch_loss
             e_loss += batch_e_loss
             f_loss += batch_f_loss
@@ -306,7 +253,7 @@ Symmetric functions parameters:
              
     def loss(self, e_nn: torch.Tensor, e_dft: torch.Tensor,
                    f_nn: torch.Tensor, f_dft: torch.Tensor) -> torch.Tensor:
-        """Gets RMSE loss of training.
+        """Gets loss of calculations.
 
         Args:
             e_nn (torch.Tensor): calculated energy
@@ -319,20 +266,16 @@ Symmetric functions parameters:
         loss = E_loss + F_loss
         return loss, E_loss, F_loss
 
-    def predict(self, cartesians: list | torch.Tensor):
+    def predict(self, dataset: AtomicDataset):
         """Calculates energy and forces for structs of atoms
 
         Args:
-            cartesians (list | torch.Tensor): structs of atoms (atomic system in certain time moment)
+            dataset (nnmd.nn.AtomicDataset): input dataset with data about atoms
             batch_size (int): data split number
         """
         # data preparing: convert to tensors, calculate g values, etc.
-        cartesians_ = torch.as_tensor(cartesians, device = self.device, dtype=torch.float32)
-        n_structs = len(cartesians_)
+        n_structs = len(dataset.cartesians)
         e_nn = torch.empty((n_structs, self.n_atoms), device = self.device, dtype = torch.float32)
-
-        g = self._calculate_g(cartesians_, self.r_cutoff,
-                              self.eta, self.rs, self.k, self._lambda, self.xi) 
 
         # disable gradient computation (we don't train NN)
         with torch.no_grad():
@@ -340,12 +283,12 @@ Symmetric functions parameters:
             for struct_index in range(n_structs):
                 for atom in range(self.n_atoms):
                     nn = self.atomic_nn_set[atom]
-                    e_nn[struct_index][atom] = nn(g[struct_index][atom])
+                    e_nn[struct_index][atom] = nn(dataset.g[struct_index][atom])
 
-            f_nn = self._nnmd.calculate_forces(cartesians_, e_nn, g,
-                                               self.atomic_nn_set, self.r_cutoff,
-                                               self.h, self.eta, self.rs,
-                                               self.k, self._lambda, self.xi)
+            f_nn = self._nnmd.calculate_forces(dataset.cartesians, e_nn, dataset.g,
+                                               self.atomic_nn_set, dataset.r_cutoff,
+                                               dataset.eta, dataset.rs, dataset.k,
+                                               dataset._lambda, dataset.xi, self.h)
         
         return e_nn, f_nn
             
