@@ -8,8 +8,10 @@ import time
 import argparse
 
 import torch
+import matplotlib.pyplot as plt
 
 from nnmd.nn import Neural_Network
+from nnmd.nn.dataset import make_atomic_dataset
 
 from lennard_jones import lennard_jones_gen
 
@@ -50,37 +52,43 @@ net = Neural_Network(input_nodes = 1,
 print("done")
 
 device = torch.device('cuda') if use_cuda else torch.device('cpu')
+dtype = torch.float32
+
+train_cartesians = torch.as_tensor(cartesians, device = device, dtype = dtype)
+
 print(f"Move NN to {'GPU' if device.type == 'cuda' else 'CPU'}:", end = ' ')
 # move NN to right device 
 net.to(device = device)
 print("done")
 
 print("Config subnets and prepare dataset:", end = ' ')
+
 # prepare data for nets and its subnets
 rc = 2.5
 eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
 n_structs = len(cartesians)
 n_atoms = len(cartesians[0])
 
-# sep = int(0.8 * n_structs)
-# batch_size = sep 
+load_models = True
+path = 'models'
 
-net.compile(cartesians, len(cartesians), n_atoms, rc, eta, rs, k, _lambda, xi)
+train_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, device, e_dft, f_dft, train = True)
+net.config(n_atoms, load_models = load_models, path = path)
 
 print("done")
 
 print("Training:")
-start = time.time()
+# start = time.time()
 
-net.fit(e_dft, batch_size)
+# net.fit(train_dataset, batch_size)
 
-end = time.time()
-train_time = (end - start)
-net.net_log.info(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
+# end = time.time()
+# train_time = (end - start)
+# print(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
 
-import matplotlib.pyplot as plt
+_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, device, train = False)
 
-e_train = net.predict(cartesians).cpu()
+e_train = net.predict(_dataset).cpu()
 print(e_dft)
 print(e_train)
 

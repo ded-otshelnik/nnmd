@@ -72,19 +72,19 @@ train_e_dft, test_e_dft = torch.as_tensor(e_dft[:sep], device = device, dtype = 
 train_f_dft, test_f_dft = torch.as_tensor(f_dft[:sep], device = device, dtype = dtype), \
                           torch.as_tensor(f_dft[sep:], device = device, dtype = dtype)
 
-train_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, train_e_dft, train_f_dft, device)
+train_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, device, train_e_dft, train_f_dft)
 train_dataset.g.requires_grad = True
-test_dataset = make_atomic_dataset(test_cartesians, rc, eta, rs, k, _lambda, xi, test_e_dft, test_f_dft, device)
+test_dataset = make_atomic_dataset(test_cartesians, rc, eta, rs, k, _lambda, xi, device, test_e_dft, test_f_dft, train = False) 
 print("done")
 # params that define what NN will do 
 load_models = True
+path = 'models'
 # train model
 train = False
 # save model params as files in <path> directory
 save = False
 # test model
 test = True
-path = 'models'
 
 print("Config subnets:", end = ' ')
 

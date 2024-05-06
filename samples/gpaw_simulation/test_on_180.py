@@ -61,7 +61,7 @@ eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
 cartesians = torch.as_tensor(cartesians, device = device, dtype = dtype)
 e_dft = torch.as_tensor(e_dft, device = device, dtype = dtype)
 f_dft = torch.as_tensor(f_dft, device = device, dtype = dtype)
-dataset = make_atomic_dataset(cartesians, rc, eta, rs, k, _lambda, xi, e_dft, f_dft, device)
+dataset = make_atomic_dataset(cartesians, rc, eta, rs, k, _lambda, xi, device, e_dft, f_dft)
 print("done")
 
 load_models = True
