@@ -70,7 +70,7 @@ path = 'models'
 print("Config subnets:", end = ' ')
 
 net.config(n_atoms, load_models = load_models, path = path)
-
+time.sleep(1)
 print("done")
 
 print("Testing:", end = ' ')

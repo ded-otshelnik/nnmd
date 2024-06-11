@@ -124,13 +124,13 @@ Symmetric functions parameters:
         self.nn_scheds = []
 
         # for each atom make Atomic NN and its optimizer
-        for _ in range(self.n_atoms):
+        for i in range(self.n_atoms):
             # create Atomic NN instance for i-th atom
             nn = AtomicNN(input_nodes = self.input_nodes, hidden_nodes = self.hidden_nodes)
             # if using pre-trained models is needed only
             if load_models:
                 # load from path
-                nn.load_state_dict(torch.load(path + f"/atomic_nn_0.pt"))         
+                nn.load_state_dict(torch.load(path + f"/atomic_nn_{i}.pt"))         
             nn = nn.to(device = self.device)
             self.atomic_nn_set.append(nn)
 

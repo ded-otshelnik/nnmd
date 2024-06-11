@@ -9,7 +9,6 @@ import time
 import argparse
 
 import torch
-from sklearn.model_selection import train_test_split
 
 from nnmd.nn import Neural_Network
 from nnmd.nn.dataset import make_atomic_dataset
@@ -73,7 +72,6 @@ train_f_dft, test_f_dft = torch.as_tensor(f_dft[:sep], device = device, dtype = 
                           torch.as_tensor(f_dft[sep:], device = device, dtype = dtype)
 
 train_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, device, train_e_dft, train_f_dft)
-train_dataset.g.requires_grad = True
 test_dataset = make_atomic_dataset(test_cartesians, rc, eta, rs, k, _lambda, xi, device, test_e_dft, test_f_dft, train = False) 
 print("done")
 # params that define what NN will do 

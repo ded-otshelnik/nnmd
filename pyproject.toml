@@ -27,9 +27,11 @@ test = [
 ]
 
 [build-system]
-# (!) torch must be compiled first
-# for compatibility with extension
-requires = ["setuptools",
+# (!) torch must be compiled first for compatibility with extension
+# but it mustn't be mentioned in 'requires'
+# because pip will try to download torch from web resources 
+# what will break extentions and their compatibility 
+requires = ["setuptools==69.5.1",
             "wheel",
             "ninja",
             "cmake>=3.11",

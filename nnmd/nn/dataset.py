@@ -69,6 +69,7 @@ def make_atomic_dataset(cartesians: torch.Tensor, r_cutoff: float,
     g = calculate_g(cartesians, r_cutoff, eta, rs, k, _lambda, xi, device)
     if train:
         dataset = TrainAtomicDataset(cartesians, r_cutoff, eta, rs, k, _lambda, xi, g, e_dft, f_dft)
+        dataset.g.requires_grad = True
     else:
         dataset = AtomicDataset(cartesians, r_cutoff, eta, rs, k, _lambda, xi, g)
 
