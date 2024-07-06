@@ -3,7 +3,8 @@
 
 # example of nnmd package usage with lennard-jones potentials
 
-
+import os
+import shutil
 import time 
 import argparse
 
@@ -36,6 +37,8 @@ print("Getting Lennard-Jones potential: ", end = '')
 
 cartesians, e_dft, f_dft, distances = lennard_jones_gen()
 
+n_structs = len(cartesians)
+n_atoms = len(cartesians[0])
 print("done")
 
 print("Create an instance of NN:", end = ' ')
@@ -44,54 +47,104 @@ epochs = 100
 batch_size = len(distances)
 # Atomic NN, nodes amount in hidden layers
 hidden_nodes = [10, 10]
-# create an instance
-net = Neural_Network(input_nodes = 1, 
-                     hidden_nodes = hidden_nodes,
-                     epochs = epochs,
-                     use_cuda = use_cuda)
-print("done")
 
 device = torch.device('cuda') if use_cuda else torch.device('cpu')
 dtype = torch.float32
 
-train_cartesians = torch.as_tensor(cartesians, device = device, dtype = dtype)
+print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
 
-print(f"Move NN to {'GPU' if device.type == 'cuda' else 'CPU'}:", end = ' ')
-# move NN to right device 
-net.to(device = device)
+# params of symmetric functions
+symm_func_params = {"r_cutoff": 2.5,
+                    "eta": 0.01,
+                    "k": 1,
+                    "rs": 0.5,
+                    "lambda": 1,
+                    "xi": 3}
+h = 1
+
+# ~80% - train, ~20% - test
+sep = int(0.8 * n_structs)
+# inputs and targets
+train_cartesians, test_cartesians = torch.as_tensor(cartesians[:sep], device = device, dtype = dtype), \
+                                    torch.as_tensor(cartesians[sep:],  device = device, dtype = dtype)
+train_e_dft, test_e_dft = torch.as_tensor(e_dft[:sep], device = device, dtype = dtype), \
+                          torch.as_tensor(e_dft[sep:], device = device, dtype = dtype)
+train_f_dft, test_f_dft = torch.as_tensor(f_dft[:sep], device = device, dtype = dtype), \
+                          torch.as_tensor(f_dft[sep:], device = device, dtype = dtype)
+train_dataset = make_atomic_dataset(train_cartesians, symm_func_params, h, device,
+                                    train_e_dft, train_f_dft, train = True)
+test_dataset = make_atomic_dataset(test_cartesians, symm_func_params, h, device) 
 print("done")
 
-print("Config subnets and prepare dataset:", end = ' ')
-
-# prepare data for nets and its subnets
-rc = 2.5
-eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
-n_structs = len(cartesians)
-n_atoms = len(cartesians[0])
-
+# params that define what NN will do 
+# load pre-trained models
 load_models = True
 path = 'models'
+# train model
+train = False
+# save model params as files in <path> directory
+save = False
+# test model
+test = True
 
-train_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, device, e_dft, f_dft, train = True)
-net.config(n_atoms, load_models = load_models, path = path)
+# Atomic NN nodes in hidden layers
+input_nodes = 1
+hidden_nodes = [10, 10]
 
+print("Create an instance of NN and config its subnets:", end = ' ')
+net = Neural_Network()
+net.config(hidden_nodes = hidden_nodes, 
+           use_cuda = use_cuda,
+           n_atoms = n_atoms,
+           input_nodes = input_nodes,
+           load_models = load_models,
+           path = path,
+           dtype = dtype)
 print("done")
 
-print("Training:")
-# start = time.time()
+if train:
+    # parameters of training 
+    batch_size = n_structs
+    epochs = 1
 
-# net.fit(train_dataset, batch_size)
+    print("Training:", f"Training sample size: {len(train_dataset)} ", sep = '\n') 
 
-# end = time.time()
-# train_time = (end - start)
-# print(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
+    start = time.time()
+    net.fit(train_dataset, batch_size, epochs)
+    end = time.time()
 
-_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, device, train = False)
+    train_time = end - start
+    print(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
 
-e_train = net.predict(_dataset).cpu()
-print(e_dft)
-print(e_train)
+if save:
+    print("Saving model: ", end = '')
 
-plt.plot(distances, e_dft)
-plt.plot(distances, e_train.sum(1))
-plt.show()
+    if os.path.exists(path):
+        shutil.rmtree(path, ignore_errors = True)
+    os.mkdir(path)
+
+    net.save_model(path)
+    print("done")
+
+if test:
+    print("Testing:", end = ' ')
+
+    start = time.time()
+    test_e_nn, test_f_nn = net.predict(test_dataset)
+    end = time.time()
+
+    print("done", f"Testing sample size: {len(test_dataset)} ",
+          f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s",
+          sep = '\n')
+    
+    test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, test_e_dft, test_f_nn, test_f_dft)
+
+    test_e_loss = test_e_loss.cpu().detach().numpy()
+    test_f_loss = test_f_loss.cpu().detach().numpy()
+    test_loss = test_loss.cpu().detach().numpy()
+
+    print(f"test: RMSE E = {test_e_loss:.4f}, RMSE F = {test_f_loss:.4f}, RMSE total = {test_loss:.4f} eV")
+
+    plt.plot(distances, e_dft)
+    plt.plot(distances, test_e_nn.sum(1))
+    plt.show()

@@ -5,7 +5,6 @@
 
 namespace cuda{
     // @brief Calculates forces of atomic system on iteration using AtomicNNs.
-    // TODO: check forces formula
     // @param cartesians: atomic positions
     // @param e_nn: actual calculated energies
     // @param nets: list of AtomicNNs

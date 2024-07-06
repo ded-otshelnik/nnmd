@@ -23,14 +23,21 @@ Repository = "https://github.com/ded-otshelnik/nnmd.git"
 
 [project.optional-dependencies]
 test = [
-    "pytest"
+    # dependencies of tox
+    # for auto-tests
+    "platformdirs==2.6.2",
+    "virtualenv==20.21.1",
+    "tox",
+    "tox-current-env",
+    "pytest",
+    "mypy"
 ]
 
 [build-system]
 # (!) torch must be compiled first for compatibility with extension
 # but it mustn't be mentioned in 'requires'
 # because pip will try to download torch from web resources 
-# what will break extentions and their compatibility 
+# what will break extensions and their compatibility 
 requires = ["setuptools==69.5.1",
             "wheel",
             "ninja",
@@ -41,12 +48,12 @@ requires = ["setuptools==69.5.1",
             # for pyproject.toml-based project
             "typing_extensions",
             "sympy",
-            "numpy"]
+            "numpy<2"
+]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = [""]
-exclude = ["test/"]
 
 [tool.pytest.ini_options]
 # directory containing your tests
@@ -63,3 +70,29 @@ filterwarnings = [
 markers = [
     "slow: lower-importance tests that take an excessive amount of time",
 ]
+addopts = [
+    "--import-mode=importlib",
+]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+env_list =
+    pytest
+    mypy
+skipsdist = true
+
+[testenv:pytest]
+description = run the tests with pytest
+deps =
+    pytest
+commands =
+    pytest {tty:--color=yes} {posargs} -v
+
+[testenv:mypy]
+description = run the tests with pytest and mypy
+deps =
+    mypy
+commands =
+    mypy . --exclude samples --exclude tests --ignore-missing-imports
+"""

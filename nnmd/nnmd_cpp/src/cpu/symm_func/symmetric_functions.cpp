@@ -32,8 +32,8 @@ namespace cpu{
     }
 
     float G4(const float rij, const float rik, const float rjk, const float rc,
-            const float eta, const float lambda, const float xi,
-            const float cos_v){ 
+             const float eta, const float lambda, const float xi,
+             const float cos_v){ 
             
         float out_g;
         float expv = exp(-eta * (rij * rij + rik * rik + rjk * rjk)); 
@@ -51,8 +51,8 @@ namespace cpu{
     }
 
     float G5(const float rij, const float rik, const float rjk, const float rc,
-            const float eta, const float lambda, const float xi,
-            const float cos_v){ 
+             const float eta, const float lambda, const float xi,
+             const float cos_v){ 
             
         float out_g;
         float expv = exp(-eta * (rij * rij + rik * rik)); 

@@ -30,3 +30,6 @@ using std::to_string;
 #include <chrono>
 #include <ratio>
 using namespace std::chrono;
+
+void init_cpu_module(py::module_& module);
+void init_cuda_module(py::module_& module);

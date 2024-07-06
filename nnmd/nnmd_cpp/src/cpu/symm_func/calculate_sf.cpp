@@ -1,4 +1,3 @@
-#include "head.hpp"
 #include "cpu/symmetric_functions.hpp"
 
 namespace cpu{
@@ -11,8 +10,8 @@ namespace cpu{
     // @param lambda: parameter of symmetric functions
     // @param xi: parameter of symmetric functions
     Tensor calculate_sf(const Tensor &cartesians, const float& r_cutoff,
-                    const float& eta, const float& rs, const float& k_param,
-                    const int& lambda, const float& xi){
+                        const float& eta, const float& rs, const float& k_param,
+                        const int& lambda, const float& xi){
 
             auto opts = torch::TensorOptions()
                 .dtype(torch::kFloat);

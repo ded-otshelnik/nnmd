@@ -20,7 +20,6 @@ class CMakeBuild(BuildExtension):
     """Class provides CMake building of Python/C++ extensions
     with customization by CMakeLists.txt
     """
-
     def __init__(self, *args, **kwargs):
         super(CMakeBuild, self).__init__(*args, **kwargs)
         self.python_exe = sys.executable
@@ -66,9 +65,6 @@ class CMakeBuild(BuildExtension):
         config = "Debug" if self.debug else "Release"
         build_args = ["--config", config]
 
-        if platform.system() == "Darwin":
-            cmake_args += ["-DCMAKE_OSX_DEPLOYMENT_TARGET=10.9"]
-
         if platform.system() == "Windows":
             cmake_args += ["-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(config.upper(), ext_dir)]
             if sys.maxsize > 2 ** 32:
@@ -92,11 +88,11 @@ class CMakeBuild(BuildExtension):
         if not self.dry_run:
             jobs = os.getenv("CMAKE_JOBS", multiprocessing.cpu_count())
             cmd = [self.cmake, "--build", build_dir, "--", "-j{}".format(jobs)]
-            subprocess.check_call(cmd, cwd=build_dir, env=env)
+            subprocess.check_call(cmd, cwd = build_dir, env = env)
 
 setup(
-    include_package_data=True,
-    package_data={"": ["*.so"]},
+    include_package_data = True,
+    package_data = {"": ["*.so"]},
     ext_modules = [CUDAExtension(
         name = "_nnmd_cpp",
         sources = [],

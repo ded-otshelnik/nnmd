@@ -2,7 +2,7 @@ import re
 import traceback
 from typing import Tuple
 
-def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, int, list, list, list]:
+def gpaw_parser(filename, encoding = 'utf-8') -> Tuple[int, int, list, list, list]:
     """Parse info of gpaw simulation
 
     Args:
@@ -12,7 +12,7 @@ def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, int, list, list, list]
     with open(filename, encoding=encoding) as file:
         # flags that marks positions and forces
         positions_marker, forces_marker = False, False
-        cartesians, forces, energies, n_atoms = [], [], [], []
+        cartesians, forces, energies = [], [], [],
 
         line = file.readline() 
         while line:
@@ -33,11 +33,6 @@ def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, int, list, list, list]
                 elif line.startswith('Extrapolated'):
                     energies.append(float(re.findall(r'[-+]?\d+.\d+', line)[0]))   
                     line = file.readline() 
-                    continue
-                # if atoms amount is found
-                elif line.startswith('Number of atoms:'):
-                    n_atoms = int(re.findall(r'\d+', line)[0])
-                    line = file.readline()   
                     continue
                 
                 # parse atomic positions on iteration
@@ -66,4 +61,4 @@ def gpaw_parser(filename, encoding='utf-8') -> Tuple[int, int, list, list, list]
                 traceback.print_exc()
                 exit(1)
         
-        return len(cartesians), n_atoms, cartesians, forces, energies
+        return len(cartesians), len(cartesians[0]), cartesians, forces, energies

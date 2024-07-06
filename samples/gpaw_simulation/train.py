@@ -21,10 +21,7 @@ params_parser.add_argument("-c", "--use_cuda",
                             help = "Enable/disable CUDA usage.")
 args = params_parser.parse_args()
 
-# check if GPU usage is needed and available 
 use_cuda = (args.use_cuda is not None) and torch.cuda.is_available()
-
-# print GPU availability status
 if use_cuda:
     print("GPU usage is enabled")
 elif args.use_cuda and not torch.cuda.is_available():
@@ -36,45 +33,36 @@ print("Get info from GPAW simulation: ", end = '')
 n_structs, n_atoms, cartesians, f_dft, e_dft = gpaw_parser(args.gpaw_file)
 print("done")
 
-print("Create an instance of NN:", end = ' ')
-# Global parameters of HDNN 
-epochs = 1
-batch_size = 16
-# Atomic NN, nodes amount in hidden layers
-hidden_nodes = [16, 8]
-# create an instance
-net = Neural_Network(hidden_nodes = hidden_nodes,
-                     epochs = epochs,
-                     use_cuda = use_cuda)
-print("done")
-
 device = torch.device('cuda') if use_cuda else torch.device('cpu')
 dtype = torch.float32
 
-print(f"Move NN to {'GPU' if device.type == 'cuda' else 'CPU'}:", end = ' ')
-# move NN to right device 
-net.to(device = device)
-print("done")
-
-print(f"Separate data to train and test datasets:", end = ' ')
+print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
 
 # params of symmetric functions
-rc = 12.0
-eta, rs, k, _lambda, xi = 0.01, 0.5, 1, -1, 3
+symm_func_params = {"r_cutoff": 12.0,
+                    "eta": 0.01,
+                    "k": 1,
+                    "rs": 0.5,
+                    "lambda": 1,
+                    "xi": 3}
+h = 1
 
 # ~80% - train, ~20% - test
 sep = int(0.8 * n_structs)
+# inputs and targets
 train_cartesians, test_cartesians = torch.as_tensor(cartesians[:sep], device = device, dtype = dtype), \
-                                    torch.as_tensor(cartesians[sep:-1],  device = device, dtype = dtype)
+                                    torch.as_tensor(cartesians[sep:],  device = device, dtype = dtype)
 train_e_dft, test_e_dft = torch.as_tensor(e_dft[:sep], device = device, dtype = dtype), \
                           torch.as_tensor(e_dft[sep:], device = device, dtype = dtype)
 train_f_dft, test_f_dft = torch.as_tensor(f_dft[:sep], device = device, dtype = dtype), \
                           torch.as_tensor(f_dft[sep:], device = device, dtype = dtype)
-
-train_dataset = make_atomic_dataset(train_cartesians, rc, eta, rs, k, _lambda, xi, device, train_e_dft, train_f_dft)
-test_dataset = make_atomic_dataset(test_cartesians, rc, eta, rs, k, _lambda, xi, device, test_e_dft, test_f_dft, train = False) 
+train_dataset = make_atomic_dataset(train_cartesians, symm_func_params, h, device,
+                                    train_e_dft, train_f_dft, train = True)
+test_dataset = make_atomic_dataset(test_cartesians, symm_func_params, h, device) 
 print("done")
+
 # params that define what NN will do 
+# load pre-trained models
 load_models = True
 path = 'models'
 # train model
@@ -84,22 +72,33 @@ save = False
 # test model
 test = True
 
-print("Config subnets:", end = ' ')
+# Atomic NN nodes in hidden layers
+input_nodes = 5
+hidden_nodes = [16, 8]
 
-net.config(n_atoms, load_models = load_models, path = path)
-
+print("Create an instance of NN and config its subnets:", end = ' ')
+net = Neural_Network()
+net.config(hidden_nodes = hidden_nodes, 
+           use_cuda = use_cuda,
+           dtype = dtype,
+           n_atoms = n_atoms,
+           input_nodes = input_nodes,
+           load_models = load_models,
+           path = path)
 print("done")
 
 if train:
+    # parameters of training 
+    batch_size = 16
+    epochs = 1
 
-    print("Training:")
-    print(f"\nTraining sample size: {len(train_dataset)} ") 
+    print("Training:", f"Training sample size: {len(train_dataset)} ", sep = '\n') 
 
     start = time.time()
-    net.fit(train_dataset, batch_size)
+    net.fit(train_dataset, batch_size, epochs)
     end = time.time()
 
-    train_time = (end - start)
+    train_time = end - start
     print(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
 
 if save:
@@ -119,15 +118,14 @@ if test:
     test_e_nn, test_f_nn = net.predict(test_dataset)
     end = time.time()
 
-    print("done")
-    print(f"\nTesting sample size: {len(test_dataset)} ")
-    print(f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s")
-
+    print("done", f"Testing sample size: {len(test_dataset)} ",
+          f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s",
+          sep = '\n')
+    
     test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, test_e_dft, test_f_nn, test_f_dft)
 
     test_e_loss = test_e_loss.cpu().detach().numpy()
     test_f_loss = test_f_loss.cpu().detach().numpy()
     test_loss = test_loss.cpu().detach().numpy()
 
-    test_loss_info = f"test: RMSE E = {test_e_loss:.4f}, RMSE F = {test_f_loss:.4f}, RMSE total = {test_loss:.4f} eV"
-    print(test_loss_info)
+    print(f"test: RMSE E = {test_e_loss:.4f}, RMSE F = {test_f_loss:.4f}, RMSE total = {test_loss:.4f} eV")

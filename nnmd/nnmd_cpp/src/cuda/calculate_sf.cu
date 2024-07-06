@@ -1,5 +1,4 @@
 #include "cuda/symmetric_functions.hpp"
-
 #include "cuda/cuda_header.hpp"
 
 namespace cuda{
@@ -32,6 +31,7 @@ namespace cuda{
     Tensor calculate_sf(const Tensor& cartesians, const float& r_cutoff,
                     const float& eta, const float& rs, const float& k_param,
                     const int& lambda, const float& xi){
+
         CHECK_INPUT(cartesians);
         
         torch::TensorOptions opts = torch::TensorOptions()

@@ -1,4 +1,3 @@
-#include "head.hpp"
 #include "cuda/symmetric_functions.hpp"
 #include "cuda/calculate_forces.hpp"
 
