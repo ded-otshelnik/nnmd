@@ -14,6 +14,7 @@ import nnmd_cpp
 from . import AtomicNN
 from .dataset import AtomicDataset
 from ..util._logger import Logger
+from ..util.calculate_g import calculate_g
 
 import time
 
@@ -30,6 +31,8 @@ class Neural_Network(torch.nn.Module):
     For each atom it defines special Atomic NN which provide machine-trained potentials.
     """
     def __init__(self) -> None:
+        """Init method of Neural_Network class
+        """
         super().__init__()
     
     def _describe_training(self, dataset, batch_size, epochs):
@@ -251,33 +254,32 @@ Symmetric functions parameters:
         loss = E_loss + F_loss
         return loss, E_loss, F_loss
 
-    def predict(self, dataset: AtomicDataset):
+    def predict(self, cartesians: torch.Tensor, symm_func_params: dict[str, float],
+                 h: float) -> tuple[torch.Tensor]:
         """Calculates energy and forces for structs of atoms
 
         Args:
-            dataset (nnmd.nn.AtomicDataset): input dataset with data about atoms
+            cartesians (torch.Tensor): positions of atoms
+            symm_func_params (dict[str, float]): parameters of symmetric functions
+            h (float): step of coordinate-wise moving (used in forces caclulations).
         """
-        # data preparing: convert to tensors, calculate g values, etc.
-        n_structs = len(dataset.cartesians)
-        e_nn = torch.empty((n_structs, self.n_atoms), device = self.device, dtype = self.dtype)
-
+        cartesians = cartesians.unsqueeze(0).to(device = self.device)
+        e_nn = torch.empty(self.n_atoms, device = self.device, dtype = self.dtype)
         # disable gradient computation (we don't train NN)
         with torch.no_grad():
+            g = calculate_g(cartesians, self.device, symm_func_params).squeeze(0)
             # calculate energies using NN
-            for struct_index in range(n_structs):
-                for atom in range(self.n_atoms):
-                    nn = self.atomic_nn_set[atom]
-                    e_nn[struct_index][atom] = nn(dataset.g[struct_index][atom])
-
-            f_nn = self._nnmd.calculate_forces(dataset.cartesians, e_nn, dataset.g, self.atomic_nn_set,
-                                               dataset.symm_func_params['r_cutoff'],
-                                               dataset.symm_func_params['eta'],
-                                               dataset.symm_func_params['rs'],
-                                               dataset.symm_func_params['k'],
-                                               dataset.symm_func_params['lambda'],
-                                               dataset.symm_func_params['xi'], dataset.h)
-        
-        return e_nn, f_nn
+            for atom in range(self.n_atoms):
+                nn = self.atomic_nn_set[atom]
+                e_nn[atom] = nn(g[atom])
+            f_nn = self._nnmd.calculate_forces(cartesians, e_nn.unsqueeze(0), g.unsqueeze(0), self.atomic_nn_set,
+                                               symm_func_params['r_cutoff'],
+                                               symm_func_params['eta'],
+                                               symm_func_params['rs'],
+                                               symm_func_params['k'],
+                                               symm_func_params['lambda'],
+                                               symm_func_params['xi'], h).squeeze(0)
+        return f_nn
             
     def save_model(self, path: str):
         """Saves trained models to files.

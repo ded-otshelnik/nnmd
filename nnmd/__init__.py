@@ -6,4 +6,5 @@ machine-learning potentials for MD simulations.
 """
 from . import nn
 from . import util
+from . import md
 import nnmd_cpp
