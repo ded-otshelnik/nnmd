@@ -1,7 +1,5 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
-from functools import reduce
 
 import torch
 
@@ -12,9 +10,8 @@ from tqdm import tqdm
 class MDSimulation:
     def __init__(self, N_atoms: int, cartesians: torch.Tensor, nn: Neural_Network,
                   mass: float, rVan, symm_func_params: dict, L: float, T: float, dt: float,
-                  h = float, v_initial = torch.Tensor):
-            self.R = 8.314462
-            self.X = 0.1
+                  h = float, v_initial = torch.Tensor, a_initial = torch.Tensor):
+            self.log = open("md_simulation.log", "w+")
 
             self.cartesians = cartesians
             self.N_atoms = N_atoms
@@ -24,10 +21,11 @@ class MDSimulation:
             self.Vx = [v_initial_item[0] for v_initial_item in v_initial]
             self.Vy = [v_initial_item[1] for v_initial_item in v_initial]
             self.Vz = [v_initial_item[2] for v_initial_item in v_initial]
+            #print(f"Velocities: {v_initial}", file = self.log)
             # acceleration projection
-            self.ax = torch.zeros(self.N_atoms)
-            self.ay = torch.zeros(self.N_atoms)
-            self.az = torch.zeros(self.N_atoms)
+            self.ax = [a_initial_item[0] for a_initial_item in a_initial]
+            self.ay = [a_initial_item[1] for a_initial_item in a_initial]
+            self.az = [a_initial_item[2] for a_initial_item in a_initial]
 
             # derivatives by time
             self.dt = dt
@@ -59,32 +57,44 @@ class MDSimulation:
 
             self.h = h
 
+            #print(f"Initial correction of velocities", file = self.log)
             self.corr_veloc()
+            #print(f"Initial calculation of acceleration", file = self.log)
             self.calc_acel()
-
+            
             self.cartesians_history = [self.cartesians.clone()]
+            self.forces_history = [a_initial.clone() * self.mass]
             
     def run_md_simulation(self, steps):
         for step in tqdm(range(steps)):
+            #print(f"Step: {step}, start verle", file = self.log)
             self.verle()
             if (step + 1) % 100 == 0:
+                #print(f"Step: {step}, correct velocities", file = self.log)
                 self.corr_veloc()
             self.cartesians_history.append(self.cartesians.clone())
+            acc = torch.as_tensor(list(zip(self.ax, self.ay, self.az)))
+            #print(f"Acc: {acc}", file = self.log)
+            self.forces_history.append(acc * self.mass)
             
-
     def corr_veloc(self):
         Vsx = 0
         Vsy = 0
         Vsz = 0
 
         for i in range(self.N_atoms):
-            D = math.sqrt(1 / (self.Vx[i] * self.Vx[i] + self.Vy[i] * self.Vy[i] + self.Vz[i] * self.Vz[i]))
+            if (self.Vx[i] * self.Vx[i] + self.Vy[i] * self.Vy[i] + self.Vz[i] * self.Vz[i]) < 1e-8:
+                continue
+            D = torch.sqrt(1. / (self.Vx[i] * self.Vx[i] + self.Vy[i] * self.Vy[i] + self.Vz[i] * self.Vz[i]))
+            #print(f"D{i}: ", D, file = self.log)
             self.Vx[i] *= D 
             self.Vy[i] *= D
             self.Vz[i] *= D
             Vsx += self.Vx[i]
             Vsy += self.Vy[i]
             Vsz += self.Vz[i]
+            #print(f"Velocities ({i}): Vsx = {Vsx}, Vsy = {Vsy}, Vsz = {Vsz}", file = self.log)
+
 
         Vsx /= self.N_atoms
         Vsy /= self.N_atoms
@@ -94,6 +104,8 @@ class MDSimulation:
             self.Vx[i] -= Vsx
             self.Vy[i] -= Vsy
             self.Vz[i] -= Vsz
+            #print(f"Velocities ({i}): Vx = {self.Vx[i]}, Vy = {self.Vy[i]}, Vz = {self.Vz[i]}", file = self.log)
+        
 
     def calc_acel(self):
         a = self.nn.predict(self.cartesians,
@@ -123,8 +135,14 @@ class MDSimulation:
                 Nx = dx / r
                 Ny = dy / r
                 Nz = dz / r
+                #print(f"({i},{j}), r: {r}, dx: {dx}, dy: {dy}, dz: {dz},", file = self.log)
                 if r < self.rVan:
                     #! check this
+                    #print(f"Velocities ({i}): Vx = {self.Vx[i]}, Vy = {self.Vy[i]}, Vz = {self.Vz[i]}", file = self.log)
+                    #print(f"Velocities ({j}): Vx = {self.Vx[j]}, Vy = {self.Vy[j]}, Vz = {self.Vz[j]}", file = self.log)
+                    #print(f"({i},{j}), (self.Vx[j] - self.Vx[i]): {(self.Vx[j] - self.Vx[i])}, \
+                    #       self.Vy[j] - self.Vy[i]: {self.Vy[j] - self.Vy[i]}, \
+                    #       self.Vz[j] - self.Vz[i]: {self.Vz[j] - self.Vz[i]}, ", file = self.log)
                     proj = Nx * (self.Vx[j] - self.Vx[i]) + Ny * (
                         self.Vy[j] - self.Vy[i]) + Nz * (self.Vz[j] - self.Vz[i])
                     dr = (self.rVan - r) / 2
@@ -135,12 +153,15 @@ class MDSimulation:
                     self.cartesians[j][1] += Ny * dr
                     self.cartesians[j][2] += Nz * dr
 
+                    #print(f"({i},{j}), Nx: {Nx}, Ny: {Ny}, Nz: {Nz}", file = self.log)
+                    #print(f"proj ({i},{j}): {proj}", file = self.log)
                     self.Vx[i] += Nx * proj
                     self.Vy[i] += Ny * proj
                     self.Vz[i] += Nz * proj
                     self.Vx[j] -= Nx * proj
                     self.Vy[j] -= Ny * proj
                     self.Vz[j] -= Nz * proj
+                    #print(f"Velocities ({i},{j}): {self.Vx}, {self.Vy}, {self.Vz}", file = self.log)
                 else:
                     self.ax[i] -= a[i][0] * Nx
                     self.ay[i] -= a[i][1] * Ny
@@ -148,9 +169,13 @@ class MDSimulation:
                     self.ax[j] += a[j][0] * Nx
                     self.ay[j] += a[j][1] * Ny
                     self.az[j] += a[j][2] * Nz
+        #print("Carts: ", self.cartesians, file = self.log)
+        #print("Nx: ", Nx, file = self.log)
 
-    
     def verle(self):
+        #print("Carts: ", self.cartesians, file = self.log)
+        #print("Vx: ", self.Vx, file = self.log)
+        #print("ax: ", self.ax, file = self.log)
         for i in range(self.N_atoms):
             self.cartesians[i][0] += self.Vx[i] * self.dt + self.ax[i] * self.dt2
             self.cartesians[i][1] += self.Vy[i] * self.dt + self.ay[i] * self.dt2
@@ -164,7 +189,7 @@ class MDSimulation:
             self.Vx[i] += self.ax[i] * self.dt1
             self.Vy[i] += self.ay[i] * self.dt1
             self.Vz[i] += self.az[i] * self.dt1
-
+        #print(self.cartesians, file = self.log)
         self.calc_acel()
 
         for i in range(self.N_atoms):

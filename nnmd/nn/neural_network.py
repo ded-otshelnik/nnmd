@@ -121,7 +121,7 @@ Symmetric functions parameters:
             # if using pre-trained models is needed only
             if load_models:
                 # load params to current AtomicNN instance
-                nn.load_state_dict(torch.load(kwargs['path'] + f"/atomic_nn_{i}.pt"))         
+                nn.load_state_dict(torch.load(kwargs['path'] + f"/atomic_nn_0.pt"))         
             nn = nn.to(device = self.device)
             self.atomic_nn_set.append(nn)
 
