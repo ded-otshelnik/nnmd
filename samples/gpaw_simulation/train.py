@@ -4,12 +4,16 @@
 # example of nnmd package usage with gpaw simulation
 
 import os
+import random
 import shutil
 import time 
 import argparse
 
+from nnmd.nn import dataset
+
 import torch
 
+import nnmd
 from nnmd.nn import Neural_Network
 from nnmd.nn.dataset import make_atomic_dataset
 from nnmd.util import gpaw_parser
@@ -39,16 +43,22 @@ dtype = torch.float32
 print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
 
 # params of symmetric functions
-symm_func_params = {"r_cutoff": 12.0,
+symm_func_params = {"r_cutoff": 6.0,
                     "eta": 0.01,
                     "k": 1,
                     "rs": 0.5,
-                    "lambda": 1,
+                    "lambda": -1,
                     "xi": 3}
-h = 1
+h = 0.01
+
+# shuffle data
+data = list(zip(cartesians, e_dft, f_dft))
+random.shuffle(data)
+cartesians, e_dft, f_dft = zip(*data)
 
 # ~80% - train, ~20% - test
 sep = int(0.8 * n_structs)
+
 # inputs and targets
 train_cartesians, test_cartesians = torch.as_tensor(cartesians[:sep], device = device, dtype = dtype), \
                                     torch.as_tensor(cartesians[sep:],  device = device, dtype = dtype)
@@ -63,18 +73,24 @@ print("done")
 
 # params that define what NN will do 
 # load pre-trained models
-load_models = True
-path = 'models'
+load_models = False
+path = 'models_new'
 # train model
-train = False
+train = True
 # save model params as files in <path> directory
-save = False
+save = True
 # test model
 test = True
 
 # Atomic NN nodes in hidden layers
 input_nodes = 5
-hidden_nodes = [16, 8]
+hidden_nodes = [30, 30]
+mu = 1
+learning_rate = 0.1
+
+# sigma = 0.1
+# for g in train_dataset.g:
+#     print(nnmd.nnmd_cpp.cuda.calculate_gdf(g, len(g), len(g[0]), input_nodes, sigma))
 
 print("Create an instance of NN and config its subnets:", end = ' ')
 net = Neural_Network()
@@ -84,15 +100,17 @@ net.config(hidden_nodes = hidden_nodes,
            n_atoms = n_atoms,
            input_nodes = input_nodes,
            load_models = load_models,
-           path = path)
+           path = path,
+           mu = mu,
+           learning_rate = learning_rate)
 print("done")
 
 if train:
     # parameters of training 
     batch_size = 16
-    epochs = 1
+    epochs = 100
 
-    print("Training:", f"Training sample size: {len(train_dataset)} ", sep = '\n') 
+    print(f"Training sample size: {len(train_dataset)}", "Training:", sep = '\n') 
 
     start = time.time()
     net.fit(train_dataset, batch_size, epochs)
@@ -115,14 +133,18 @@ if test:
     print("Testing:", end = ' ')
 
     start = time.time()
-    test_e_nn, test_f_nn = net.predict(test_dataset)
+    test_loss, test_e_loss, test_f_loss = 0, 0, 0
+    for cartesian, e_dft, f_dft in zip(test_cartesians, test_e_dft, test_f_dft):
+        test_e_nn, test_f_nn = net.predict(cartesian, symm_func_params, h)
+        loss = net.loss(test_e_nn.unsqueeze(0), e_dft, test_f_nn, f_dft)
+        test_loss += loss[0]
+        test_e_loss += loss[1]
+        test_f_loss+= loss[2]
     end = time.time()
 
     print("done", f"Testing sample size: {len(test_dataset)} ",
           f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s",
           sep = '\n')
-    
-    test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, test_e_dft, test_f_nn, test_f_dft)
 
     test_e_loss = test_e_loss.cpu().detach().numpy()
     test_f_loss = test_f_loss.cpu().detach().numpy()

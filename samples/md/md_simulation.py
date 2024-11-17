@@ -31,11 +31,11 @@ device = torch.device('cuda') if use_cuda else torch.device('cpu')
 dtype = torch.float32
 
 # params of symmetric functions
-symm_func_params = {"r_cutoff": 12.0,
+symm_func_params = {"r_cutoff": 6.0,
                     "eta": 0.01,
                     "k": 1,
                     "rs": 0.5,
-                    "lambda": 1,
+                    "lambda": -1,
                     "xi": 3}
 
 # mass of atom of Copper (in atomic mass units)
@@ -43,28 +43,30 @@ m_atom = ad.atomic_masses[ad.atomic_numbers['Cu']]
 # temperature of system (in Kelvin)
 T = 300.0
 # Van der Waals radius
-rVan = 2.74
+rVan = 1.84
 dt = 10e-15
-h = 10e-2
+h = 5 * 10e-3
 
 # start data: initial positions, forces (=> acceleration) and velocity
 cartesians = torch.as_tensor(np.load("cartesians_actual.npy.npz")['cartesians'], dtype = dtype)
 forces = torch.as_tensor(np.load("forces_actual.npy.npz")['forces'], dtype = dtype)
-v_initial = torch.as_tensor(np.load("velocities_actual.npy.npz")['velocities'][0], dtype = dtype)
-cartesians_initial = cartesians[0]
-n_atoms = cartesians_initial.shape[0]
-a_initial = forces[0] / m_atom
 
-Vm = np.sqrt(8 * 8.314462 * T / (np.pi * m_atom))
+start = int(0.8 * len(cartesians))
+v_initial = torch.as_tensor(np.load("velocities_actual.npy.npz")['velocities'][start], dtype = dtype)
+cartesians_initial = cartesians[start]
+n_atoms = cartesians_initial.shape[0]
+a_initial = forces[start] / m_atom
+
+# Vm = np.sqrt(8 * 8.314462 * T / (np.pi * m_atom))
 # v_initial = torch.as_tensor(np.log(np.random.uniform(0.5, 2.5, (n_atoms, 3))) * Vm, dtype = dtype)
 # a_initial = torch.zeros((n_atoms, 3), dtype = dtype)
 
 nn = Neural_Network()
-hidden_nodes = [16, 8]
+hidden_nodes = [30, 30]
 nn.config(hidden_nodes = hidden_nodes,
           use_cuda = use_cuda,
           n_atoms = n_atoms,
-          load_models = True, path = "../gpaw_simulation/models")
+          load_models = True, path = "../gpaw_simulation/models_new")
 
 md_system = MDSimulation(N_atoms = n_atoms, cartesians = cartesians_initial, nn = nn,
                          mass = m_atom, rVan = rVan, symm_func_params = symm_func_params,
@@ -76,3 +78,4 @@ md_system.run_md_simulation(steps = 10)
 data = np.array(md_system.cartesians_history)
 np.savez("cartesians_history.npy.npz", x = data[:, :, 0], y = data[:, :, 1], z = data[:, :, 2])
 np.savez("forces_history.npy.npz", forces = np.array(md_system.forces_history))
+np.savez("velocities_history.npy.npz", velocities = np.array(md_system.velocities_history))

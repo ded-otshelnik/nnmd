@@ -25,7 +25,7 @@ class TrainAtomicDataset(AtomicDataset):
     def __init__(self, cartesians: torch.Tensor, symm_func_params: dict[str, float],
                  g: torch.Tensor, h: float, e_dft: torch.Tensor, f_dft: torch.Tensor) -> None:
                  
-        super().__init__(cartesians,symm_func_params, g, h)
+        super().__init__(cartesians, symm_func_params, g, h)
         self.g.requires_grad = True
         self.e_dft = e_dft
         self.f_dft = f_dft

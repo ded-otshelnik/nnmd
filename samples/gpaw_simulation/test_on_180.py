@@ -35,13 +35,13 @@ n_structs, n_atoms, cartesians, f_dft, e_dft = gpaw_parser(args.gpaw_file)
 print("done", f"Make dataset:", end = ' ', sep = '\n')
 
 # params of symmetric functions
-symm_func_params = {"r_cutoff": 12.0,
+symm_func_params = {"r_cutoff": 6.0,
                     "eta": 0.01,
                     "k": 1,
                     "rs": 0.5,
-                    "lambda": 1,
+                    "lambda": -1,
                     "xi": 3}
-h = 0.1
+h = 0.01
 
 cartesians = torch.as_tensor(cartesians, device = device, dtype = dtype)
 e_dft = torch.as_tensor(e_dft, device = device, dtype = dtype)
@@ -50,10 +50,10 @@ dataset = make_atomic_dataset(cartesians, symm_func_params, h, device)
 print("done")
 
 load_models = True
-path = 'models'
+path = 'models_new'
 
 input_nodes = 5
-hidden_nodes = [16, 8]
+hidden_nodes = [30, 30]
 
 print("Create an instance of NN and config its subnets:", end = ' ')
 net = Neural_Network()
@@ -69,17 +69,21 @@ print("done")
 print("Testing:", end = ' ')
 
 start = time.time()
-e_nn, f_nn = net.predict(dataset)
+test_loss, test_e_loss, test_f_loss = 0, 0, 0
+for cartesian, e_dft, f_dft in zip(cartesians, e_dft, f_dft):
+    test_e_nn, test_f_nn = net.predict(cartesian, symm_func_params, h)
+    loss = net.loss(test_e_nn, e_dft.unsqueeze(0), test_f_nn, f_dft)
+    test_loss += loss[0]
+    test_e_loss += loss[1]
+    test_f_loss+= loss[2]
 end = time.time()
 
-print("done", f"\nTesting sample size: {len(dataset)} ",
-      f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s",
-      sep = '\n')
+print("done", f"Testing sample size: {len(dataset)} ",
+        f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s",
+        sep = '\n')
 
-test_loss, test_e_loss, test_f_loss = net.loss(e_nn, e_dft, f_nn, f_dft)
-
-test_e_loss = test_e_loss.cpu().detach().numpy()
-test_f_loss = test_f_loss.cpu().detach().numpy()
-test_loss = test_loss.cpu().detach().numpy()
+test_e_loss = test_e_loss.cpu().detach().numpy() / n_structs
+test_f_loss = test_f_loss.cpu().detach().numpy() / n_structs
+test_loss = test_loss.cpu().detach().numpy() / n_structs
 
 print(f"test: RMSE E = {test_e_loss:.4f}, RMSE F = {test_f_loss:.4f}, RMSE total = {test_loss:.4f} eV")

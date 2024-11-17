@@ -1,5 +1,6 @@
 #include "cuda/symmetric_functions.hpp"
 #include "cuda/calculate_forces.hpp"
+#include "cuda/calculate_gdf.hpp"
 
 using namespace cuda;
 
@@ -34,9 +35,8 @@ void init_cuda_module(py::module_& module){
 
         Args
             cartesians: atomic positions
-            e_nn: actual calculated energies
             g: actual g values
-            nets: list of AtomicNNs
+            dE: energies gradients by functions G values
             r_cutoff: cutoff radius
             eta: parameter of symmetric functions
             rs: parameter of symmetric functions
@@ -45,9 +45,8 @@ void init_cuda_module(py::module_& module){
             h: step of coordinate-wise atom moving
         )pbdoc",
         py::arg("cartesians"),
-        py::arg("e_nn"),
         py::arg("g"),
-        py::arg("nets"),
+        py::arg("dE"),
         py::arg("r_cutoff"),
         py::arg("eta"),
         py::arg("rs"),
@@ -55,5 +54,22 @@ void init_cuda_module(py::module_& module){
         py::arg("lambda"),
         py::arg("xi"),
         py::arg("h")
+    );
+
+    module.def("calculate_gdf", &cuda::calculate_gdf, R"pbdoc(
+        Calculates gdf values for atomic structures
+
+        Args:
+            refs: reference atomic structures
+            num_refs: number of reference structures
+            num_targets: number of target structures
+            num_features: number of features
+            sigma: standard deviance value
+        )pbdoc",
+        py::arg("refs"),
+        py::arg("num_refs"),
+        py::arg("num_targets"),
+        py::arg("num_features"),
+        py::arg("sigma")
     );
 }
