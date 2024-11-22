@@ -3,12 +3,12 @@ import numpy as np
 
 import torch
 
-from ..nn import Neural_Network
+from ..nn import HDNN
 
 from tqdm import tqdm
 
 class MDSimulation:
-    def __init__(self, N_atoms: int, cartesians: torch.Tensor, nn: Neural_Network,
+    def __init__(self, N_atoms: int, cartesians: torch.Tensor, nn: HDNN,
                   mass: float, rVan, symm_func_params: dict, L: float, T: float, dt: float,
                   h = float, v_initial = torch.Tensor, a_initial = torch.Tensor):
             # self.log = open("md_simulation.log", "w+")

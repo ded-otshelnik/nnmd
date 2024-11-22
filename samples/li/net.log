@@ -1,0 +1,30 @@
+NNMD v0.1.0
+
+---Neural network parameters---
+device:                        cuda
+training epochs:               20
+batch size:                    100
+optimizer:                     Adam
+loss function:                 RMSELoss
+loss function coefficient:     1
+learning rate:                 0.1
+scheduler:                     ReduceLROnPlateau
+L2 regularization coefficient: 0.001
+
+----Atomic NNs parameters----
+input size (number of descriptors): 5
+hidden layers sizes:                [30, 30]
+mu:                                 1
+
+----Symmetry functions parameters----
+cutoff radius: 6.0
+eta:           0.01
+rs:            0.5
+k:             1
+lambda:        -1
+xi:            3
+
+Training sample size:   18972
+Validation sample size: 2371
+Epoch 1, training:   RMSE E = 4.079207e+00, RMSE F = 3.003925e-01, RMSE total = 4.379601e+00 eV
+Epoch 1: validation: RMSE E = 3.786157e-01, RMSE F = 5.386421e-02, RMSE total = 4.324799e-01 eV

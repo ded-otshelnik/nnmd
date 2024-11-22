@@ -1,5 +1,4 @@
 import argparse
-from calendar import c
 import numpy as np
 from ase.io import Trajectory
 

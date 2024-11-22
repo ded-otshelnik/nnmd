@@ -8,7 +8,7 @@ import torch
 
 import numpy as np
 
-from nnmd.nn import Neural_Network
+from nnmd.nn import HDNN
 from nnmd.md import MDSimulation
 
 import ase.data as ad
@@ -37,6 +37,7 @@ symm_func_params = {"r_cutoff": 6.0,
                     "rs": 0.5,
                     "lambda": -1,
                     "xi": 3}
+h = 0.01
 
 # mass of atom of Copper (in atomic mass units)
 m_atom = ad.atomic_masses[ad.atomic_numbers['Cu']]
@@ -45,7 +46,6 @@ T = 300.0
 # Van der Waals radius
 rVan = 1.84
 dt = 10e-15
-h = 5 * 10e-3
 
 # start data: initial positions, forces (=> acceleration) and velocity
 cartesians = torch.as_tensor(np.load("cartesians_actual.npy.npz")['cartesians'], dtype = dtype)
@@ -61,12 +61,12 @@ a_initial = forces[start] / m_atom
 # v_initial = torch.as_tensor(np.log(np.random.uniform(0.5, 2.5, (n_atoms, 3))) * Vm, dtype = dtype)
 # a_initial = torch.zeros((n_atoms, 3), dtype = dtype)
 
-nn = Neural_Network()
+nn = HDNN()
 hidden_nodes = [30, 30]
 nn.config(hidden_nodes = hidden_nodes,
           use_cuda = use_cuda,
           n_atoms = n_atoms,
-          load_models = True, path = "../gpaw_simulation/models_new")
+          load_models = True, path = "../li/checkpoint.pt")
 
 md_system = MDSimulation(N_atoms = n_atoms, cartesians = cartesians_initial, nn = nn,
                          mass = m_atom, rVan = rVan, symm_func_params = symm_func_params,

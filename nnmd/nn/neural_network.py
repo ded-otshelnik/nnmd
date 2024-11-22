@@ -4,6 +4,7 @@
 
 # must be imported before C++ extention
 # for compatibility
+import math
 import torch
 from torch import nn
 torch.manual_seed(0)
@@ -13,11 +14,12 @@ from torch.utils.data import DataLoader
 import nnmd_cpp
 
 from . import AtomicNN
-from .dataset import AtomicDataset
+from .dataset import AtomicDataset, TrainAtomicDataset
 from ..util._logger import Logger
 from ..util.calculate_g import calculate_g
 
 import time
+from tqdm import tqdm
 
 class RMSELoss(torch.nn.Module):
     def __init__(self):
@@ -27,16 +29,16 @@ class RMSELoss(torch.nn.Module):
     def forward(self, yhat, y):
         return torch.sqrt(self.mse(yhat, y))
 
-class Neural_Network(torch.nn.Module):
+class HDNN(torch.nn.Module):
     """Class implement high-dimentional NN for system of atoms. \n
     For each atom it defines special Atomic NN which provide machine-trained potentials.
     """
     def __init__(self) -> None:
-        """Init method of Neural_Network class
+        """Init method of HDNN class
         """
         super().__init__()
     
-    def _describe_training(self, dataset, batch_size, epochs):
+    def _describe_training(self, symm_func_params, train_dataset_size, val_dataset_size, batch_size, epochs):
         from importlib.metadata import version
 
         module_name = "nnmd"
@@ -57,13 +59,14 @@ class Neural_Network(torch.nn.Module):
         self.net_log.info(f"hidden layers sizes:                {self.hidden_nodes}")
         self.net_log.info(f"mu:                                 {self.mu}\n")
         self.net_log.info(f"----Symmetry functions parameters----")
-        self.net_log.info(f"cutoff radius: {dataset.symm_func_params['r_cutoff']}")
-        self.net_log.info(f"eta:           {dataset.symm_func_params['eta']}")
-        self.net_log.info(f"rs:            {dataset.symm_func_params['rs']}")
-        self.net_log.info(f"k:             {dataset.symm_func_params['k']}")
-        self.net_log.info(f"lambda:        {dataset.symm_func_params['lambda']}")
-        self.net_log.info(f"xi:            {dataset.symm_func_params['xi']}\n")
-        self.net_log.info(f"Training sample size: {len(dataset)}")
+        self.net_log.info(f"cutoff radius: {symm_func_params['r_cutoff']}")
+        self.net_log.info(f"eta:           {symm_func_params['eta']}")
+        self.net_log.info(f"rs:            {symm_func_params['rs']}")
+        self.net_log.info(f"k:             {symm_func_params['k']}")
+        self.net_log.info(f"lambda:        {symm_func_params['lambda']}")
+        self.net_log.info(f"xi:            {symm_func_params['xi']}\n")
+        self.net_log.info(f"Training sample size:   {train_dataset_size}")
+        self.net_log.info(f"Validation sample size: {val_dataset_size}")
 
 
     def config(self, hidden_nodes: list[int], use_cuda: bool, n_atoms: int,
@@ -125,7 +128,7 @@ class Neural_Network(torch.nn.Module):
         # if using pre-trained models is needed
         if load_models:
             # load params to current AtomicNN instance
-            self.net.load_state_dict(torch.load(kwargs['path'] + f"/atomic_nn.pt"))         
+            self.net.load_state_dict(torch.load(kwargs['path']))         
         self.net = self.net.to(device = self.device)
 
         # Atomic NN optimizer
@@ -133,7 +136,9 @@ class Neural_Network(torch.nn.Module):
         # scheduler for Atomic NN optimizer
         self.sched = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, factor = 0.9, patience = 15)
     
-    def fit(self, dataset: AtomicDataset, batch_size: int, epochs: int):
+    def fit(self, train_dataset: TrainAtomicDataset,
+             val_dataset: TrainAtomicDataset,
+             batch_size: int, epochs: int):
         """Train method of neural network.
 
         Args:
@@ -141,29 +146,31 @@ class Neural_Network(torch.nn.Module):
             batch_size (int): size of batch
             epochs (int): amount of training epochs
         """
-        num_batches = len(dataset.cartesians) // batch_size if len(dataset.cartesians) > batch_size else 1
-        train_loader = DataLoader(dataset, batch_size = batch_size)
-        symm_funcs_params = dataset.symm_func_params
+        train_num_batches = math.ceil(len(train_dataset) / batch_size) if len(train_dataset) > batch_size else 1
+        val_num_batches = math.ceil(len(val_dataset) / batch_size) if len(val_dataset) > batch_size else 1
+
+        train_loader = DataLoader(train_dataset, batch_size = batch_size)
+        val_loader = DataLoader(val_dataset, batch_size = batch_size)
 
         # output log files
         self.net_log = Logger.get_logger("net train info", "net.log")
         self.time_log = Logger.get_logger("net time info", "time.log")
 
         # save package/environment/nn info to log file
-        self._describe_training(dataset, batch_size, epochs)
+        self._describe_training(train_dataset.symm_func_params, len(train_dataset), len(val_dataset), batch_size, epochs)
 
         # run training
         for epoch in range(epochs):
+            print(f"epoch {epoch + 1}:")
             start = time.time()
-            print(f"epoch {epoch + 1}:" , end = ' ')
-
-            self._train_loop(epoch, train_loader, num_batches, symm_funcs_params, dataset.h)
-
+            print("Training:")
+            self._train_loop(epoch, train_loader, train_num_batches, train_dataset.symm_func_params, train_dataset.h)
+            print("Validation:")
+            self._validate(epoch, val_loader, val_num_batches, val_dataset.symm_func_params, val_dataset.h)
+                
             self.time_log.info(f"epoch {epoch + 1} elapsed: {(time.time() - start):.3f} s")
-            print("done")
 
-    def _train_loop(self, epoch: int, train_loader: DataLoader, num_batches: int,
-                    symm_func_params: dict[str, float], h: float):
+    def _train_loop(self, epoch: int, train_loader: DataLoader, num_batches: int, symm_func_params: dict[str, float], h: float):
         """Train loop method. 
 
         Args:
@@ -173,18 +180,21 @@ class Neural_Network(torch.nn.Module):
             symm_func_params (dict[str, float]): parameters of symmetric functions
             h (float): step of coordinate-wise moving (used in forces caclulations).
         """
+        # set model to training mode
         self.net.train()
         # epoch losses: energies, forces and total
         e_loss = torch.zeros(1, device = self.device).squeeze()
         f_loss = torch.zeros(1, device = self.device).squeeze()
         loss = torch.zeros(1, device = self.device).squeeze()
 
-        for batch, data in enumerate(train_loader):
+        self.time_log.info(f"Epoch {epoch + 1}\nTraining")
+
+        for batch, data in tqdm(enumerate(train_loader)):
             # input data in batch:
             # positions (necessary in forces calculation),
             # g values (nn inputs),
             # energies and forces (nn targets)
-            cartesians, g, e_dft, f_dft, = data
+            cartesians, g, energy, forces = data
             
             start = time.time()
             # calculate energies using NN
@@ -200,16 +210,14 @@ class Neural_Network(torch.nn.Module):
                                                symm_func_params['lambda'],
                                                symm_func_params['xi'],
                                                h)
-            
             end = time.time()
-            self.time_log.info(f"Epoch {epoch}, batch {batch}, forward: {(end - start):.5f} s")
-
-            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.squeeze(2), e_dft, f_nn, f_dft)
+            self.time_log.info(f"Epoch {epoch + 1}, batch {batch + 1}, forward: {(end - start):.5f} s")
+            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum(dim = 1).squeeze(1), energy, f_nn, forces)
 
             start = time.time()
             batch_loss.backward(retain_graph = True)
             end = time.time()
-            self.time_log.info(f"Epoch {epoch}, batch {batch}, backpropagation: {(end - start):.3f} s")
+            self.time_log.info(f"Epoch {epoch + 1}, batch {batch + 1}, backpropagation: {(end - start):.3f} s")
 
             self.optim.step()
             self.sched.step(batch_loss)
@@ -233,26 +241,89 @@ class Neural_Network(torch.nn.Module):
         loss = loss.cpu().detach().numpy()
 
         # make info message about losses and write to log file
-        loss_info = f"iter: {epoch + 1}: RMSE E = {e_loss:e}, RMSE F = {f_loss:e}, RMSE total = {loss:e} eV"
-        self.net_log.info(loss_info)
+        loss_info = f"RMSE E = {e_loss:e}, RMSE F = {f_loss:e}, RMSE total = {loss:e} eV"
+        self.net_log.info(f"Epoch {epoch + 1}, training:   " + loss_info)
+
+    def _validate(self, epoch: int, val_loader: DataLoader, num_batches: int, symm_func_params: dict[str, float], h: float):
+        """Train loop method. 
+
+        Args:
+            epoch (int): current training epoch
+            train_loader (DataLoader): loads data into the pipeline for training
+            batch_size (int): size of batch
+            symm_func_params (dict[str, float]): parameters of symmetric functions
+            h (float): step of coordinate-wise moving (used in forces caclulations).
+        """
+        self.net.eval()
+        # epoch losses: energies, forces and total
+        e_loss = torch.zeros(1, device = self.device).squeeze()
+        f_loss = torch.zeros(1, device = self.device).squeeze()
+        loss = torch.zeros(1, device = self.device).squeeze()
+        self.time_log.info(f"Validation: ")
+        for batch, data in tqdm(enumerate(val_loader)):
+            # input data in batch:
+            # positions (necessary in forces calculation),
+            # g values (nn inputs),
+            # energies and forces (nn targets)
+            cartesians, g, energy, forces = data
+            
+            start = time.time()
+            # calculate energies using NN
+            # and gradients by G values using Autograd Engine
+            e_nn = self.net(g)
+            dE = torch.autograd.grad(torch.sum(e_nn), g, create_graph = True)[0]
+            with torch.no_grad():
+                f_nn = self._nnmd.calculate_forces(cartesians, g, dE,
+                                                symm_func_params['r_cutoff'],
+                                                symm_func_params['eta'],
+                                                symm_func_params['rs'],
+                                                symm_func_params['k'],
+                                                symm_func_params['lambda'],
+                                                symm_func_params['xi'],
+                                                h).squeeze(0)
+            
+            end = time.time()
+            self.time_log.info(f"Epoch {epoch + 1}, batch {batch}, forward: {(end - start):.5f} s")
+            
+            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum(dim = 1).squeeze(1), energy, f_nn, forces)
+
+            self.time_log.info(f"Epoch {epoch + 1}, batch {batch}, backpropagation: {(end - start):.3f} s")
+
+            loss += batch_loss
+            e_loss += batch_e_loss
+            f_loss += batch_f_loss
+
+        # normalize total epoch losses
+        f_loss /= num_batches
+        e_loss /= num_batches
+        loss /= num_batches
+
+        # convert tensors to numpy types for logging
+        e_loss = e_loss.cpu().detach().numpy()
+        f_loss = f_loss.cpu().detach().numpy()
+        loss = loss.cpu().detach().numpy()
+
+        # make info message about losses and write to log file
+        loss_info = f"RMSE E = {e_loss:e}, RMSE F = {f_loss:e}, RMSE total = {loss:e} eV"
+        self.net_log.info(f"Epoch {epoch + 1}: validation: " + loss_info)
              
-    def loss(self, e_nn: torch.Tensor, e_dft: torch.Tensor,
-                   f_nn: torch.Tensor, f_dft: torch.Tensor) -> torch.Tensor:
+    def loss(self, e_nn: torch.Tensor, energies: torch.Tensor,
+                   f_nn: torch.Tensor, forces: torch.Tensor) -> torch.Tensor:
         """Gets loss of calculations.
 
         Args:
             e_nn (torch.Tensor): calculated energy
-            e_dft (torch.Tensor): target energy
+            energy (torch.Tensor): target energy
             f_nn (torch.Tensor): calculated forces
-            f_dft (torch.Tensor): target forces
+            forces (torch.Tensor): target forces
         """
-        E_loss = self.criterion(e_nn.sum(dim = 1), e_dft)
-        F_loss = self.criterion(f_nn, f_dft) * (self.mu / 3)
+        E_loss = self.criterion(e_nn, energies)
+        F_loss = self.criterion(f_nn, forces) * (self.mu / 3)
         loss = E_loss + F_loss
         return loss, E_loss, F_loss
 
     def predict(self, cartesians: torch.Tensor, symm_func_params: dict[str, float],
-                 h: float) -> tuple[torch.Tensor]:
+                 h: float) -> tuple[torch.Tensor, torch.Tensor]:
         """Calculates energy and forces for structs of atoms
 
         Args:
@@ -281,7 +352,7 @@ class Neural_Network(torch.nn.Module):
         return e_nn, f_nn
             
     def save_model(self, path: str):
-        """Saves trained models to files.
-        It makes possible to load pre-trained nets for calculations
+        """Saves trained model to file.
+        It makes possible to load pre-trained net for calculations
         """
-        torch.save(self.net.state_dict(), f'{path}/atomic_nn.pt')
+        torch.save(self.net.state_dict(), path)
