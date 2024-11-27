@@ -15,7 +15,6 @@ from nnmd.nn import HDNN
 from nnmd.nn.dataset import make_atomic_dataset
 from nnmd.util import traj_parser, train_val_test_split
 
-from torch.utils.data import DataLoader
 from torch.utils.data.dataset import TensorDataset
 
 # import warnings
@@ -41,9 +40,9 @@ dtype = torch.float32
 
 print("Get info from traj simulation: ", end = '')
 # cartesians, forces, energies, velocities = traj_parser(args.data_file)
-cartesians = np.load("cartesians_actual.npy.npz")['cartesians'].tolist()
-energies = np.load("energies_actual.npy.npz")['energies'].tolist()
-forces = np.load("forces_actual.npy.npz")['forces'].tolist()
+cartesians = np.load("cartesians_actual.npy.npz")['cartesians'][:1000].tolist()
+energies = np.load("energies_actual.npy.npz")['energies'][:1000].tolist()
+forces = np.load("forces_actual.npy.npz")['forces'][:1000].tolist()
 print("done")
 
 print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
@@ -52,10 +51,10 @@ print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
 symm_func_params = {"r_cutoff": 6.0,
                     "eta": 0.01,
                     "k": 1,
-                    "rs": 0.5,
+                    "rs": 0.9313,
                     "lambda": -1,
-                    "xi": 3}
-h = 0.01
+                    "xi": 0.345}
+h = 1
 
 n_structs = len(cartesians)
 n_atoms = len(cartesians[0])
@@ -81,11 +80,11 @@ print("done")
 # params that define what NN will do 
 # load pre-trained models
 load_models = False
-path = 'models'
+path = 'models_test'
 # train model
 train = True
 # save model params as files in <path> directory
-save = False
+save = True
 # test model
 test = True
 

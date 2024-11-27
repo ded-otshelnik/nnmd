@@ -26,5 +26,45 @@ xi:            3
 
 Training sample size:   18972
 Validation sample size: 2371
-Epoch 1, training:   RMSE E = 4.079207e+00, RMSE F = 3.003925e-01, RMSE total = 4.379601e+00 eV
-Epoch 1: validation: RMSE E = 3.786157e-01, RMSE F = 5.386421e-02, RMSE total = 4.324799e-01 eV
+Epoch 1, training:   RMSE E = 3.994182e+00, RMSE F = 3.022484e-01, RMSE total = 4.296431e+00 eV
+Epoch 1: validation: RMSE E = 3.487955e-01, RMSE F = 5.394258e-02, RMSE total = 4.027381e-01 eV
+Epoch 2, training:   RMSE E = 3.461827e-01, RMSE F = 5.395746e-02, RMSE total = 4.001401e-01 eV
+Epoch 2: validation: RMSE E = 3.404452e-01, RMSE F = 5.397847e-02, RMSE total = 3.944237e-01 eV
+Epoch 3, training:   RMSE E = 3.447599e-01, RMSE F = 5.388549e-02, RMSE total = 3.986455e-01 eV
+Epoch 3: validation: RMSE E = 3.421539e-01, RMSE F = 5.396458e-02, RMSE total = 3.961185e-01 eV
+Epoch 4, training:   RMSE E = 3.383713e-01, RMSE F = 5.384213e-02, RMSE total = 3.922134e-01 eV
+Epoch 4: validation: RMSE E = 3.369795e-01, RMSE F = 5.391103e-02, RMSE total = 3.908905e-01 eV
+Epoch 5, training:   RMSE E = 3.371890e-01, RMSE F = 5.383807e-02, RMSE total = 3.910270e-01 eV
+Epoch 5: validation: RMSE E = 3.374461e-01, RMSE F = 5.390574e-02, RMSE total = 3.913518e-01 eV
+Epoch 6, training:   RMSE E = 3.365588e-01, RMSE F = 5.382654e-02, RMSE total = 3.903853e-01 eV
+Epoch 6: validation: RMSE E = 3.361715e-01, RMSE F = 5.390948e-02, RMSE total = 3.900809e-01 eV
+Epoch 7, training:   RMSE E = 3.364293e-01, RMSE F = 5.382241e-02, RMSE total = 3.902517e-01 eV
+Epoch 7: validation: RMSE E = 3.361250e-01, RMSE F = 5.391663e-02, RMSE total = 3.900416e-01 eV
+Epoch 8, training:   RMSE E = 3.363598e-01, RMSE F = 5.381906e-02, RMSE total = 3.901790e-01 eV
+Epoch 8: validation: RMSE E = 3.360991e-01, RMSE F = 5.391137e-02, RMSE total = 3.900105e-01 eV
+Epoch 9, training:   RMSE E = 3.363363e-01, RMSE F = 5.382410e-02, RMSE total = 3.901606e-01 eV
+Epoch 9: validation: RMSE E = 3.360953e-01, RMSE F = 5.390378e-02, RMSE total = 3.899990e-01 eV
+Epoch 10, training:   RMSE E = 3.363272e-01, RMSE F = 5.382669e-02, RMSE total = 3.901540e-01 eV
+Epoch 10: validation: RMSE E = 3.360953e-01, RMSE F = 5.391371e-02, RMSE total = 3.900089e-01 eV
+Epoch 11, training:   RMSE E = 3.363239e-01, RMSE F = 5.382123e-02, RMSE total = 3.901450e-01 eV
+Epoch 11: validation: RMSE E = 3.360952e-01, RMSE F = 5.392236e-02, RMSE total = 3.900176e-01 eV
+Epoch 12, training:   RMSE E = 3.363228e-01, RMSE F = 5.382459e-02, RMSE total = 3.901474e-01 eV
+Epoch 12: validation: RMSE E = 3.360952e-01, RMSE F = 5.391355e-02, RMSE total = 3.900087e-01 eV
+Epoch 13, training:   RMSE E = 3.363226e-01, RMSE F = 5.382410e-02, RMSE total = 3.901466e-01 eV
+Epoch 13: validation: RMSE E = 3.360953e-01, RMSE F = 5.390684e-02, RMSE total = 3.900021e-01 eV
+Epoch 14, training:   RMSE E = 3.363226e-01, RMSE F = 5.382472e-02, RMSE total = 3.901471e-01 eV
+Epoch 14: validation: RMSE E = 3.360953e-01, RMSE F = 5.390455e-02, RMSE total = 3.899998e-01 eV
+Epoch 15, training:   RMSE E = 3.363225e-01, RMSE F = 5.382680e-02, RMSE total = 3.901494e-01 eV
+Epoch 15: validation: RMSE E = 3.360953e-01, RMSE F = 5.392044e-02, RMSE total = 3.900158e-01 eV
+Epoch 16, training:   RMSE E = 3.363226e-01, RMSE F = 5.382244e-02, RMSE total = 3.901451e-01 eV
+Epoch 16: validation: RMSE E = 3.360954e-01, RMSE F = 5.391800e-02, RMSE total = 3.900135e-01 eV
+Epoch 17, training:   RMSE E = 3.363227e-01, RMSE F = 5.382032e-02, RMSE total = 3.901429e-01 eV
+Epoch 17: validation: RMSE E = 3.360953e-01, RMSE F = 5.390378e-02, RMSE total = 3.899991e-01 eV
+Epoch 18, training:   RMSE E = 3.363228e-01, RMSE F = 5.382292e-02, RMSE total = 3.901455e-01 eV
+Epoch 18: validation: RMSE E = 3.360953e-01, RMSE F = 5.391787e-02, RMSE total = 3.900132e-01 eV
+Epoch 19, training:   RMSE E = 3.363227e-01, RMSE F = 5.382699e-02, RMSE total = 3.901495e-01 eV
+Epoch 19: validation: RMSE E = 3.360954e-01, RMSE F = 5.389619e-02, RMSE total = 3.899916e-01 eV
+Epoch 20, training:   RMSE E = 3.363228e-01, RMSE F = 5.381885e-02, RMSE total = 3.901415e-01 eV
+Epoch 20: validation: RMSE E = 3.360953e-01, RMSE F = 5.391313e-02, RMSE total = 3.900084e-01 eV
+Testing sample size: 2372
+Testing: RMSE E = 2.712745e-01, RMSE F = 5.311667e-02, RMSE total = 3.243913e-01 eV

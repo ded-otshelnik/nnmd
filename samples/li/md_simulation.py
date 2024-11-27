@@ -37,43 +37,41 @@ symm_func_params = {"r_cutoff": 6.0,
                     "rs": 0.5,
                     "lambda": -1,
                     "xi": 3}
-h = 0.01
+h = 10e-1
 
-# mass of atom of Copper (in atomic mass units)
+# mass of atom (in atomic mass units)
 m_atom = ad.atomic_masses[ad.atomic_numbers['Li']]
 # temperature of system (in Kelvin)
 T = 300.0
+# size of the box
+L = 9.0
 # Van der Waals radius
-rVan = 2.74
-dt = 10e-15
+rVan = 1.44
+dt = 10e-3
 
 # start data: initial positions, forces (=> acceleration) and velocity
-cartesians = torch.as_tensor(np.load("cartesians_actual.npy.npz")['cartesians'], dtype = dtype)
-forces = torch.as_tensor(np.load("forces_actual.npy.npz")['forces'], dtype = dtype)
+cartesians = np.load("cartesians_actual.npy.npz")['cartesians']
+forces = np.load("forces_actual.npy.npz")['forces']
 
-start = int(0.8 * len(cartesians))
-v_initial = torch.as_tensor(np.load("velocities_actual.npy.npz")['velocities'][start], dtype = dtype)
+start = 0
+v_initial = np.load("velocities_actual.npy.npz")['velocities'][start]
 cartesians_initial = cartesians[start]
 n_atoms = cartesians_initial.shape[0]
 a_initial = forces[start] / m_atom
-
-# Vm = np.sqrt(8 * 8.314462 * T / (np.pi * m_atom))
-# v_initial = torch.as_tensor(np.log(np.random.uniform(0.5, 2.5, (n_atoms, 3))) * Vm, dtype = dtype)
-# a_initial = torch.zeros((n_atoms, 3), dtype = dtype)
 
 nn = HDNN()
 hidden_nodes = [30, 30]
 nn.config(hidden_nodes = hidden_nodes,
           use_cuda = use_cuda,
           n_atoms = n_atoms,
-          load_models = True, path = "../li/checkpoint.pt")
+          load_models = True, path = "../li/models/atomic_nn_Li.pt")
 
 md_system = MDSimulation(N_atoms = n_atoms, cartesians = cartesians_initial, nn = nn,
                          mass = m_atom, rVan = rVan, symm_func_params = symm_func_params,
-                         L = h, T = T, dt = dt, h = h, v_initial = v_initial, a_initial = a_initial)
+                         L = L, T = T, dt = dt, h = h, v_initial = v_initial, a_initial = a_initial)
 
 # MD simulation
-md_system.run_md_simulation(steps = 100)
+md_system.run_md_simulation(steps = 600)
 
 data = np.array(md_system.cartesians_history)
 np.savez("cartesians_history.npy.npz", x = data[:, :, 0], y = data[:, :, 1], z = data[:, :, 2])

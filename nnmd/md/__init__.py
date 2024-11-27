@@ -1,1 +1,1 @@
-from .verle import MDSimulation
+from .verlet import MDSimulation
