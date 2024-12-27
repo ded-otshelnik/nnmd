@@ -110,7 +110,7 @@ print("done")
 try:
     if train:
         batch_size = 100
-        epochs = 20
+        epochs = 1000
 
         start = time.time()
         net.fit(train_dataset, val_dataset, batch_size, epochs)

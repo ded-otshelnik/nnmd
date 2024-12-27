@@ -7,27 +7,26 @@ import numpy as np
 from ase.io import Trajectory
 
 def traj_parser(traj_file: str) -> tuple[np.ndarray, np.ndarray,
-                                                np.ndarray, np.ndarray]:
+                                         np.ndarray, np.ndarray]:
     """Extracts positions and forces from ASE trajectory file
 
     """
     traj = Trajectory(traj_file)
+
+    # for MD will be extracted only 4 types of characteristics 
     cartesians = []
     energies = []
     forces = []
     velocities = []
+
+    # collect necessary data from each atomic structure
     for atoms in traj:
         cartesians.append(atoms.positions)
         energies.append(atoms.get_total_energy())
         forces.append(atoms.get_forces())
         velocities.append(atoms.get_velocities())
 
-    cartesians = np.array(cartesians)
-    forces = np.array(forces)
-    energies = np.array(energies)
-    velocities = np.array(velocities)
-
-    return cartesians, forces, energies, velocities
+    return np.array(cartesians), np.array(forces), np.array(energies), np.array(velocities)
 
 def gpaw_parser(filename, encoding = 'utf-8') -> Tuple[int, int, list, list, list]:
     """Parse info of gpaw simulation
@@ -36,7 +35,7 @@ def gpaw_parser(filename, encoding = 'utf-8') -> Tuple[int, int, list, list, lis
         filename: file of gpaw simulation
         encoding (str, optional): Defaults to 'utf-8'.
     """
-    with open(filename, encoding=encoding) as file:
+    with open(filename, encoding = encoding) as file:
         # flags that marks positions and forces
         positions_marker, forces_marker = False, False
         cartesians, forces, energies = [], [], [],

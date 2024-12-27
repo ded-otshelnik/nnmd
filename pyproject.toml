@@ -83,14 +83,14 @@ env_list =
 skipsdist = true
 
 [testenv:pytest]
-description = run the tests with pytest
+description = run pytest for package
 deps =
     pytest
 commands =
     pytest {tty:--color=yes} {posargs} -v
 
 [testenv:mypy]
-description = run the tests with pytest and mypy
+description = run mypy for package
 deps =
     mypy
 commands =

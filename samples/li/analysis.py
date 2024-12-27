@@ -14,6 +14,9 @@ with open("net.log",'r') as file:
     while line:
         try:
             # get numbers in scientific format (like 1.2e+3 = 1200.0)
+            if (line.find("training") != -1):
+                line = file.readline()    
+                continue
             info = re.findall(r'\d+.\d+e[+-]+\d+', line)
 
             if len(info) != 0:
@@ -30,17 +33,28 @@ with open("net.log",'r') as file:
             traceback.print_exc()
             exit(1)
 
-fig, ax = plt.subplots(constrained_layout = True)
+fig, ax = plt.subplots(constrained_layout = True, figsize = (10, 6))
 ax.set_title("Среднеквадратичная ошибка (СКО) при обучении")
 
 # the main plot
-ax.plot(iterations[10:], e_nn_rmse[10:], color = 'black', marker = 'x', label = "СКО, потенциалы")
-ax.plot(iterations[10:], f_nn_rmse[10:], color = 'red', marker = 'x',label = "СКО, силы на атомах")
-ax.plot(iterations[10:], total_nn_rmse[10:], color = 'blue', marker = 'x', label = "Полное СКО")
+ax.plot(iterations[50:], e_nn_rmse[50:], color = 'red', marker = 'o', label = "СКО, потенциалы")
 
 ax.set_xlabel("Итерации", fontsize = 15, color = 'black')
 ax.set_ylabel("СКО (эВ/\u212b)", fontsize = 15, color = 'black')
 ax.legend()
 
 # save as png file
-fig.savefig("plot.png")
+fig.savefig("plot_potentials.png")
+
+fig, ax = plt.subplots(constrained_layout = True, figsize = (10, 6))
+ax.set_title("Среднеквадратичная ошибка (СКО) при обучении")
+
+# the main plot
+ax.plot(iterations[50:], f_nn_rmse[50:], color = 'red', marker = 'o',label = "СКО, силы на атомах")
+
+ax.set_xlabel("Итерации", fontsize = 15, color = 'black')
+ax.set_ylabel("СКО (эВ/\u212b)", fontsize = 15, color = 'black')
+ax.legend()
+
+# save as png file
+fig.savefig("plot_forces.png")

@@ -134,7 +134,7 @@ class HDNN(torch.nn.Module):
         # Atomic NN optimizer
         self.optim = torch.optim.Adam(self.net.parameters(), lr = self.learning_rate, weight_decay = self.l2_regularization)
         # scheduler for Atomic NN optimizer
-        self.sched = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, factor = 0.9, patience = 15)
+        self.sched = torch.optim.lr_scheduler.L(self.optim, factor = 0.9, patience = 15)
     
     def fit(self, train_dataset: TrainAtomicDataset,
              val_dataset: TrainAtomicDataset,
