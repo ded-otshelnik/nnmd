@@ -134,8 +134,13 @@ class HDNN(torch.nn.Module):
         # Atomic NN optimizer
         self.optim = torch.optim.Adam(self.net.parameters(), lr = self.learning_rate, weight_decay = self.l2_regularization)
         # scheduler for Atomic NN optimizer
-        self.sched = torch.optim.lr_scheduler.L(self.optim, factor = 0.9, patience = 15)
-    
+        self.sched = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, mode = 'min',
+                                                                factor = 0.5, patience = 10, verbose = True)
+
+    def _get_lr(self):
+        for param_group in self.optim.param_groups:
+            return param_group['lr']
+        
     def fit(self, train_dataset: TrainAtomicDataset,
              val_dataset: TrainAtomicDataset,
              batch_size: int, epochs: int):
@@ -149,9 +154,9 @@ class HDNN(torch.nn.Module):
         train_num_batches = math.ceil(len(train_dataset) / batch_size) if len(train_dataset) > batch_size else 1
         val_num_batches = math.ceil(len(val_dataset) / batch_size) if len(val_dataset) > batch_size else 1
 
-        train_loader = DataLoader(train_dataset, batch_size = batch_size)
-        val_loader = DataLoader(val_dataset, batch_size = batch_size)
-
+        train_loader = DataLoader(train_dataset, batch_size = batch_size, pin_memory = True, num_workers = 2)
+        val_loader = DataLoader(val_dataset, batch_size = batch_size, pin_memory = True, num_workers = 2)
+        
         # output log files
         self.net_log = Logger.get_logger("net train info", "net.log")
         self.time_log = Logger.get_logger("net time info", "time.log")
@@ -160,6 +165,7 @@ class HDNN(torch.nn.Module):
         self._describe_training(train_dataset.symm_func_params, len(train_dataset), len(val_dataset), batch_size, epochs)
 
         # run training
+        curr_lr = self._get_lr()
         for epoch in range(epochs):
             print(f"epoch {epoch + 1}:")
             start = time.time()
@@ -167,8 +173,11 @@ class HDNN(torch.nn.Module):
             self._train_loop(epoch, train_loader, train_num_batches, train_dataset.symm_func_params, train_dataset.h)
             print("Validation:")
             self._validate(epoch, val_loader, val_num_batches, val_dataset.symm_func_params, val_dataset.h)
-                
-            self.time_log.info(f"epoch {epoch + 1} elapsed: {(time.time() - start):.3f} s")
+            # Print the learning rate at the end of each epoch
+            if self._get_lr() != curr_lr:
+                curr_lr = self._get_lr()
+                self.net_log.info(f"Learning rate changed to {curr_lr}")
+                self.time_log.info(f"epoch {epoch + 1} elapsed: {(time.time() - start):.3f} s")
 
     def _train_loop(self, epoch: int, train_loader: DataLoader, num_batches: int, symm_func_params: dict[str, float], h: float):
         """Train loop method. 
@@ -194,22 +203,20 @@ class HDNN(torch.nn.Module):
             # positions (necessary in forces calculation),
             # g values (nn inputs),
             # energies and forces (nn targets)
-            cartesians, g, energy, forces = data
+            cartesians, g, dG, energy, forces = data
             
             start = time.time()
+
             # calculate energies using NN
             # and gradients by G values using Autograd Engine
             e_nn = self.net(g)
             dE = torch.autograd.grad(torch.sum(e_nn), g, create_graph = True)[0]
+            print("dE: ", dE)
+            print("dG: ", dG)
 
-            f_nn = self._nnmd.calculate_forces(cartesians, g, dE,
-                                               symm_func_params['r_cutoff'],
-                                               symm_func_params['eta'],
-                                               symm_func_params['rs'],
-                                               symm_func_params['k'],
-                                               symm_func_params['lambda'],
-                                               symm_func_params['xi'],
-                                               h)
+            f_nn = torch.mul(torch.sum(dG, dim = 2), torch.sum(dE, dim = 2).unsqueeze(2))
+            print("f_nn: ", f_nn)
+
             end = time.time()
             self.time_log.info(f"Epoch {epoch + 1}, batch {batch + 1}, forward: {(end - start):.5f} s")
             batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum(dim = 1).squeeze(1), energy, f_nn, forces)
@@ -220,7 +227,8 @@ class HDNN(torch.nn.Module):
             self.time_log.info(f"Epoch {epoch + 1}, batch {batch + 1}, backpropagation: {(end - start):.3f} s")
 
             self.optim.step()
-            self.sched.step(batch_loss)
+            # if self.sched:
+            #     self.sched.step(batch_loss)
 
             # reset params grad to None
             for param in self.net.parameters():
@@ -265,7 +273,7 @@ class HDNN(torch.nn.Module):
             # positions (necessary in forces calculation),
             # g values (nn inputs),
             # energies and forces (nn targets)
-            cartesians, g, energy, forces = data
+            cartesians, g, dG, energy, forces = data
             
             start = time.time()
             # calculate energies using NN
@@ -273,14 +281,7 @@ class HDNN(torch.nn.Module):
             e_nn = self.net(g)
             dE = torch.autograd.grad(torch.sum(e_nn), g, create_graph = True)[0]
             with torch.no_grad():
-                f_nn = self._nnmd.calculate_forces(cartesians, g, dE,
-                                                symm_func_params['r_cutoff'],
-                                                symm_func_params['eta'],
-                                                symm_func_params['rs'],
-                                                symm_func_params['k'],
-                                                symm_func_params['lambda'],
-                                                symm_func_params['xi'],
-                                                h).squeeze(0)
+                f_nn = torch.mul(torch.sum(dG, dim = 2), torch.sum(dE, dim = 2).unsqueeze(2))
             
             end = time.time()
             self.time_log.info(f"Epoch {epoch + 1}, batch {batch}, forward: {(end - start):.5f} s")
@@ -337,18 +338,17 @@ class HDNN(torch.nn.Module):
         # disable gradient computation (we don't train NN)
         g = calculate_g(cartesians, self.device, symm_func_params).squeeze(0)
         g.requires_grad = True
+        dG = self._nnmd.calculate_dG(cartesians, g.unsqueeze(0), symm_func_params['r_cutoff'],
+                                     symm_func_params['eta'],
+                                     symm_func_params['rs'],
+                                     symm_func_params['k'],
+                                     symm_func_params['lambda'],
+                                     symm_func_params['xi'], h).squeeze(0)
         # calculate energies using NN
         e_nn = self.net(g)
         dE = torch.autograd.grad(torch.sum(e_nn), g, retain_graph = True)[0]
         with torch.no_grad():
-            #f_nn = self._nnmd.calculate_forces(cartesians, e_nn.unsqueeze(0), g.unsqueeze(0), self.atomic_nn_set,
-            f_nn = self._nnmd.calculate_forces(cartesians, g.unsqueeze(0), dE,
-                                               symm_func_params['r_cutoff'],
-                                               symm_func_params['eta'],
-                                               symm_func_params['rs'],
-                                               symm_func_params['k'],
-                                               symm_func_params['lambda'],
-                                               symm_func_params['xi'], h).squeeze(0)
+            f_nn = torch.mul(torch.sum(dG, dim = 1), torch.sum(dE, dim = 1).unsqueeze(1)).squeeze(0)
         return e_nn, f_nn
             
     def save_model(self, path: str):

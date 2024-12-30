@@ -1,5 +1,5 @@
 #include "cuda/symmetric_functions.hpp"
-#include "cuda/calculate_forces.hpp"
+#include "cuda/calculate_dG.hpp"
 #include "cuda/calculate_gdf.hpp"
 
 using namespace cuda;
@@ -23,20 +23,18 @@ void init_cuda_module(py::module_& module){
         py::arg("r_cutoff"),
         py::arg("eta"),
         py::arg("rs"),
-        py::arg("k"),
+        py::arg("kappa"),
         py::arg("lambda"),
-        py::arg("xi")
+        py::arg("zeta")
     );
 
 
-    module.def("calculate_forces", &cuda::calculate_forces, R"pbdoc(
-        Calculates forces of atomic system on iteration using AtomicNNs.
-        TODO: check forces formula
+    module.def("calculate_dG", &cuda::calculate_dG, R"pbdoc(
+        Calculates dG for atomic system.
 
         Args
             cartesians: atomic positions
             g: actual g values
-            dE: energies gradients by functions G values
             r_cutoff: cutoff radius
             eta: parameter of symmetric functions
             rs: parameter of symmetric functions
@@ -46,13 +44,12 @@ void init_cuda_module(py::module_& module){
         )pbdoc",
         py::arg("cartesians"),
         py::arg("g"),
-        py::arg("dE"),
         py::arg("r_cutoff"),
         py::arg("eta"),
         py::arg("rs"),
-        py::arg("k"),
+        py::arg("kappa"),
         py::arg("lambda"),
-        py::arg("xi"),
+        py::arg("zeta"),
         py::arg("h")
     );
 

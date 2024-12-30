@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # example of nnmd package usage with gpaw simulation
 
 import os
 import shutil
 import time 
 import argparse
+
 import numpy as np
 
 import torch
@@ -39,22 +37,7 @@ device = torch.device('cuda') if use_cuda else torch.device('cpu')
 dtype = torch.float32
 
 print("Get info from traj simulation: ", end = '')
-# cartesians, forces, energies, velocities = traj_parser(args.data_file)
-cartesians = np.load("cartesians_actual.npy.npz")['cartesians'][:1000].tolist()
-energies = np.load("energies_actual.npy.npz")['energies'][:1000].tolist()
-forces = np.load("forces_actual.npy.npz")['forces'][:1000].tolist()
-print("done")
-
-print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
-
-# params of symmetric functions
-symm_func_params = {"r_cutoff": 6.0,
-                    "eta": 0.01,
-                    "k": 1,
-                    "rs": 0.9313,
-                    "lambda": -1,
-                    "xi": 0.345}
-h = 1
+cartesians, forces, energies, velocities = traj_parser(args.data_file)
 
 n_structs = len(cartesians)
 n_atoms = len(cartesians[0])
@@ -64,6 +47,25 @@ cartesians = torch.as_tensor(cartesians, dtype = dtype, device = device)
 # targets
 energies = torch.tensor(energies, dtype = dtype, device = device)
 forces = torch.tensor(forces, dtype = dtype, device = device)
+
+print("done")
+
+print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
+
+# params of symmetric functions
+# euclidean distances between atoms in the first structure
+distances = torch.norm(cartesians[0, :, None, :] - cartesians[0, None, :, :], dim = -1, p = 2)
+# all distances that are 0 will be replaced with inf so that they do not affect the minimum
+min_distance = torch.where(distances == 0, torch.as_tensor(np.inf, device = device), distances).min().item()
+
+# params of symmetric functions
+symm_func_params = {"r_cutoff": 2 * min_distance,
+                    "eta": 0.333,
+                    "k": 2,
+                    "rs": 3,
+                    "lambda": 1,
+                    "xi": 2}
+h = 2
 
 
 # ~80% - train, ~10% - test and validation
@@ -75,6 +77,7 @@ train_dataset = make_atomic_dataset(train_dataset, symm_func_params, h, device, 
 val_dataset = make_atomic_dataset(val_dataset, symm_func_params, h, device, train = True)
 test_dataset = make_atomic_dataset(test_dataset, symm_func_params, h, device)
 
+print(len(train_dataset), len(val_dataset), len(test_dataset))
 print("done")
 
 # params that define what NN will do 
@@ -84,13 +87,13 @@ path = 'models_test'
 # train model
 train = True
 # save model params as files in <path> directory
-save = True
+save = False
 # test model
 test = True
 
 # Atomic NN nodes in hidden layers
 input_nodes = 5
-hidden_nodes = [30, 30]
+hidden_nodes = [15, 15]
 mu = 1
 learning_rate = 0.1
 
@@ -110,7 +113,7 @@ print("done")
 try:
     if train:
         batch_size = 100
-        epochs = 1000
+        epochs = 100
 
         start = time.time()
         net.fit(train_dataset, val_dataset, batch_size, epochs)

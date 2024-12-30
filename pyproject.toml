@@ -42,6 +42,7 @@ requires = ["setuptools==69.5.1",
             "wheel",
             "ninja",
             "cmake>=3.11",
+            "pybind11",
             # dependencies from torch
             # must be added
             # if "pip install ." are used

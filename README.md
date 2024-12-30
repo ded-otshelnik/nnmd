@@ -15,7 +15,7 @@ Make sure that you have compatible versions of C++ library and Python module.
     - PYBIND11_DIR
     - TORCH_LIB
     - Torch_DIR
-5. If you build with CUDA support, export next environment variables:
+5. If you build with CUDA support, set next environment variables:
     - CMAKE_CUDA_COMPILER
     - CUDA_CUDA_LIB
     - CUDACXX
@@ -34,7 +34,7 @@ It installs module with C++ extension to your active Python environment.
 
 ## Usage
 
-After setup you can use package.
+After setup you can use package. Some usage examples are presented in samples subdirectory.
 
 ## References
 

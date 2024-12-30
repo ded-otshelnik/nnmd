@@ -27,7 +27,7 @@ void init_cpu_module(py::module_& module){
         )pbdoc",
         py::arg("rij"),
         py::arg("rc"),
-        py::arg("k")
+        py::arg("kappa")
     );
 
     module.def("G4", &cpu::G4,
@@ -39,7 +39,7 @@ void init_cpu_module(py::module_& module){
         py::arg("rc"),
         py::arg("eta"),
         py::arg("lambda"),
-        py::arg("xi"),
+        py::arg("zeta"),
         py::arg("cos_v")
     );
 
@@ -52,7 +52,7 @@ void init_cpu_module(py::module_& module){
         py::arg("rc"),
         py::arg("eta"),
         py::arg("lambda"),
-        py::arg("xi"),
+        py::arg("zeta"),
         py::arg("cos_v")
     );
 
@@ -65,46 +65,15 @@ void init_cpu_module(py::module_& module){
             eta: parameter of symmetric functions
             rs: parameter of symmetric functions
             lambda: parameter of symmetric functions
-            xi: parameter of symmetric functions
-            dg_total: storage of output derivatives
+            zeta: parameter of symmetric functions
         
         )pbdoc",
         py::arg("cartesians"),
         py::arg("r_cutoff"),
         py::arg("eta"),
         py::arg("rs"),
-        py::arg("k"),
+        py::arg("kappa"),
         py::arg("lambda"),
-        py::arg("xi")
-    );
-
-
-    module.def("calculate_forces", &cpu::calculate_forces, R"pbdoc(
-        Calculates forces of atomic system on iteration using AtomicNNs.
-        TODO: check forces formula
-
-        Args
-            cartesians: atomic positions
-            e_nn: actual calculated energies
-            g: actual g values
-            nets: list of AtomicNNs
-            r_cutoff: cutoff radius
-            eta: parameter of symmetric functions
-            rs: parameter of symmetric functions
-            lambda: parameter of symmetric functions
-            xi: parameter of symmetric functions
-            h: step of coordinate-wise atom moving
-        )pbdoc",
-        py::arg("cartesians"),
-        py::arg("e_nn"),
-        py::arg("g"),
-        py::arg("nets"),
-        py::arg("r_cutoff"),
-        py::arg("eta"),
-        py::arg("rs"),
-        py::arg("k"),
-        py::arg("lambda"),
-        py::arg("xi"),
-        py::arg("h")
+        py::arg("zeta")
     );
 }

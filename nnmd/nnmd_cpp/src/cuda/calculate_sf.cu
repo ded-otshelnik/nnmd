@@ -20,18 +20,16 @@ namespace cuda{
             const float eta, const float lambda, const float xi,
             const float cos_v);
 
-    // @brief Calculates symmetric functions and its derivatives
+    // @brief Calculates symmetry functions
     // @param cartesians: atomic positions
     // @param r_cutoff: cutoff radius
-    // @param eta: parameter of symmetric functions
-    // @param rs: parameter of symmetric functions
-    // @param lambda: parameter of symmetric functions
-    // @param xi: parameter of symmetric functions
-    // @param dg_total: storage of output derivatives
+    // @param eta: parameter of symmetry functions
+    // @param rs: parameter of symmetry functions
+    // @param lambda: parameter of symmetry functions
+    // @param zeta: parameter of symmetry functions
     Tensor calculate_sf(const Tensor& cartesians, const float& r_cutoff,
-                    const float& eta, const float& rs, const float& k_param,
-                    const int& lambda, const float& xi){
-
+                    const float& eta, const float& rs, const float& kappa,
+                    const int& lambda, const float& zeta){
         CHECK_INPUT(cartesians);
         
         torch::TensorOptions opts = torch::TensorOptions()
@@ -50,7 +48,7 @@ namespace cuda{
         
         calculate_sf_kernel<<<blocks, threads>>>(
                 cartesians_accessor, g_total_accessor,
-                r_cutoff, eta, rs, k_param, lambda, xi, N
+                r_cutoff, eta, rs, kappa, lambda, zeta, N
         );
 
         // normalize g values
@@ -65,7 +63,7 @@ namespace cuda{
                     const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
                     at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
                     const float r_cutoff, const float eta, const float rs,
-                    const float k_param, const float lambda, const float xi,
+                    const float kappa, const float lambda, const float zeta,
                     const int n_atoms
     ){
 
@@ -129,7 +127,7 @@ namespace cuda{
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
-                                g += G3(rij, r_cutoff, k_param);
+                                g += G3(rij, r_cutoff, kappa);
                             }
                             break;
                         }
@@ -161,7 +159,7 @@ namespace cuda{
 
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
 
-                                    g += G4(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v);
+                                    g += G4(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
                                 }
                             }
                             break;
@@ -192,13 +190,13 @@ namespace cuda{
                                     rjk = sqrt(rjk);
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
                                     
-                                    g += G5(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v);
+                                    g += G5(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
                                 }
                             }
                             break;
                         }
                     }
-                    // pass g and dg values of atom
+                    // pass g of atom
                     g_total[i][g_type - 1] = g;
                 }
     }
@@ -225,12 +223,12 @@ namespace cuda{
         return exp(-eta * (rij - rs) * (rij - rs)) * cutf(rij, rc);
     }
 
-    __device__ float G3(const float rij, const float rc, const float k){ 
-        return cos(k * rij) * cutf(rij, rc);
+    __device__ float G3(const float rij, const float rc, const float kappa){ 
+        return cos(kappa * rij) * cutf(rij, rc);
     }
 
     __device__ float G4(const float rij, const float rik, const float rjk, const float rc,
-            const float eta, const float lambda, const float xi,
+            const float eta, const float lambda, const float zeta,
             const float cos_v){ 
             
         float out_g;
@@ -241,16 +239,16 @@ namespace cuda{
             powcos = 0;
         }
         else{
-            powcos = pow(cosv, xi);
+            powcos = pow(cosv, zeta);
         }
-        out_g = pow(2, 1 - xi) * powcos * expv * \
+        out_g = pow(2, 1 - zeta) * powcos * expv * \
                 cutf(rij, rc) * cutf(rik, rc) * cutf(rjk, rc);
                 
         return out_g;
     }
 
     __device__ float G5(const float rij, const float rik, const float rjk, const float rc,
-            const float eta, const float lambda, const float xi,
+            const float eta, const float lambda, const float zeta,
             const float cos_v){ 
             
         float out_g;
@@ -261,9 +259,9 @@ namespace cuda{
             powcos = 0;
         }
         else{
-            powcos = pow(cosv, xi);
+            powcos = pow(cosv, zeta);
         }
-        out_g = pow(2, 1 - xi) * powcos * expv * \
+        out_g = pow(2, 1 - zeta) * powcos * expv * \
                 cutf(rij, rc) * cutf(rik, rc);
 
         return out_g;

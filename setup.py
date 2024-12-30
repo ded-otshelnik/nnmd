@@ -15,6 +15,9 @@ import sys
 
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+from pybind11.setup_helpers import ParallelCompile, naive_recompile
+
+ParallelCompile("NPY_NUM_BUILD_JOBS", needs_recompile = naive_recompile).install()
 
 class CMakeBuild(BuildExtension):
     """Class provides CMake building of Python/C++ extensions

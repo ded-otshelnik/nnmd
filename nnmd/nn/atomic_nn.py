@@ -20,9 +20,11 @@ class AtomicNN(nn.Module):
             for prev, curr in zip(range(len(hidden_nodes) - 1), range(1, len(hidden_nodes))):
                 self.model.append(nn.Linear(hidden_nodes[prev], hidden_nodes[curr]))
             self.model.append(nn.Linear(hidden_nodes[-1], 1))
-        else:
-            self.model.append(nn.Linear(5, hidden_nodes))
+        elif isinstance(hidden_nodes, int):
+            self.model.append(nn.Linear(input_nodes, hidden_nodes))
             self.model.append(nn.Linear(hidden_nodes, 1))
+        else:
+            raise ValueError("hidden_nodes must be a list or an integer")
 
     def forward(self, x):
         for i, layer in enumerate(self.model):

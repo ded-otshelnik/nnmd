@@ -1,0 +1,17 @@
+data:
+  reference_data: Li_crystal_27.traj
+  symmetry_functions_set: symm_li_27.json
+
+use_cuda: true
+
+neural_network:
+  hidden_layers: [32, 32]
+  epochs: 1000
+  batch_size: 32
+  learning_rate: 0.001
+  mu: 3.0
+  load_models: False
+  path: 'models'
+  train: True
+  save: False
+  test: True
