@@ -1,13 +1,11 @@
 #include "cuda/symmetric_functions.hpp"
-#include "cuda/cuda_header.hpp"
 
 namespace cuda{
+
     __global__ void calculate_sf_kernel(
                     const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
                     at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
-                    const float r_cutoff, const float eta, const float rs,
-                    const float kappa, const float lambda, const float zeta,
-                    const int n_atoms
+                    const int* features, float** params, int n_atoms, int n_features
     );
 
     __device__ float G1(const float rij, const float rc);
@@ -22,33 +20,48 @@ namespace cuda{
 
     // @brief Calculates symmetry functions
     // @param cartesians: atomic positions
-    // @param r_cutoff: cutoff radius
-    // @param eta: parameter of symmetry functions
-    // @param rs: parameter of symmetry functions
-    // @param lambda: parameter of symmetry functions
-    // @param zeta: parameter of symmetry functions
-    Tensor calculate_sf(const Tensor& cartesians, const float& r_cutoff,
-                    const float& eta, const float& rs, const float& kappa,
-                    const int& lambda, const float& zeta){
+    // @param features: list of symmetry functions to calculate
+    // @param params: list of parameters for each symmetry function
+    // (length of list must be equal to length of features list
+    // and all vectors must have the size equal to the number of symmetry functions params)
+    // @return g_total: symmetry functions
+    Tensor calculate_sf(const Tensor& cartesians, const vector<int>& features, const vector<vector<float>>& params){
         CHECK_INPUT(cartesians);
         
         torch::TensorOptions opts = torch::TensorOptions()
                                         .dtype(torch::kFloat)
                                         .device(torch::kCUDA);
-        int N = cartesians.size(0);
-
+        int N_atoms = cartesians.size(0);
+        int N_features = features.size();
+        
         // output g values
-        Tensor g_total = torch::zeros({N, 5}, opts);
+        Tensor g_total = torch::zeros({N_atoms, N_features}, opts);
 
         int threads = 512;
-        dim3 blocks(N, 5, N);
+        dim3 blocks(N_atoms, N_features, N_atoms);
 
+        // accessors to torch tensors for gpu
         auto cartesians_accessor = cartesians.packed_accessor32<float, 2, torch::RestrictPtrTraits>();
         auto g_total_accessor = g_total.packed_accessor32<float, 2, torch::RestrictPtrTraits>();
-        
+
+        // copy features and params to device
+        int* features_d;
+        cudaMalloc(&features_d, N_features * sizeof(int));
+        cudaMemcpy(features_d, features.data(), N_features * sizeof(int), cudaMemcpyHostToDevice);
+
+        float** params_d;
+        float** params_h = (float**)malloc(N_features * sizeof(float*));
+        for (int i = 0; i < N_features; i++){
+            cudaMalloc(&params_h[i], params[i].size() * sizeof(float));
+            cudaMemcpy(params_h[i], params[i].data(), params[i].size() * sizeof(float), cudaMemcpyHostToDevice);
+        }
+        cudaMalloc(&params_d, N_features * sizeof(float*));
+        cudaMemcpy(params_d, params_h, N_features * sizeof(float*), cudaMemcpyHostToDevice);
+        free(params_h);
+
         calculate_sf_kernel<<<blocks, threads>>>(
                 cartesians_accessor, g_total_accessor,
-                r_cutoff, eta, rs, kappa, lambda, zeta, N
+                features_d, params_d, N_atoms, N_features
         );
 
         // normalize g values
@@ -62,20 +75,16 @@ namespace cuda{
     __global__ void calculate_sf_kernel(
                     const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
                     at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
-                    const float r_cutoff, const float eta, const float rs,
-                    const float kappa, const float lambda, const float zeta,
-                    const int n_atoms
+                    const int* features, float** params, int n_atoms, int n_features
     ){
 
-            // current g value
-            float g;
-
             int i = blockIdx.x * blockDim.x + threadIdx.x;
-            int g_type = blockIdx.y;
+            int feature_index = blockIdx.y;
             int j = blockIdx.z * blockDim.z + threadIdx.z;
 
-            if(i < n_atoms && g_type < 5){
-                    switch (g_type){
+            float g;
+            if(i < n_atoms && feature_index < n_features){
+                    switch (features[feature_index]){
                         // G1
                         case 1:{
                             if(j < n_atoms){
@@ -90,7 +99,7 @@ namespace cuda{
                                 }
 
                                 rij = sqrt(rij);
-                                g = G1(rij, r_cutoff);
+                                g = G1(rij, params[feature_index][0]);
                             }
                             break;
                         }
@@ -108,7 +117,7 @@ namespace cuda{
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
-                                g = G2(rij, r_cutoff, eta, rs);
+                                g = G2(rij, params[feature_index][0], params[feature_index][1], params[feature_index][2]);
                             }
                             break;
                         }
@@ -126,7 +135,7 @@ namespace cuda{
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
-                                g = G3(rij, r_cutoff, kappa);
+                                g = G3(rij, params[feature_index][0], params[feature_index][1]);
                             }
                             break;
                         }
@@ -158,7 +167,9 @@ namespace cuda{
 
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
 
-                                    g = G4(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
+                                    g = G4(rij, rik, rjk,
+                                             params[feature_index][0], params[feature_index][1], 
+                                             params[feature_index][2], params[feature_index][3], cos_v);
                                 }
                             }
                             break;
@@ -189,14 +200,15 @@ namespace cuda{
                                     rjk = sqrt(rjk);
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
                                     
-                                    g = G5(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
+                                    g = G5(rij, rik, rjk,
+                                             params[feature_index][0], params[feature_index][1], 
+                                             params[feature_index][2], params[feature_index][3], cos_v);
                                 }
                             }
                             break;
                         }
                     }
-                    // pass g of atom
-                    g_total[i][g_type - 1] += g;
+                    g_total[i][feature_index - 1] += g;
                 }
     }
 

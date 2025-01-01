@@ -1,7 +1,11 @@
+from pyexpat import features
+from sympy import fu
 import yaml
 import json
 
 from nnmd.util import traj_parser
+
+from torch.nn import parameter
 
 def _parse_json_or_yaml(input_file: str) -> dict:
     with open(input_file, 'r') as f:
@@ -28,7 +32,6 @@ def input_parser(input_file: str) -> dict:
     input_data = _parse_json_or_yaml(input_file)
 
     for key, value in input_data.items():
-        print(key, value)
         if key == "atomic_data" and isinstance(value, dict):
             for k, v in value.items():
                 if k == "reference_data":
@@ -39,6 +42,19 @@ def input_parser(input_file: str) -> dict:
                                             "velocities": velocities}
                 elif k == "symmetry_functions_set":
                     symmetry_functions_data = _parse_json_or_yaml(v)
-                    input_data[key][k] = symmetry_functions_data
-
+                    input_data[key][k] = []
+                    for element, functions in symmetry_functions_data['symmetry_functions_params'].items():
+                        features = []
+                        params = []
+                        h = None
+                        for function, param_group in functions.items():
+                            if function[0] == 'G':
+                                for i in range(len(list(param_group.values())[0])):
+                                    # for each set of parameters only number of function is needed
+                                    features.append(int(function[1]))
+                                    params.append([list(group) for group in zip(*param_group.values())][i])
+                            elif function == 'h':
+                                h = float(param_group)
+                        assert h is not None, "Hypersurface shift parameter is not defined"
+                        input_data[key][k].append({element: {"features": features, "params": params, "h": h}})
     return input_data

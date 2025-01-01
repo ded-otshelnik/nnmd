@@ -1,7 +1,7 @@
 import torch
 import nnmd_cpp
 
-def calculate_dg(cartesians: torch.Tensor, g: torch.Tensor, symm_func_params: dict):
+def calculate_dg(cartesians: torch.Tensor, g: torch.Tensor, symm_funcs_data: dict):
     """Calculates derivatives of symmetric functions for each structs of atoms with specified parameters.
 
     Args:
@@ -11,14 +11,7 @@ def calculate_dg(cartesians: torch.Tensor, g: torch.Tensor, symm_func_params: di
         
     """
     nnmd = nnmd_cpp.cuda if cartesians.device.type == 'cuda' else nnmd_cpp.cpu
-    
-    dg = nnmd.calculate_dG(cartesians, g,
-                                symm_func_params['r_cutoff'],
-                                symm_func_params['eta'],
-                                symm_func_params['rs'],
-                                symm_func_params['kappa'],
-                                symm_func_params['lambda'],
-                                symm_func_params['zeta'], 
-                                symm_func_params['h'])
+    print('Calculating derivatives of symmetric functions...')
+    dg = nnmd.calculate_dG(cartesians, g, symm_funcs_data['features'], symm_funcs_data['params'], symm_funcs_data['h'])
     return dg
     
