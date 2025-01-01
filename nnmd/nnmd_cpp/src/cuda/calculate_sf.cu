@@ -6,7 +6,7 @@ namespace cuda{
                     const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
                     at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
                     const float r_cutoff, const float eta, const float rs,
-                    const float k_param, const float lambda, const float xi,
+                    const float kappa, const float lambda, const float zeta,
                     const int n_atoms
     );
 
@@ -75,7 +75,6 @@ namespace cuda{
             int j = blockIdx.z * blockDim.z + threadIdx.z;
 
             if(i < n_atoms && g_type < 5){
-                    g = 0;
                     switch (g_type){
                         // G1
                         case 1:{
@@ -91,7 +90,7 @@ namespace cuda{
                                 }
 
                                 rij = sqrt(rij);
-                                g += G1(rij, r_cutoff);
+                                g = G1(rij, r_cutoff);
                             }
                             break;
                         }
@@ -109,7 +108,7 @@ namespace cuda{
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
-                                g += G2(rij, r_cutoff, eta, rs);
+                                g = G2(rij, r_cutoff, eta, rs);
                             }
                             break;
                         }
@@ -127,7 +126,7 @@ namespace cuda{
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
-                                g += G3(rij, r_cutoff, kappa);
+                                g = G3(rij, r_cutoff, kappa);
                             }
                             break;
                         }
@@ -159,7 +158,7 @@ namespace cuda{
 
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
 
-                                    g += G4(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
+                                    g = G4(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
                                 }
                             }
                             break;
@@ -190,14 +189,14 @@ namespace cuda{
                                     rjk = sqrt(rjk);
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
                                     
-                                    g += G5(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
+                                    g = G5(rij, rik, rjk, r_cutoff, eta, lambda, zeta, cos_v);
                                 }
                             }
                             break;
                         }
                     }
                     // pass g of atom
-                    g_total[i][g_type - 1] = g;
+                    g_total[i][g_type - 1] += g;
                 }
     }
 

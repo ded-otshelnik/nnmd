@@ -8,7 +8,7 @@ from ase.io import Trajectory
 
 def traj_parser(traj_file: str) -> tuple[np.ndarray, np.ndarray,
                                          np.ndarray, np.ndarray]:
-    """Extracts positions and forces from ASE trajectory file
+    """Extracts positions, energies, forces and velocities from ASE trajectory file
 
     """
     traj = Trajectory(traj_file)

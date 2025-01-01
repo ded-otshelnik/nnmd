@@ -2,7 +2,6 @@
 
 #include "cuda/calculate_dG.hpp"
 #include "cuda/cuda_header.hpp"
-
 namespace cuda{
     // @brief Calculates dG for symmetry functions.
     // @param cartesians: atomic positions
@@ -34,7 +33,7 @@ namespace cuda{
         // output forces
         Tensor forces = torch::zeros_like({cartesians}, opts);
         Tensor dG = torch::zeros({n_structs, n_dims, n_atoms, n_symm_funcs}, opts);
-        
+
         for (int atom_struct = 0; atom_struct < n_structs; atom_struct++){
             // difference between new and actual energies
             for (int atom = 0; atom < n_atoms; atom++){
@@ -44,7 +43,7 @@ namespace cuda{
 
                     // calculate new symmetry functions values
                     g_new = cuda::calculate_sf(cartesians_copy[atom_struct],
-                                                r_cutoff, eta, rs, k, lambda, zeta);
+                                               r_cutoff, eta, rs, k, lambda, zeta);
                     // difference between new and actual g values
                     dG[atom_struct][dim][atom] = torch::sub(g_new[atom], g[atom_struct][atom]) / h;
 

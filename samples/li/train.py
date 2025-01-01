@@ -15,25 +15,11 @@ from nnmd.util import traj_parser, train_val_test_split
 
 from torch.utils.data.dataset import TensorDataset
 
-# import warnings
-# warnings.filterwarnings('ignore')
-
 params_parser = argparse.ArgumentParser(description = "Sample code of nnmd usage")
 params_parser.add_argument("data_file", type = str, help = "Path to file with atomic data")
-params_parser.add_argument("-c", "--use_cuda",
-                            action = argparse.BooleanOptionalAction,
-                            help = "Enable/disable CUDA usage.")
 args = params_parser.parse_args()
 
-use_cuda = (args.use_cuda is not None) and torch.cuda.is_available()
-if use_cuda:
-    print("GPU usage is enabled")
-elif args.use_cuda and not torch.cuda.is_available():
-    print("Pytorch compiled/downloaded without CUDA support. GPU is disabled")
-else:
-    print("GPU usage is disabled")
-
-device = torch.device('cuda') if use_cuda else torch.device('cpu')
+device = torch.device('cuda')
 dtype = torch.float32
 
 print("Get info from traj simulation: ", end = '')
@@ -59,48 +45,47 @@ distances = torch.norm(cartesians[0, :, None, :] - cartesians[0, None, :, :], di
 min_distance = torch.where(distances == 0, torch.as_tensor(np.inf, device = device), distances).min().item()
 
 # params of symmetric functions
-symm_func_params = {"r_cutoff": 2 * min_distance,
-                    "eta": 0.333,
-                    "k": 2,
+symm_func_params = {"r_cutoff": 7.0,
+                    "eta": -2,
                     "rs": 3,
+                    "kappa": 2,
                     "lambda": 1,
-                    "xi": 2}
-h = 2
-
-
+                    "zeta": 4,
+                    "h": 0.1}
 # ~80% - train, ~10% - test and validation
 train_val_test_ratio = (0.8, 0.1, 0.1)
 train_dataset, val_dataset, test_dataset = train_val_test_split(TensorDataset(cartesians, energies, forces), train_val_test_ratio)
 
-# convert train data to atomic dataset with symmetric functions
-train_dataset = make_atomic_dataset(train_dataset, symm_func_params, h, device, train = True)
-val_dataset = make_atomic_dataset(val_dataset, symm_func_params, h, device, train = True)
-test_dataset = make_atomic_dataset(test_dataset, symm_func_params, h, device)
 
-print(len(train_dataset), len(val_dataset), len(test_dataset))
+# convert train data to atomic dataset with symmetric functions
+train_dataset = make_atomic_dataset(train_dataset, symm_func_params, device, train = True, path = "train")
+val_dataset = make_atomic_dataset(val_dataset, symm_func_params, device, train = True, path = "val")
+test_dataset = make_atomic_dataset(test_dataset, symm_func_params, device)
 print("done")
+
+torch.cuda.empty_cache()
 
 # params that define what NN will do 
 # load pre-trained models
 load_models = False
-path = 'models_test'
+path = 'model'
 # train model
 train = True
 # save model params as files in <path> directory
-save = False
+save = True
 # test model
 test = True
 
 # Atomic NN nodes in hidden layers
 input_nodes = 5
-hidden_nodes = [15, 15]
+hidden_nodes = [64, 32, 8]
 mu = 1
-learning_rate = 0.1
+learning_rate = 0.01
 
 print("Create an instance of NN and config its subnets:", end = ' ')
 net = HDNN()
 net.config(hidden_nodes = hidden_nodes, 
-           use_cuda = use_cuda,
+           use_cuda = True,
            dtype = dtype,
            n_atoms = n_atoms,
            input_nodes = input_nodes,
@@ -112,8 +97,8 @@ print("done")
 
 try:
     if train:
-        batch_size = 100
-        epochs = 100
+        batch_size = 1000
+        epochs = 1
 
         start = time.time()
         net.fit(train_dataset, val_dataset, batch_size, epochs)
@@ -137,15 +122,14 @@ try:
         start = time.time()
         test_loss, test_e_loss, test_f_loss = 0, 0, 0
         for cartesian, energy_struct, force_struct in test_dataset:
-            test_e_nn, test_f_nn = net.predict(cartesian, symm_func_params, h)
+            test_e_nn, test_f_nn = net.predict(cartesian, symm_func_params)
             loss = net.loss(test_e_nn.sum(dim = 0), energy_struct.unsqueeze(0), test_f_nn, force_struct)
-            test_loss += loss[0]
+            test_loss   += loss[0]
             test_e_loss += loss[1]
-            test_f_loss+= loss[2]
+            test_f_loss += loss[2]
         end = time.time()
 
         print("done")
-        net.time_log.info(f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s")
 
         test_e_loss = test_e_loss.cpu().detach().numpy() / len(test_dataset)
         test_f_loss = test_f_loss.cpu().detach().numpy() / len(test_dataset)
@@ -154,6 +138,6 @@ try:
         net.net_log.info(f"Testing sample size: {len(test_dataset)}")
         net.net_log.info(f"Testing: RMSE E = {test_e_loss:e}, RMSE F = {test_f_loss:e}, RMSE total = {test_loss:e} eV")
         
-except KeyboardInterrupt:
+except:
     print("Training is stopped. Model is saved")
     net.save_model("checkpoint.pt")

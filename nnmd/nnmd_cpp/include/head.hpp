@@ -1,12 +1,12 @@
 // preprocessor directives
 #pragma once
+// enable debug mode
+#define DEBUG 1
 
 // torch headers and usings
 #include <torch/extension.h>
 #include <torch/script.h> 
 #include <torch/csrc/utils/pybind.h>
-#include <torch/optim/optimizer.h>
-#include <torch/optim/sgd.h>
 #include <torch/types.h>
 using torch::Tensor;
 using namespace torch::nn;
@@ -22,14 +22,16 @@ namespace py = pybind11;
 #include <vector>
 using std::vector;
 
-// IO headers (will be removed later)
-#include <iostream>
-using std::cout, std::endl;
-#include <string>
-using std::to_string;
-#include <chrono>
-#include <ratio>
-using namespace std::chrono;
+// IO headers (enabled only in DEBUG mode)
+#ifdef DEBUG
+    #include <iostream>
+    using std::cout, std::endl;
+    #include <string>
+    using std::to_string;
+    #include <chrono>
+    #include <ratio>
+    using namespace std::chrono;
+#endif
 
 void init_cpu_module(py::module_& module);
 void init_cuda_module(py::module_& module);

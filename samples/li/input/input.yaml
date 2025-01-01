@@ -1,6 +1,6 @@
-data:
-  reference_data: Li_crystal_27.traj
-  symmetry_functions_set: symm_li_27.json
+atomic_data:
+  reference_data: input/Li_crystal_27.traj
+  symmetry_functions_set: input/symm_li_27.json
 
 use_cuda: true
 
