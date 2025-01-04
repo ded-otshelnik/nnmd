@@ -11,7 +11,6 @@ def calculate_dg(cartesians: torch.Tensor, g: torch.Tensor, symm_funcs_data: dic
         
     """
     nnmd = nnmd_cpp.cuda if cartesians.device.type == 'cuda' else nnmd_cpp.cpu
-    print('Calculating derivatives of symmetric functions...')
     dg = nnmd.calculate_dG(cartesians, g, symm_funcs_data['features'], symm_funcs_data['params'], symm_funcs_data['h'])
     return dg
     

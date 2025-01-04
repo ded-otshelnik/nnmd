@@ -1,7 +1,6 @@
 #include "head.hpp"
 #include "cpu/symmetric_functions.hpp"
-#include "cpu/calculate_forces.hpp"
-#include "cpu/symmetric_functions.hpp"
+#include "cpu/calculate_dG.hpp"
 
 using namespace cpu;
 
@@ -61,19 +60,14 @@ void init_cpu_module(py::module_& module){
 
         Args:
             cartesians: atomic positions
-            r_cutoff: cutoff radius
-            eta: parameter of symmetric functions
-            rs: parameter of symmetric functions
-            lambda: parameter of symmetric functions
-            zeta: parameter of symmetric functions
-        
+            features: symmetry functions set
+            params: parameters of symmetry functions
+
+        Returns:
+            Symmetric descriptors of atom structure
         )pbdoc",
         py::arg("cartesians"),
-        py::arg("r_cutoff"),
-        py::arg("eta"),
-        py::arg("rs"),
-        py::arg("kappa"),
-        py::arg("lambda"),
-        py::arg("zeta")
+        py::arg("features"),
+        py::arg("params")
     );
 }

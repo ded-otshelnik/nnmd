@@ -9,17 +9,16 @@ namespace cpu{
     // @param rs: parameter of symmetric functions
     // @param lambda: parameter of symmetric functions
     // @param xi: parameter of symmetric functions
-    Tensor calculate_sf(const Tensor &cartesians, const float& r_cutoff,
-                        const float& eta, const float& rs, const float& k_param,
-                        const int& lambda, const float& xi){
+    Tensor calculate_sf(const Tensor& cartesians, const vector<int>& features, const vector<vector<float>>& params){
 
             auto opts = torch::TensorOptions()
                 .dtype(torch::kFloat);
             // atoms amount
             int n_atoms = cartesians.size(0);
+            int n_features = features.size();
 
             // output g values
-            Tensor g_total = torch::zeros({n_atoms, 5}, opts);
+            Tensor g_total = torch::zeros({n_atoms, n_features}, opts);
 
             // get accessors to tensors 
             auto cartesians_accessor = cartesians.accessor<float, 2>();
@@ -30,9 +29,9 @@ namespace cpu{
             // loop by atoms
             for (int i = 0; i < n_atoms; i++){
                 // loop by symmetric functions type
-                for (int g_type = 1; g_type <= 5; g_type++){
+                for (int feature_index = 0; feature_index < n_features; feature_index++){
                     g = 0;
-                    switch (g_type){
+                    switch (features[feature_index]){
                         // G1
                         case 1:{
                             for (int j = 0; j < n_atoms; j++){
@@ -47,7 +46,7 @@ namespace cpu{
                                 }
 
                                 rij = sqrt(rij);
-                                g += G1(rij, r_cutoff);
+                                g += G1(rij, params[feature_index][0]);
                             }
                             break;
                         }
@@ -65,7 +64,7 @@ namespace cpu{
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
-                                g += G2(rij, r_cutoff, eta, rs);
+                                g += G2(rij, params[feature_index][0], params[feature_index][1], params[feature_index][2]);
                             }
                             break;
                         }
@@ -83,7 +82,7 @@ namespace cpu{
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
-                                g += G3(rij, r_cutoff, k_param);
+                                g += G3(rij, params[feature_index][0], params[feature_index][1]);
                             }
                             break;
                         }
@@ -115,7 +114,9 @@ namespace cpu{
 
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
 
-                                    g += G4(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v);
+                                    g += G4(rij, rik, rjk,
+                                             params[feature_index][0], params[feature_index][1], 
+                                             params[feature_index][2], params[feature_index][3], cos_v);
                                 }
                             }
                             break;
@@ -146,14 +147,16 @@ namespace cpu{
                                     rjk = sqrt(rjk);
                                     float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
 
-                                    g += G5(rij, rik, rjk, r_cutoff, eta, lambda, xi, cos_v);
+                                    g += G5(rij, rik, rjk,
+                                             params[feature_index][0], params[feature_index][1], 
+                                             params[feature_index][2], params[feature_index][3], cos_v);
                                 }
                             }
                             break;
                         }
                     }
-                    // pass g and dg values of atom
-                    g_total[i][g_type - 1] = g;
+                    // pass g value of atom
+                    g_total[i][feature_index - 1] = g;
                 }
             }
             // normalize g values
