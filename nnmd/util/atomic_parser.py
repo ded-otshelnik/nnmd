@@ -26,7 +26,7 @@ def traj_parser(traj_file: str) -> tuple[np.ndarray, np.ndarray,
         forces.append(atoms.get_forces())
         velocities.append(atoms.get_velocities())
 
-    return np.array(cartesians), np.array(forces), np.array(energies), np.array(velocities)
+    return np.array(cartesians), np.array(energies), np.array(forces), np.array(velocities)
 
 def gpaw_parser(filename, encoding = 'utf-8') -> Tuple[int, int, list, list, list]:
     """Parse info of gpaw simulation

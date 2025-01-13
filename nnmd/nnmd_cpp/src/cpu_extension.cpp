@@ -70,4 +70,24 @@ void init_cpu_module(py::module_& module){
         py::arg("features"),
         py::arg("params")
     );
+
+    module.def("calculate_dG", &cpu::calculate_dG, R"pbdoc(
+        Calculates dG for symmetry functions
+
+        Args:
+            cartesians: atomic positions
+            g: symmetry functions values
+            features: symmetry functions set
+            params: parameters of symmetry functions
+            h: step of coordinate-wise atom moving
+
+        Returns:
+            dG for symmetry functions
+        )pbdoc",
+        py::arg("cartesians"),
+        py::arg("g"),
+        py::arg("features"),
+        py::arg("params"),
+        py::arg("h")
+    );
 }

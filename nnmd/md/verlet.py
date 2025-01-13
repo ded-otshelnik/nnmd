@@ -10,7 +10,7 @@ from tqdm import tqdm
 class MDSimulation:
     def __init__(self, N_atoms: int, cartesians: np.ndarray, nn: HDNN,
                   mass: float, rVan: float, symm_func_params: dict, L: float, T: float, dt: float,
-                  h = float, v_initial = np.ndarray, a_initial = np.ndarray):
+                  h: float, v_initial: np.ndarray, a_initial: np.ndarray, r_cutoff: float = 4.0):
             """Initializes MD simulation system
 
             Args:
@@ -19,13 +19,14 @@ class MDSimulation:
                 nn (HDNN): neural network
                 mass (float): mass of atom
                 rVan (float): van der Waals radius
-                symm_func_params (dict): params of symmetric functions
+                symm_func_params (dict): params of symmetry functions set
                 L (float): size of the box
                 T (float): temperature of system (in Kelvin)
                 dt (float): step of verlet integration
-                h (float, optional): step of forces calculation. Defaults to float.
-                v_initial (np.ndarray, optional): initial velocities. Defaults to torch.Tensor.
-                a_initial (np.ndarray, optional): initial accelerations. Defaults to torch.Tensor.
+                h (float, optional): step of forces calculation.
+                v_initial (np.ndarray, optional): initial velocities.
+                a_initial (np.ndarray, optional): initial accelerations.
+                r_cutoff (float, optional): cutoff radius. Defaults to 6.0.
             """
 
             self.cartesians = cartesians
@@ -61,14 +62,15 @@ class MDSimulation:
             # params of symmetric functions
             # r_cutoff - cutoff radius
             # eta - width of the Gaussian
-            # k - power of the polynomial
             # rs - width of the Gaussian
+            # kappa - power of the polynomial
             # lambda - power of the polynomial
-            # xi - width of the Gaussian
+            # zeta - width of the Gaussian
             self.symm_func_params = symm_func_params
+            self.r_cutoff = r_cutoff
 
             # distance threshold between atoms
-            self.L_threshold = -L / self.symm_func_params['r_cutoff']
+            self.L_threshold = -L / 2
 
             self.h = h
 
@@ -117,30 +119,30 @@ class MDSimulation:
         
 
     def calc_acel(self):
-        _, f = self.nn.predict(torch.tensor(self.cartesians, dtype = torch.float32),
+        _, f = self.nn.predict(torch.as_tensor(self.cartesians, dtype = torch.float32),
                                 self.symm_func_params,
                                 self.h)
-        a = f.cpu().numpy() / self.mass
+        a = f.cpu().detach().numpy() / self.mass
 
         for i in range(self.N_atoms - 1):
              for j in range(i + 1, self.N_atoms):
                 dx = self.cartesians[j][0] - self.cartesians[i][0]
                 if np.abs(dx) > self.L_threshold:
                     dx -= np.sign(dx) * self.L
-                if np.abs(dx) > self.symm_func_params['r_cutoff']:
+                if np.abs(dx) > self.r_cutoff:
                     continue
                 dy = self.cartesians[j][1] - self.cartesians[i][1]
                 if np.abs(dy) > self.L_threshold:
                     dy -= np.sign(dy) * self.L
-                if np.abs(dx) > self.symm_func_params['r_cutoff']:
+                if np.abs(dx) > self.r_cutoff:
                     continue
                 dz = self.cartesians[j][2] - self.cartesians[i][2]
                 if np.abs(dz) > self.L_threshold:
                     dz -= np.sign(dz) * self.L
-                if np.abs(dz) > self.symm_func_params['r_cutoff']:
+                if np.abs(dz) > self.r_cutoff:
                     continue
                 r = np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
-                if r > self.symm_func_params['r_cutoff']:
+                if r > self.r_cutoff:
                     continue
                 Nx = dx / r
                 Ny = dy / r

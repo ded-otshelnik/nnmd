@@ -25,7 +25,6 @@ namespace cpu{
         int n_features = features.size();
 
         // output forces
-        Tensor forces = torch::zeros_like({cartesians}, opts);
         Tensor dG = torch::zeros({n_structs, n_dims, n_atoms, n_features}, opts);
 
         for (int atom_struct = 0; atom_struct < n_structs; atom_struct++){

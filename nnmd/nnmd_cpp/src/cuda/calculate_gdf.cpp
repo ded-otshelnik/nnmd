@@ -9,10 +9,9 @@ namespace cuda{
         
         Tensor gdf = torch::zeros({num_refs}, opts);
         
-        double tmp_gdf, tmp_indi, tot_val;
+        double tmp_gdf, tmp_indi;
         double epsilon = 1e-20;
 
-        tot_val = 0;
         for (int i = 0; i < num_targets; ++i) {
             if (sigma > 0.) {
                 tmp_gdf = 0;

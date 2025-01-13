@@ -8,4 +8,7 @@ PYBIND11_MODULE(nnmd_cpp, module){
 
     auto cuda_module = module.def_submodule("cuda", "CUDA extension");
     init_cuda_module(cuda_module);
+
+    auto torch_module = module.def_submodule("torch", "Torch extension");
+    init_torch_module(torch_module);
 }

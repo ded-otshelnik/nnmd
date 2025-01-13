@@ -35,3 +35,4 @@ using std::vector;
 
 void init_cpu_module(py::module_& module);
 void init_cuda_module(py::module_& module);
+void init_torch_module(py::module_& module);

@@ -1,111 +1,79 @@
-# example of nnmd package usage with gpaw simulation
+# example of nnmd package usage
 
 import os
 import shutil
-import time 
-import argparse
-
-import numpy as np
 
 import torch
 
 from nnmd.nn import HDNN
 from nnmd.nn.dataset import make_atomic_dataset
-from nnmd.util import traj_parser, train_val_test_split
+from nnmd.util import input_parser, train_val_test_split
+from nnmd.features import params_for_G2, params_for_G4
 
 from torch.utils.data.dataset import TensorDataset
-
-params_parser = argparse.ArgumentParser(description = "Sample code of nnmd usage")
-params_parser.add_argument("data_file", type = str, help = "Path to file with atomic data")
-args = params_parser.parse_args()
 
 device = torch.device('cuda')
 dtype = torch.float32
 
 print("Get info from traj simulation: ", end = '')
-cartesians, forces, energies, velocities = traj_parser(args.data_file)
-
-n_structs = len(cartesians)
-n_atoms = len(cartesians[0])
+input_data = input_parser("input/input.yaml")
 
 # inputs
-cartesians = torch.as_tensor(cartesians, dtype = dtype, device = device)
+cartesians = torch.tensor(input_data['atomic_data']['reference_data']['cartesians'], dtype = dtype, device = device)
+cartesians.requires_grad = True
+n_structs = cartesians.size(0)
+n_atoms = cartesians.size(1)
+
 # targets
-energies = torch.tensor(energies, dtype = dtype, device = device)
-forces = torch.tensor(forces, dtype = dtype, device = device)
+energies = torch.tensor(input_data['atomic_data']['reference_data']['energies'], dtype = dtype, device = device)
+forces = torch.tensor(input_data['atomic_data']['reference_data']['forces'], dtype = dtype, device = device)
+
+# for automatic params computation
+# must be defined cutoffs and number of radial and angular functions
+r_cutoff_g2 = 4.0
+r_cutoff_g4 = 4.0
+n_radial = 4
+n_angular = 12
+
+features = [2] * n_radial + [4] * n_angular
+params = params_for_G2(n_radial, r_cutoff_g2) + params_for_G4(n_angular, r_cutoff_g4)
+symm_funcs_data = {'features': features, 'params': params}
 
 print("done")
 
 print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
-
-# params of symmetric functions
-# euclidean distances between atoms in the first structure
-distances = torch.norm(cartesians[0, :, None, :] - cartesians[0, None, :, :], dim = -1, p = 2)
-# all distances that are 0 will be replaced with inf so that they do not affect the minimum
-min_distance = torch.where(distances == 0, torch.as_tensor(np.inf, device = device), distances).min().item()
-
-# params of symmetric functions
-symm_func_params = {"r_cutoff": 7.0,
-                    "eta": -2,
-                    "rs": 3,
-                    "kappa": 2,
-                    "lambda": 1,
-                    "zeta": 4,
-                    "h": 0.1}
 # ~80% - train, ~10% - test and validation
 train_val_test_ratio = (0.8, 0.1, 0.1)
 train_dataset, val_dataset, test_dataset = train_val_test_split(TensorDataset(cartesians, energies, forces), train_val_test_ratio)
 
-
 # convert train data to atomic dataset with symmetric functions
-train_dataset = make_atomic_dataset(train_dataset, symm_func_params, device, train = True, path = "train")
-val_dataset = make_atomic_dataset(val_dataset, symm_func_params, device, train = True, path = "val")
-test_dataset = make_atomic_dataset(test_dataset, symm_func_params, device)
+train_dataset = make_atomic_dataset(train_dataset, symm_funcs_data, saved = True, train = True, path = "input/train")
+val_dataset = make_atomic_dataset(val_dataset, symm_funcs_data, saved = True, train = True, path = "input/val")
+test_dataset = make_atomic_dataset(test_dataset, symm_funcs_data, saved = True, train = True, path = "input/test")
 print("done")
 
-torch.cuda.empty_cache()
-
-# params that define what NN will do 
-# load pre-trained models
-load_models = False
-path = 'model'
 # train model
-train = True
-# save model params as files in <path> directory
-save = True
-# test model
-test = True
+train = input_data['neural_network']['train']
 
-# Atomic NN nodes in hidden layers
-input_nodes = 5
-hidden_nodes = [64, 32, 8]
-mu = 1
-learning_rate = 0.01
+# save model params as files in <path> directory
+save = input_data['neural_network']['save']
+# path to save model
+path = input_data['neural_network']['path']
+
+# Atomic NN input_size in hidden layers
+input_size = n_radial + n_angular
 
 print("Create an instance of NN and config its subnets:", end = ' ')
-net = HDNN()
-net.config(hidden_nodes = hidden_nodes, 
-           use_cuda = True,
-           dtype = dtype,
-           n_atoms = n_atoms,
-           input_nodes = input_nodes,
-           load_models = load_models,
-           path = path + "/atomic_nn_Li.pt",
-           mu = mu,
-           learning_rate = learning_rate)
+
+net = HDNN(dtype = dtype)
+net.config(input_data['neural_network'], input_size)
+
 print("done")
 
 try:
     if train:
-        batch_size = 1000
-        epochs = 1
-
-        start = time.time()
-        net.fit(train_dataset, val_dataset, batch_size, epochs)
-        end = time.time()
-
-        train_time = end - start
-        net.time_log.info(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
+        print("Training:", end = ' ')
+        net.fit(train_dataset, val_dataset, test_dataset)
         
     if save:
         print("Saving model: ", end = '')
@@ -114,30 +82,13 @@ try:
             shutil.rmtree(path, ignore_errors = True)
         os.mkdir(path)
 
-        net.save_model(path + "/atomic_nn_Li.pt")
+        net.save_model(path)
         print("done")
-
-    if test:
-        print("Testing:", end = ' ')
-        start = time.time()
-        test_loss, test_e_loss, test_f_loss = 0, 0, 0
-        for cartesian, energy_struct, force_struct in test_dataset:
-            test_e_nn, test_f_nn = net.predict(cartesian, symm_func_params)
-            loss = net.loss(test_e_nn.sum(dim = 0), energy_struct.unsqueeze(0), test_f_nn, force_struct)
-            test_loss   += loss[0]
-            test_e_loss += loss[1]
-            test_f_loss += loss[2]
-        end = time.time()
-
-        print("done")
-
-        test_e_loss = test_e_loss.cpu().detach().numpy() / len(test_dataset)
-        test_f_loss = test_f_loss.cpu().detach().numpy() / len(test_dataset)
-        test_loss = test_loss.cpu().detach().numpy() / len(test_dataset)
-
-        net.net_log.info(f"Testing sample size: {len(test_dataset)}")
-        net.net_log.info(f"Testing: RMSE E = {test_e_loss:e}, RMSE F = {test_f_loss:e}, RMSE total = {test_loss:e} eV")
         
-except:
+except KeyboardInterrupt:
     print("Training is stopped. Model is saved")
-    net.save_model("checkpoint.pt")
+    
+    if os.path.exists("checkpoint"):
+        shutil.rmtree("checkpoint", ignore_errors = True)
+    os.mkdir("checkpoint")
+    net.save_model("checkpoint")

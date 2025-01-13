@@ -1,3 +1,4 @@
+from itertools import count
 from pyexpat import features
 from sympy import fu
 import yaml
@@ -37,13 +38,14 @@ def input_parser(input_file: str) -> dict:
                 if k == "reference_data":
                     cartesians, energies, forces, velocities = traj_parser(v)
                     input_data[key][k] = {"cartesians": cartesians,
-                                            "energies": energies,
-                                            "forces": forces,
-                                            "velocities": velocities}
+                                          "energies": energies,
+                                          "forces": forces,
+                                          "velocities": velocities}
                 elif k == "symmetry_functions_set":
                     symmetry_functions_data = _parse_json_or_yaml(v)
-                    input_data[key][k] = []
+                    input_data[key][k] = {}
                     for element, functions in symmetry_functions_data['symmetry_functions_params'].items():
+                        count = 0
                         features = []
                         params = []
                         h = None
@@ -53,8 +55,8 @@ def input_parser(input_file: str) -> dict:
                                     # for each set of parameters only number of function is needed
                                     features.append(int(function[1]))
                                     params.append([list(group) for group in zip(*param_group.values())][i])
+                                    count += 1
                             elif function == 'h':
                                 h = float(param_group)
-                        assert h is not None, "Hypersurface shift parameter is not defined"
-                        input_data[key][k].append({element: {"features": features, "params": params, "h": h}})
+                        input_data[key][k][element] = {"features": features, "params": params, "h": h, "n_features": count}
     return input_data

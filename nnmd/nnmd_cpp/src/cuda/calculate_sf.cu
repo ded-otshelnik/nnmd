@@ -5,7 +5,7 @@ namespace cuda{
     __global__ void calculate_sf_kernel(
                     const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
                     at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
-                    const int* features, float** params, int n_atoms, int n_features
+                    const int* features, float** params, int n_atoms, int n_features, int n_dims
     );
 
     __device__ float G1(const float rij, const float rc);
@@ -33,12 +33,18 @@ namespace cuda{
                                         .device(torch::kCUDA);
         int N_atoms = cartesians.size(0);
         int N_features = features.size();
+        int N_dims = cartesians.size(1);
         
         // output g values
         Tensor g_total = torch::zeros({N_atoms, N_features}, opts);
 
-        int threads = 512;
-        dim3 blocks(N_atoms, N_features, N_atoms);
+        int n_x = N_atoms;
+        int n_y = N_features;
+        const dim3 threadsPerBlock(32, 32);
+
+        int bpg_x = (n_x + threadsPerBlock.x - 1) / threadsPerBlock.x;
+        int bpg_y = (n_y + threadsPerBlock.y - 1) / threadsPerBlock.y;
+        const dim3 numBlocks(bpg_x, bpg_y);
 
         // accessors to torch tensors for gpu
         auto cartesians_accessor = cartesians.packed_accessor32<float, 2, torch::RestrictPtrTraits>();
@@ -59,157 +65,159 @@ namespace cuda{
         cudaMemcpy(params_d, params_h, N_features * sizeof(float*), cudaMemcpyHostToDevice);
         free(params_h);
 
-        calculate_sf_kernel<<<blocks, threads>>>(
+        calculate_sf_kernel<<<numBlocks, threadsPerBlock>>>(
                 cartesians_accessor, g_total_accessor,
-                features_d, params_d, N_atoms, N_features
+                features_d, params_d, N_atoms, N_features, N_dims
         );
+        cudaDeviceSynchronize();
 
         // normalize g values
-        g_total = torch::nn::functional::normalize(g_total,
-                                                torch::nn::functional::NormalizeFuncOptions()
-                                                                        .p(2.0)
-                                                                        .dim(1));
+        g_total = (g_total - g_total.min()) / (g_total.max() - g_total.min());
+
         return g_total;
     }
 
     __global__ void calculate_sf_kernel(
-                    const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
-                    at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
-                    const int* features, float** params, int n_atoms, int n_features
-    ){
+        const at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> cartesians,
+        at::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> g_total,
+        const int* features, float** params, int n_atoms, int n_features, int n_dims
+    ) {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        int feature_index = blockIdx.y * blockDim.y + threadIdx.y;
 
-            int i = blockIdx.x * blockDim.x + threadIdx.x;
-            int feature_index = blockIdx.y;
-            int j = blockIdx.z * blockDim.z + threadIdx.z;
-
-            float g;
-            if(i < n_atoms && feature_index < n_features){
-                    switch (features[feature_index]){
-                        // G1
-                        case 1:{
-                            if(j < n_atoms){
-                                if (i == j){
-                                    break;
-                                }
-                                auto ri = cartesians[i];
-                                auto rj = cartesians[j];
-                                float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
-                                    rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
-                                }
-
-                                rij = sqrt(rij);
-                                g = G1(rij, params[feature_index][0]);
-                            }
-                            break;
+        if (i < n_atoms && feature_index < n_features) {
+            float g = 0;
+            switch (features[feature_index]) {
+                // G1
+                case 1: {
+                    for (int j = 0; j < n_atoms; j++) {
+                        if (i == j) {
+                            continue;
                         }
-                        // G2
-                        case 2:
-                        {
-                            if(j < n_atoms){
-                                if (i == j){
-                                    break;
-                                }
-                                auto ri = cartesians[i];
-                                auto rj = cartesians[j];
-                                float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
-                                    rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
-                                }
-                                rij = sqrt(rij);
-                                g = G2(rij, params[feature_index][0], params[feature_index][1], params[feature_index][2]);
-                            }
-                            break;
+                        auto ri = cartesians[i];
+                        auto rj = cartesians[j];
+                        float rij = 0;
+                        for (int dim = 0; dim < 3; dim++) {
+                            rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                         }
-                        // G3
-                        case 3:
-                        {
-                            if(j < n_atoms){
-                                if (i == j){
-                                    break;
-                                }
-                                auto ri = cartesians[i];
-                                auto rj = cartesians[j];
-                                float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
-                                    rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
-                                }
-                                rij = sqrt(rij);
-                                g = G3(rij, params[feature_index][0], params[feature_index][1]);
-                            }
-                            break;
+                        rij = sqrt(rij);
+                        g += G1(rij, params[feature_index][0]);
+                    }
+                    break;
+                }
+                // G2
+                case 2: {
+                    for (int j = 0; j < n_atoms; j++) {
+                        if (i == j) {
+                            continue;
                         }
-                        // G4
-                        case 4:
-                        {
-                            if (j < n_atoms){
-                                for (int k = 0; k < n_atoms; k++){
-                                    if (i == j || i == k || j == k){
-                                        continue;
-                                    }
-                                    auto ri = cartesians[i];
-                                    auto rj = cartesians[j];
-                                    auto rk = cartesians[k];
-
-                                    float rij = 0;
-                                    float rik = 0;
-                                    float rjk = 0;
-
-                                    for (int dim = 0; dim < 3; dim++){
-                                        rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
-                                        rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
-                                        rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);
-                                    }
-
-                                    rij = sqrt(rij);
-                                    rik = sqrt(rik);
-                                    rjk = sqrt(rjk);
-
-                                    float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
-
-                                    g = G4(rij, rik, rjk,
-                                             params[feature_index][0], params[feature_index][1], 
-                                             params[feature_index][2], params[feature_index][3], cos_v);
-                                }
-                            }
-                            break;
+                        auto ri = cartesians[i];
+                        auto rj = cartesians[j];
+                        float rij = 0;
+                        for (int dim = 0; dim < 3; dim++) {
+                            rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                         }
-                        // G5
-                        case 5:
-                        {
-                            if (j < n_atoms){
-                                for (int k = 0; k < n_atoms; k++){
-                                    if (i == j || i == k || j == k){
-                                        continue;
-                                    }
-
-                                    auto ri = cartesians[i];
-                                    auto rj = cartesians[j];
-                                    auto rk = cartesians[k];
-
-                                    float rij = 0;
-                                    float rik = 0;
-                                    float rjk = 0;
-                                    for (int dim = 0; dim < 3; dim++){
-                                        rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
-                                        rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
-                                        rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);
-                                    }
-                                    rij = sqrt(rij);
-                                    rik = sqrt(rik);
-                                    rjk = sqrt(rjk);
-                                    float cos_v = (rij * rij + rik * rik - rjk * rjk) / 2 / rij / rik;
-                                    
-                                    g = G5(rij, rik, rjk,
-                                             params[feature_index][0], params[feature_index][1], 
-                                             params[feature_index][2], params[feature_index][3], cos_v);
-                                }
+                        rij = sqrt(rij);
+                        g += G2(rij, params[feature_index][0], params[feature_index][1], params[feature_index][2]);
+                    }
+                    break;
+                }
+                // G3
+                case 3: {
+                    for (int j = 0; j < n_atoms; j++) {
+                        if (i == j) {
+                            continue;
+                        }
+                        auto ri = cartesians[i];
+                        auto rj = cartesians[j];
+                        float rij = 0;
+                        for (int dim = 0; dim < 3; dim++) {
+                            rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
+                        }
+                        rij = sqrt(rij);
+                        g += G3(rij, params[feature_index][0], params[feature_index][1]);
+                    }
+                    break;
+                }
+                // G4
+                case 4: {
+                    for (int j = 0; j < n_atoms; j++) {
+                        for (int k = 0; k < n_atoms; k++) {
+                            if (i == j || i == k || j == k) {
+                                continue;
                             }
-                            break;
+                            auto ri = cartesians[i];
+                            auto rj = cartesians[j];
+                            auto rk = cartesians[k];
+
+                            float rij = 0;
+                            float rik = 0;
+                            float rjk = 0;
+
+                            for (int dim = 0; dim < 3; dim++) {
+                                rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
+                                rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
+                                rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);
+                            }
+
+                            rij = sqrt(rij);
+                            rik = sqrt(rik);
+                            rjk = sqrt(rjk);
+
+                            float cos_v;
+                            if (rij * rik == 0){
+                                cos_v = 0;
+                            }
+                            else{
+                                cos_v = (rij * rij + rik * rik - rjk * rjk) / (2 * rij * rik);
+                            }
+
+                            g += G4(rij, rik, rjk, params[feature_index][0], params[feature_index][1], params[feature_index][2], params[feature_index][3], cos_v);
                         }
                     }
-                    g_total[i][feature_index - 1] += g;
+                    break;
                 }
+                // G5
+                case 5: {
+                    for (int j = 0; j < n_atoms; j++) {
+                        for (int k = 0; k < n_atoms; k++) {
+                            if (i == j || i == k || j == k) {
+                                continue;
+                            }
+
+                            auto ri = cartesians[i];
+                            auto rj = cartesians[j];
+                            auto rk = cartesians[k];
+
+                            float rij = 0;
+                            float rik = 0;
+                            float rjk = 0;
+                            for (int dim = 0; dim < 3; dim++) {
+                                rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
+                                rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
+                                rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);
+                            }
+                            rij = sqrt(rij);
+                            rik = sqrt(rik);
+                            rjk = sqrt(rjk);
+                            
+                            float cos_v;
+                            if (rij * rik == 0){
+                                cos_v = 0;
+                            }
+                            else{
+                                cos_v = (rij * rij + rik * rik - rjk * rjk) / (2 * rij * rik);
+                            }
+
+                            g += G5(rij, rik, rjk, params[feature_index][0],
+                             params[feature_index][1], params[feature_index][2], params[feature_index][3], cos_v);
+                        }
+                    }
+                    break;
+                }
+            }
+            atomicAdd(&g_total[i][feature_index], g);
+        }
     }
 
     __device__ float cutf(const float rij, const float rc){

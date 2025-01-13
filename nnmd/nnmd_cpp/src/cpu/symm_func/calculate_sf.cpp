@@ -15,6 +15,7 @@ namespace cpu{
                 .dtype(torch::kFloat);
             // atoms amount
             int n_atoms = cartesians.size(0);
+            int n_dims = cartesians.size(1);
             int n_features = features.size();
 
             // output g values
@@ -41,7 +42,7 @@ namespace cpu{
                                 auto ri = cartesians_accessor[i];
                                 auto rj = cartesians_accessor[j];
                                 float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
+                                for (int dim = 0; dim < n_dims; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
 
@@ -60,7 +61,7 @@ namespace cpu{
                                 auto ri = cartesians_accessor[i];
                                 auto rj = cartesians_accessor[j];
                                 float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
+                                for (int dim = 0; dim < n_dims; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
@@ -78,7 +79,7 @@ namespace cpu{
                                 auto ri = cartesians_accessor[i];
                                 auto rj = cartesians_accessor[j];
                                 float rij = 0;
-                                for (int dim = 0; dim < 3; dim++){
+                                for (int dim = 0; dim < n_dims; dim++){
                                     rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                 }
                                 rij = sqrt(rij);
@@ -102,7 +103,7 @@ namespace cpu{
                                     float rik = 0;
                                     float rjk = 0;
 
-                                    for (int dim = 0; dim < 3; dim++){
+                                    for (int dim = 0; dim < n_dims; dim++){
                                         rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                         rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
                                         rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);
@@ -137,7 +138,7 @@ namespace cpu{
                                     float rij = 0;
                                     float rik = 0;
                                     float rjk = 0;
-                                    for (int dim = 0; dim < 3; dim++){
+                                    for (int dim = 0; dim < n_dims; dim++){
                                         rij += (ri[dim] - rj[dim]) * (ri[dim] - rj[dim]);
                                         rjk += (rk[dim] - rj[dim]) * (rk[dim] - rj[dim]);
                                         rik += (rk[dim] - ri[dim]) * (rk[dim] - ri[dim]);
@@ -154,16 +155,14 @@ namespace cpu{
                             }
                             break;
                         }
+                        
                     }
                     // pass g value of atom
-                    g_total[i][feature_index - 1] = g;
+                    g_total[i][feature_index - 1] += g;
                 }
             }
             // normalize g values
-            g_total = torch::nn::functional::normalize(g_total,
-                                            torch::nn::functional::NormalizeFuncOptions()
-                                                                    .p(2.0)
-                                                                    .dim(1));
+            g_total = (g_total - g_total.min()) / (g_total.max() - g_total.min());
 
             return g_total;
     }

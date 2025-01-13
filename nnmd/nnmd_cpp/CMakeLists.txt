@@ -38,6 +38,8 @@ list(APPEND EXTERNAL_DEPS "torch")
 
 find_package(pybind11 CONFIG REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 pybind11_add_module(${PROJECT_TARGET}
         ${pybind11_INCLUDE_DIRS}

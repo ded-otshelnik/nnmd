@@ -1,43 +1,28 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# MD simulation of Li atoms with neural network
 
-# MD simulation of Cu atoms with neural network
-import argparse
-
+from try_nn import calculate_input
+from get_auto_g_params import params_for_G2, params_for_G4
 import torch
 
-import numpy as np
+from nnmd.md import NNMD_calc
 
-from nnmd.nn import HDNN
-from nnmd.md import MDSimulation
-
+from ase.md.verlet import VelocityVerlet
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+import ase.units as units
 import ase.data as ad
 
-params_parser = argparse.ArgumentParser(description = "Script for MD simulation with neural network")   
-params_parser.add_argument("-c", "--use_cuda",
-                            action = argparse.BooleanOptionalAction,
-                            help = "Enable/disable CUDA usage.")
-args = params_parser.parse_args()
-
-use_cuda = (args.use_cuda is not None) and torch.cuda.is_available()
-if use_cuda:
-    print("GPU usage is enabled")
-elif args.use_cuda and not torch.cuda.is_available():
-    print("Pytorch compiled/downloaded without CUDA support. GPU is disabled")
-else:
-    print("GPU usage is disabled")
-
-device = torch.device('cuda') if use_cuda else torch.device('cpu')
-dtype = torch.float32
+device = torch.device('cuda')
+dtype = torch.float64
 
 # params of symmetric functions
-symm_func_params = {"r_cutoff": 6.0,
-                    "eta": 0.01,
-                    "k": 1,
-                    "rs": 0.5,
-                    "lambda": -1,
-                    "xi": 3}
-h = 10e-1
+r_cutoff_g2 = 6.0
+r_cutoff_g4 = 6.0
+n_radial = 6
+n_angular = 12
+
+features = [2] * n_radial + [4] * n_angular
+params = params_for_G2(n_radial, r_cutoff_g2) + params_for_G4(n_angular, r_cutoff_g4)
+symm_funcs_data = {'features': features, 'params': params}
 
 # mass of atom (in atomic mass units)
 m_atom = ad.atomic_masses[ad.atomic_numbers['Li']]
@@ -49,31 +34,47 @@ L = 9.0
 rVan = 1.44
 dt = 10e-3
 
-# start data: initial positions, forces (=> acceleration) and velocity
-cartesians = np.load("cartesians_actual.npy.npz")['cartesians']
-forces = np.load("forces_actual.npy.npz")['forces']
+from ase.io import Trajectory
+import numpy as np
+sample_traj = Trajectory('Li_crystal_27.traj')
+start = int(len(sample_traj) * 0.8)
 
-start = 0
-v_initial = np.load("velocities_actual.npy.npz")['velocities'][start]
-cartesians_initial = cartesians[start]
-n_atoms = cartesians_initial.shape[0]
-a_initial = forces[start] / m_atom
+class NN:
+    def __init__(self):
+        from nnmd.nn import AtomicNN
+        self.model = AtomicNN(input_size = n_angular + n_radial, hidden_size = [30, 30]).float()
+        self.model.load_state_dict(torch.load("model.pth"))
 
-nn = HDNN()
-hidden_nodes = [30, 30]
-nn.config(hidden_nodes = hidden_nodes,
-          use_cuda = use_cuda,
-          n_atoms = n_atoms,
-          load_models = True, path = "../li/models/atomic_nn_Li.pt")
+    def forward(self, cartesians, symm_func_params, h = None):
+        carts = cartesians.unsqueeze(0)
+        carts.requires_grad = True
+        g, dg = calculate_input(carts, symm_func_params)
+        g = g.squeeze()
+        dg = dg.squeeze()
 
-md_system = MDSimulation(N_atoms = n_atoms, cartesians = cartesians_initial, nn = nn,
-                         mass = m_atom, rVan = rVan, symm_func_params = symm_func_params,
-                         L = L, T = T, dt = dt, h = h, v_initial = v_initial, a_initial = a_initial)
+        energy = self.model(g)
+        de = torch.autograd.grad(energy.sum(), g, create_graph = True)[0]
+        forces = -torch.einsum('ijk,ij->ik', dg, de)
+        return energy, forces
 
-# MD simulation
-md_system.run_md_simulation(steps = 600)
+nn = NN()
 
-data = np.array(md_system.cartesians_history)
-np.savez("cartesians_history.npy.npz", x = data[:, :, 0], y = data[:, :, 1], z = data[:, :, 2])
-np.savez("forces_history.npy.npz", forces = np.array(md_system.forces_history))
-np.savez("velocities_history.npy.npz", velocities = np.array(md_system.velocities_history))
+# ASE calculator
+calc = NNMD_calc(model = nn, to_eV = 1.0, properties = ['energy', 'forces'], symm_funcs_data = symm_funcs_data)
+atoms = sample_traj[0]
+atoms.calc = calc
+
+traj_file = f'Test_md_Li_27.traj'
+
+# Moving to the MD part
+timestep = 1  # time step of the simulation (in fs)
+
+# Integrator for the equations of motion, timestep depends on system
+dyn = VelocityVerlet(atoms, timestep * units.fs)
+MaxwellBoltzmannDistribution(atoms, temperature_K = 300)
+
+# Saving the positions of all atoms after every time step
+with Trajectory(traj_file, 'w', atoms) as traj:
+    dyn.attach(traj.write, interval = 1)
+    # Running the simulation for timesteps
+    dyn.run(600)
