@@ -5,6 +5,8 @@
 
 import math
 
+from matplotlib.pylab import f
+
 # PyTorch module
 # must be imported before C++ extention
 # for compatibility
@@ -23,7 +25,6 @@ import os
 DEBUG = os.environ.get('DEBUG', True)
 
 if DEBUG:
-    import time
     from tqdm import tqdm
 
 class RMSELoss(torch.nn.Module):
@@ -49,7 +50,7 @@ class HDNN(torch.nn.Module):
         self.dtype = dtype
         self.use_cuda = use_cuda
     
-    def _describe_training(self, train_dataset_size, val_dataset_size, batch_size, epochs):
+    def _describe_training(self, train_dataset_size, val_dataset_size, test_dataset_size, batch_size, epochs):
         from importlib.metadata import version
 
         module_name = "nnmd"
@@ -59,36 +60,41 @@ class HDNN(torch.nn.Module):
         self.net_log.info(f"device:                        {self.device}")
         self.net_log.info(f"training epochs:               {epochs}")
         self.net_log.info(f"batch size:                    {batch_size}")
-        self.net_log.info(f"optimizer:                     {self.optim[0].__class__.__name__}")
+        self.net_log.info(f"optimizer:                     {self.optim.__class__.__name__}")
         self.net_log.info(f"loss function:                 {self.criterion.__class__.__name__}")
         self.net_log.info(f"loss function coefficient:     {self.mu}")
         self.net_log.info(f"learning rate:                 {self.learning_rate}")
-        self.net_log.info(f"scheduler:                     {self.sched[0].__class__.__name__}")
-        self.net_log.info(f"L2 regularization coefficient: {self.l2_regularization}\n")
+        self.net_log.info(f"scheduler:                     {self.sched.__class__.__name__}")
+        self.net_log.info(f"L2 regularization coefficient: {self.l2_regularization}\n\n")
         self.net_log.info(f"----Atomic NNs parameters----")
-        self.net_log.info(f"input size (number of descriptors): {self.input_size}")
-        self.net_log.info(f"hidden layers sizes:                {self.hidden_sizes}")
+        self.net_log.info(f"input sizes (number of descriptors): {self.input_sizes}")
+        self.net_log.info(f"hidden sizes:                        {self.hidden_sizes}")
+        self.net_log.info(f"output sizes (number of atoms):      {self.output_sizes}\n\n")
+        self.net_log.info(f"---Dataset parameters---")
         self.net_log.info(f"Training sample size:   {train_dataset_size}")
         self.net_log.info(f"Validation sample size: {val_dataset_size}")
+        self.net_log.info(f"Test sample size:       {test_dataset_size}\n\n")
 
 
-    def config(self, neural_net_data: dict, input_size: int, path: str = None):
+    def config(self, neural_net_data: dict, input_sizes: list[int], output_sizes: list[int], path: str = None):
         """Configures HDNN instance.
 
         Args:
             neural_net_data (dict): data about high-dimentional neural network and its atomic subnets
             input_size (int): size of input data, number of descriptors
+            output_size (int): size of output data, number of atoms of each species
             path (str): path to pre-trained models. If not None and parameter in neural_network_data ("load_models") is True,
             models will be loaded
         """
         self.neural_net_data = neural_net_data
 
         # amount of atom species in dataset
-        self.num_species = len(neural_net_data['atom_species'])
+        self.species = neural_net_data['atom_species']
 
         # params related to atomic nn and its config
-        self.input_size = input_size
+        self.input_sizes = input_sizes
         self.hidden_sizes = neural_net_data['hidden_sizes']
+        self.output_sizes = output_sizes
 
         # params related to training
         self.learning_rate = neural_net_data['learning_rate']
@@ -102,27 +108,28 @@ class HDNN(torch.nn.Module):
 
         # create Atomic NNs for each atom species
         self.atomic_nets = nn.ModuleList()
-        for i in range(self.num_species):
-            self.atomic_nets.append(AtomicNN(input_size = self.input_size,
-                                             hidden_size = self.hidden_sizes[i]))
+        for i in range(len(self.species)):
+            self.atomic_nets.append(AtomicNN(input_size = self.input_sizes[i],
+                                             hidden_sizes = self.hidden_sizes[i],
+                                             output_size = self.output_sizes[i]))
             # initialize weights of Atomic NNs
             for m in self.atomic_nets[i].model:
                 # Xavier weights initialization works better on linear layers
                 if isinstance(m, nn.Linear):
-                    nn.init.xavier_normal_(m.weight)
-                    nn.init.constant_(m.bias, 0)
+                    nn.init.xavier_uniform_(m.weight)
+                    #nn.init.constant_(m.bias, 0)
             self.atomic_nets[i] = self.atomic_nets[i].to(device = self.device)
             if neural_net_data['load_models']:
                 path2model = "".join([path, f"atomic_nn_{neural_net_data['atom_species'][i]}.pt"])
                 self.atomic_nets[i].load_state_dict(torch.load(path2model))
 
         # loss function
-        self.criterion = RMSELoss().to(device = self.device)
+        self.criterion = RMSELoss()
 
         # Atomic NN optimizer
-        self.optim = [torch.optim.Adam(net.parameters(),
+        self.optim = torch.optim.Adam([{'params': net.parameters()} for net in self.atomic_nets],
                                         lr = self.learning_rate,
-                                        weight_decay = self.l2_regularization) for net in self.atomic_nets]
+                                        weight_decay = self.l2_regularization)
     
     def loss(self, e_nn: torch.Tensor, energies: torch.Tensor,
                    f_nn: torch.Tensor, forces: torch.Tensor) -> torch.Tensor:
@@ -158,19 +165,16 @@ class HDNN(torch.nn.Module):
         test_loader = DataLoader(test_dataset, batch_size = batch_size, shuffle = True)
 
         # scheduler for Atomic NN optimizer
-        self.sched = [torch.optim.lr_scheduler.ReduceLROnPlateau(optim, mode = 'min',
-                                                                factor = 0.8,
-                                                                patience = 10, 
-                                                                min_lr = 1e-5) for optim in self.optim]
+        self.sched = torch.optim.lr_scheduler.ExponentialLR(self.optim, gamma = 0.95)
         
         # output log file
         self.net_log = Logger.get_logger("Net training info", "net.log")
 
         # save package/environment/nn info to log file
-        self._describe_training(len(train_dataset), len(val_dataset), batch_size, epochs)
+        self._describe_training(len(train_dataset), len(val_dataset), len(test_dataset), batch_size, epochs)
 
         # current learning rate
-        curr_lr = self.optim[0].param_groups[0]['lr']
+        curr_lr = self.optim.param_groups[0]['lr']
         
         # format of loss info message
         loss_info = "RMSE E = {e_loss:e}, RMSE F = {f_loss:e}, RMSE total = {loss:e} eV"
@@ -190,16 +194,16 @@ class HDNN(torch.nn.Module):
 
             # if scheduler is used
             # update learning rate by rule
-            for sched in self.sched:
-                if isinstance(sched, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    sched.step(loss)
+            if self.sched:
+                if isinstance(self.sched, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    self.sched.step(loss)
                 else:
-                    sched.step()
+                    self.sched.step()
 
             # print the learning rate at the end of the epoch
             # if it was changed
-            if self.optim[0].param_groups[0]['lr'] != curr_lr:
-                curr_lr = self.optim[0].param_groups[0]['lr']
+            if self.optim.param_groups[0]['lr'] != curr_lr:
+                curr_lr = self.optim.param_groups[0]['lr']
                 self.net_log.info(f"Learning rate changed to {curr_lr}")
 
         e_loss, f_loss, loss = self._test(test_loader)
@@ -241,18 +245,27 @@ class HDNN(torch.nn.Module):
 
             # calculate energies using NN
             # and gradients of G values using Autograd Engine
-            e_nn = self.atomic_nets[0](g)
-            dE = torch.autograd.grad(e_nn.sum(), g, retain_graph = True)[0]
+            e_nn = []
+            f_nn = []
+            for i, atom_type in enumerate(self.species):
+                e_nn_atom_type = self.atomic_nets[i](g[atom_type])
+                e_nn.append(e_nn_atom_type)
+                dE = torch.autograd.grad(e_nn_atom_type.sum(), g[atom_type],
+                                      retain_graph = True, create_graph = True)[0]
 
-            # calculate forces using gradients of E values
-            # and G values gradients by Einstein summation rule
-            f_nn = -torch.einsum('ijk,ijkl->ijl', dE, dG)
+                # calculate forces using gradients of E values
+                # and G values gradients by Einstein summation rule
+                f_nn_atom_type = -torch.einsum('ik,ijkl->ijl', dE, dG[atom_type])
+                f_nn.append(f_nn_atom_type)
 
-            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum(dim = 1).squeeze(1), energy, f_nn, forces)
+            # concatenate energies and forces for all atom species
+            e_nn = torch.cat(e_nn, dim = 0)
+            f_nn = torch.cat(f_nn, dim = 0)
+
+            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum().squeeze(), energy, f_nn, forces)
             batch_loss.backward(retain_graph = True)
 
-            for optim in self.optim:
-                optim.step()
+            self.optim.step()
 
             loss += batch_loss
             e_loss += batch_e_loss
@@ -289,17 +302,24 @@ class HDNN(torch.nn.Module):
             # energies and forces (nn targets)
             g, dG, energy, forces = data
 
-            # calculate energies using NN
-            # and gradients by G values using Autograd Engine
-            e_nn = self.atomic_nets[0](g)
-            dE = torch.autograd.grad(torch.sum(e_nn), g, retain_graph = True)[0]
+            e_nn = []
+            f_nn = []
+            for i, atom_type in enumerate(self.species):
+                e_nn_atom_type = self.atomic_nets[i](g[atom_type]).sum(dim = -1)
+                e_nn.append(e_nn_atom_type)
+                dE = torch.autograd.grad(e_nn_atom_type.sum(), g[atom_type],
+                                      retain_graph = True, create_graph = True)[0]
 
-            # calculate forces using gradients of E values
-            # and G values gradients by Einstein summation rule
-            with torch.no_grad():
-                f_nn = -torch.einsum('ijk,ijkl->ijl', dE, dG)
+                # calculate forces using gradients of E values
+                # and G values gradients by Einstein summation rule
+                f_nn_atom_type = -torch.einsum('ik,ijkl->ijl', dE, dG[atom_type])
+                f_nn.append(f_nn_atom_type)
+
+            # concatenate energies and forces for all atom species
+            e_nn = torch.cat(e_nn, dim = 0)
+            f_nn = torch.cat(f_nn, dim = 0)
             
-            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum(dim = 1).squeeze(1), energy, f_nn, forces)
+            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum().squeeze(), energy, f_nn, forces)
 
             loss += batch_loss
             e_loss += batch_e_loss
@@ -330,15 +350,24 @@ class HDNN(torch.nn.Module):
 
             # calculate energies using NN
             # and gradients by G values using Autograd Engine
-            e_nn = self.atomic_nets[0](g)
-            dE = torch.autograd.grad(torch.sum(e_nn), g, retain_graph = True)[0]
+            e_nn = []
+            f_nn = []
+            for i, atom_type in enumerate(self.species):
+                e_nn_atom_type = self.atomic_nets[i](g[atom_type]).sum(dim = -1)
+                e_nn.append(e_nn_atom_type)
+                dE = torch.autograd.grad(e_nn_atom_type.sum(), g[atom_type],
+                                      retain_graph = True, create_graph = True)[0]
 
-            # calculate forces using gradients of E values
-            # and G values gradients by Einstein summation rule
-            with torch.no_grad():
-                f_nn = -torch.einsum('ijk,ijkl->ijl', dE, dG)
+                # calculate forces using gradients of E values
+                # and G values gradients by Einstein summation rule
+                f_nn_atom_type = -torch.einsum('ik,ijkl->ijl', dE, dG[atom_type])
+                f_nn.append(f_nn_atom_type)
+
+            # concatenate energies and forces for all atom species
+            e_nn = torch.cat(e_nn, dim = 0)
+            f_nn = torch.cat(f_nn, dim = 0)
             
-            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum(dim = 1).squeeze(1), energy, f_nn, forces)
+            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum().squeeze(), energy, f_nn, forces)
 
             loss += batch_loss
             e_loss += batch_e_loss
@@ -351,7 +380,7 @@ class HDNN(torch.nn.Module):
 
         return e_loss, f_loss, loss
 
-    def predict(self, cartesians: torch.Tensor, symm_func_params: dict[str, float]) -> tuple[torch.Tensor, torch.Tensor]:
+    def predict(self, cartesians: torch.Tensor, cell: torch.Tensor, symm_func_params: dict[str, float]) -> tuple[torch.Tensor, torch.Tensor]:
         """Calculates energy and forces for structs of atoms
 
         Args:
@@ -361,7 +390,7 @@ class HDNN(torch.nn.Module):
         self.net.eval()
         cartesians = cartesians.unsqueeze(0).to(device = self.device)
         
-        g, dg = calculate_sf(cartesians, symm_func_params)
+        g, dg = calculate_sf(cartesians, cell, symm_func_params)
         g = g.squeeze(0)
         dg = dg.squeeze(0)
         g.requires_grad = True
@@ -378,4 +407,4 @@ class HDNN(torch.nn.Module):
         It makes possible to load pre-trained net for calculations
         """
         for i, net in enumerate(self.atomic_nets):
-            torch.save(net.state_dict(), path + f"_{self.neural_net_data['atom_species'][i]}")
+            torch.save(net.state_dict(), path + f"/atomic_nn_{self.neural_net_data['atom_species'][i]}.pth")

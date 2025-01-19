@@ -1,70 +1,69 @@
 import torch
-from torch.utils.data import Dataset, Subset
+import numpy as np
+from torch.utils.data import Dataset
 
 from ..features import calculate_sf
-
-class AtomicDataset(Dataset):
-    def __init__(self, cartesians: torch.Tensor, 
+    
+class TrainAtomicDataset(Dataset):
+    def __init__(self, cartesians: torch.Tensor, sf_data: dict[str, torch.Tensor],
                 energies: torch.Tensor, forces: torch.Tensor,
-                symm_func_data: dict) -> None:
+                symm_func_params: dict[str, float]) -> None:
+                 
         self.cartesians: torch.Tensor = cartesians
         self.energies: torch.Tensor = energies
         self.forces: torch.Tensor = forces
 
-        self.symm_func_data: dict = symm_func_data
-        self.len: int = len(self.cartesians)
-    
+        self.sf_data: dict[str, torch.Tensor] = sf_data
+        self.symm_func_data: dict = symm_func_params
+
+        self.len = len(self.energies)
+
     def __getitem__(self, index):
-        return self.cartesians[index], self.energies[index], self.forces[index]
-    
+        g = {spec: self.sf_data[spec][0][index] for spec in self.sf_data.keys()}
+        dG = {spec: self.sf_data[spec][1][index] for spec in self.sf_data.keys()}
+        return g, dG, self.energies[index], self.forces[index]
+        
     def __len__(self):
         return self.len
     
-class TrainAtomicDataset(AtomicDataset):
-    def __init__(self, cartesians: torch.Tensor, g: torch.Tensor, dG: torch.Tensor,
-                energies: torch.Tensor, forces: torch.Tensor,
-                symm_func_params: dict[str, float],) -> None:
-                 
-        super().__init__(cartesians, energies, forces, symm_func_params)
-        self.g: torch.Tensor = g
-        self.dG: torch.Tensor = dG
-
-    def __getitem__(self, index):
-        return self.g[index], self.dG[index], self.energies[index], self.forces[index]
-    
-def make_atomic_dataset(dataset: Subset,
-                        symm_func_params: dict[str, float],
-                        train: bool = True, **kwargs) -> AtomicDataset:
+def make_atomic_dataset(dataset: list, 
+                        symm_func_params: dict[str, dict[str, list[float | int]]],
+                        device: torch.device | str, **kwargs) -> TrainAtomicDataset:
     """Create atomic dataset with symmetric functions.
 
     Args:
-
-        dataset (Dataset): dataset with atomic positions, energies and forces
-        symm_func_params (dict[str, float]): parameters of symmetric functions
-        train (bool): if True, calculate g and dG
+        dataset (list): list with positions by species, unit cell, forces and velocities.
+        symm_func_params (dict[str, dict[str, list[float | int]]]): parameters of symmetric functions.
+        device (torch.device | str, optional): device for torch tensors. Defaults to torch.device('cuda').
 
     Returns:
-        AtomicDataset: atomic dataset with symmetric functions
+        TrainAtomicDataset: dataset with symmetric functions.
     """
-    # retrieve cartesians, energies, forces from subset and get symmetric functions values
-    dataset_indices = dataset.indices
-    cartesians = dataset.dataset.tensors[0][dataset_indices]
-    energies = dataset.dataset.tensors[1][dataset_indices]
-    forces = dataset.dataset.tensors[2][dataset_indices]
-
-    # if dataset will be used
-    # in training process
-    # calculate g
-    if train:
-        path = kwargs['path']
-        if kwargs['saved'] == True:
-            g = torch.load(f'{path}_g.pt')
-            dg = torch.load(f'{path}_dg.pt')
+    cell = torch.as_tensor(dataset['unit_cell'], dtype = torch.float32, device = device)
+    dataset = dataset['reference_data']
+    # convert data to torch tensors
+    energies = torch.tensor(np.array([data['energy'] for data in dataset]), dtype = torch.float32, device = device)
+    forces = torch.tensor(np.array([data['forces'] for data in dataset]), dtype = torch.float32, device = device)
+    
+    # get cartesian coordinates for each species
+    cartesians = {spec: torch.tensor(np.array([data[spec]['positions'] for data in dataset]), dtype = torch.float32, device = device)
+                   for spec in dataset[0].keys() if spec not in ['forces', 'energy', 'velocities']}
+    
+    
+    sf_data = {}
+    for spec in cartesians.keys():
+        if 'saved' in kwargs and kwargs['saved'] == True:
+            g_spec = torch.load(f'g_{spec}.pt', map_location = device)
+            dg_spec = torch.load(f'dg_{spec}.pt', map_location = device)
         else:
-            g, dg = calculate_sf(cartesians, symm_func_params)
-            torch.save(g, f'{path}_g.pt')
-            torch.save(dg, f'{path}_dg.pt')
-        return TrainAtomicDataset(cartesians, g, dg, energies, forces, symm_func_params)
-    # otherwise return just AtomicDataset
-    else:
-        return AtomicDataset(cartesians, energies, forces, symm_func_params)
+            g_spec, dg_spec = calculate_sf(cartesians[spec], cell, symm_func_params[spec])
+            if 'saved' in kwargs and kwargs['saved'] == False:
+                torch.save(g_spec, f'g_{spec}.pt')
+                torch.save(dg_spec, f'dg_{spec}.pt')
+        if g_spec.requires_grad != True: 
+            g_spec.requires_grad = True
+        g_spec = (g_spec - g_spec.mean()) / g_spec.std()
+        assert torch.isnan(g_spec).sum() == 0, f"Symmetry functions for {spec} contain NaN values"
+        sf_data[spec] = (g_spec, dg_spec)
+
+    return TrainAtomicDataset(cartesians, sf_data, energies, forces, symm_func_params)

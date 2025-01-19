@@ -1,31 +1,39 @@
-from nnmd.features.symm_funcs import calculate_distances
-import torch
-import numpy as np
+# This script is used to test the g function in the nnmd package
 
 from ase.io import Trajectory
-
-from nnmd.features import params_for_G2, params_for_G4, calculate_sf
+import torch
+torch.manual_seed(0)
+import numpy as np
+from nnmd.features import calculate_sf
 
 if __name__ == "__main__":
     traj = Trajectory('input/Li_crystal_27.traj')
-    cartesians = torch.tensor(np.array([atoms.get_positions() for atoms in traj]), dtype = torch.float32)
-    cartesians.requires_grad = True
-    cartesians = cartesians.to(device = 'cuda')
-    
-    distances = calculate_distances(cartesians[0])
-    
-    max_dist = torch.max(distances)
-    print("Max distance: ", max_dist)
-    r_cutoff_g2 = max_dist.item() / 2 
-    r_cutoff_g4 = max_dist.item() / 2
-    n_radial = 6
-    n_angular = 6
+    positions = np.array([atoms.positions for atoms in traj])
 
+    r_cutoff = 3.54
+    n_radial = 4
+    n_angular = 4
     features = [2] * n_radial + [4] * n_angular
-    params = params_for_G2(n_radial, r_cutoff_g2) + params_for_G4(n_angular, r_cutoff_g4)
+    params_g2 = [
+            [r_cutoff, 2, 0.1],
+            [r_cutoff, 2, 0.3],
+            [r_cutoff, 2, 0.5],
+            [r_cutoff, 2, 0.7]
+    ]
+    params_g4 = [
+            [r_cutoff, 1.0, 3, -1],
+            [r_cutoff, 1.0, 3, 1],
+            [r_cutoff, 2.0, 3, -1],
+            [r_cutoff, 2.0, 3, 1]
+    ]
+
+    params = params_g2 + params_g4
     symm_funcs_data = {'features': features, 'params': params}
 
-    g, dg = calculate_sf(cartesians[:1], symm_funcs_data)
-    print("G and dG by python code:")
-    print(g.cpu().detach().numpy())
-    print(dg.cpu().detach().numpy())
+    cell = torch.tensor(traj[0].cell.array, dtype = torch.float32)
+    cartesians = torch.tensor(positions, dtype = torch.float32)
+    cartesians.requires_grad = True
+
+    g, dg = calculate_sf(cartesians, cell, symm_funcs_data)
+    print(g)
+    print(dg)

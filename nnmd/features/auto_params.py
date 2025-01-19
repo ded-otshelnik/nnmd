@@ -12,9 +12,9 @@ def params_for_G2(n_radial: int, r_cutoff: float):
         list of tuples (r_cutoff, rs, eta)
     """
     params = []
+    rs = r_cutoff / (n_radial - 1)
+    eta = 5 * np.log(10) / (4 * (rs) ** 2)
     for i in range(n_radial):
-        rs = r_cutoff / (n_radial - 1)
-        eta = 5 * np.log(10) / (4 * (rs) ** 2)
         params.append((r_cutoff, rs * i, eta))
     return params
 

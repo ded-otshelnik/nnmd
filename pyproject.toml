@@ -34,24 +34,12 @@ test = [
 ]
 
 [build-system]
-# (!) torch must be compiled first for compatibility with extension
-# but it mustn't be mentioned in 'requires'
-# because pip will try to download torch from web resources 
-# what will break extensions and their compatibility 
 requires = ["setuptools==69.5.1",
-            "wheel",
-            "ninja",
-            "cmake>=3.11",
-            "pybind11",
             "ase",
-            "numpy",
-            "torch"
-            # # dependencies from torch
-            # # must be added
-            # # if "pip install ." are used
-            # # for pyproject.toml-based project
-            # "typing_extensions",
-            # "sympy",
+            "numpy<2.0",
+            "torch<2.5",
+            "tqdm",
+            "pyyaml"
 ]
 build-backend = "setuptools.build_meta"
 

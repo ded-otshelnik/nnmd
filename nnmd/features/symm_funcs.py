@@ -7,6 +7,35 @@ class SymmetryFunction(Enum):
     G4 = 4
     G5 = 5
 
+def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
+    """
+    Calculate pairwise distances and displacements with PBC.
+
+    Args:
+        positions: torch.Tensor of shape (n_atoms, 3)
+        cell: torch.Tensor of shape (3, 3)
+        r_cutoff: float - cutoff radius
+
+    Returns:
+        torch.Tensor of shape (n_atoms, n_atoms), torch.Tensor of shape (n_atoms, n_atoms, 3)
+    """
+    # Create pairwise displacement matrix (num_atoms x num_atoms x 3)
+    disp = positions.unsqueeze(1) - positions.unsqueeze(0)  # (B, N, N, 3)
+
+    # Convert displacements to fractional coordinates
+    inv_cell = torch.linalg.inv(cell.T)
+    frac_disp = torch.matmul(disp, inv_cell.T)
+
+    # Apply the minimum image convention
+    frac_disp -= torch.round(frac_disp)
+
+    # Convert back to Cartesian coordinates
+    cart_disp = torch.matmul(frac_disp, cell)
+
+    # Compute distances
+    distances = torch.linalg.norm(cart_disp, dim=-1)  # (B, N, N)
+    return distances, cart_disp
+
 def f_cutoff(r, cutoff):
     """
     Calculate the cutoff function for the pair of atoms.
@@ -19,146 +48,107 @@ def f_cutoff(r, cutoff):
     Returns:
         torch.Tensor of shape (n_atoms, n_atoms)
     """
-    return torch.where(torch.abs(r - cutoff) >= 1e-8, 0.5 * (torch.cos(r * torch.pi / cutoff) + 1), torch.zeros_like(r))
+    mask = r < cutoff
+    fc = 0.5 * (torch.cos(torch.pi * r / cutoff) + 1.0)
+    fc = torch.where(mask, fc, torch.zeros_like(fc))
+    return fc
 
 def g2_function(r: torch.Tensor, cutoff: float, eta: float, rs: float) -> torch.Tensor:
-        """
-        Calculate G2 symmetry functions for a pair of atoms.
-        Function is vectorized and can be applied to a batch of pairs.
-        
-        Args:
-            r: torch.Tensor of shape (n_atoms, n_atoms)
-            cutoff: float - cutoff radius
-            eta: float - width of the Gaussian
-            rs: float - center of the Gaussian
-
-        Returns:
-            torch.Tensor of shape (n_atoms, n_atoms)
-        """
-        fc = f_cutoff(r, cutoff)
-        return (torch.exp(-eta * (r - rs) ** 2) * fc).sum(dim = 1)
-
-def g4_function(rij: torch.Tensor, rjk: torch.Tensor, rik: torch.Tensor,
-                cos_theta: torch.Tensor, cutoff: float, eta: float, zeta: float, lambd: float,
-                mask: torch.Tensor) -> torch.Tensor:
-        """
-        Calculate G4 symmetry functions for a triplet of atoms.
-        Function is vectorized and can be applied to a batch of triplets.
-        Function does not filter out the diagonal elements of the input tensors.
-
-        Args:
-            rij: torch.Tensor of shape (n_atoms, n_atoms)
-            rik: torch.Tensor of shape (n_atoms, n_atoms)
-            rjk: torch.Tensor of shape (n_atoms, n_atoms)
-            cos_theta: torch.Tensor of shape (n_atoms, n_atoms)
-            cutoff: float - cutoff radius
-            eta: float - width of the Gaussian
-            zeta: float - exponent of the cosine term
-            lambd: int - sign of the cosine term
-            mask: torch.Tensor of shape (n_atoms, n_atoms) - mask for the diagonal elements
-
-        Returns:
-            torch.Tensor of shape (n_atoms, n_atoms)
-        """
-        fc_ij = f_cutoff(rij, cutoff)
-        fc_ik = f_cutoff(rik, cutoff)
-        fc_jk = f_cutoff(rjk, cutoff)
-        fc = fc_ij * fc_ik * fc_jk
-
-        term1 = (1 + lambd * cos_theta) ** zeta
-        term2 = torch.exp(-eta * (rij  ** 2 + rik ** 2 + rjk ** 2))
-
-        g = 2 ** (1 - zeta) * term1 * term2 * fc
-
-        # apply the mask to the symmetry functions
-        g[None, None, :] = g[None, None, :] * mask.float()
-
-        # replace NaNs with zeros
-        # for the case when the denominator in the cosine term is zero
-        g[torch.isnan(g)] = 0.0
-
-        # sum the symmetry functions part over the atoms
-        g = g.sum(dim = -1).sum(dim = -1).squeeze()
-        return g
-
-def g5_function(rij: torch.Tensor, rik: torch.Tensor,
-                cos_theta: torch.Tensor, cutoff: float, eta: float, zeta: float, lambd: float,
-                mask: torch.Tensor) -> torch.Tensor:
-        """
-        Calculate G5 symmetry functions for a triplet of atoms.
-        Function is vectorized and can be applied to a batch of triplets.
-        Function does not filter out the diagonal elements of the input tensors.
-
-        Args:
-            rij: torch.Tensor of shape (n_atoms, n_atoms)
-            rik: torch.Tensor of shape (n_atoms, n_atoms)
-            cos_theta: torch.Tensor of shape (n_atoms, n_atoms)
-            cutoff: float - cutoff radius
-            eta: float - width of the Gaussian
-            zeta: float - exponent of the cosine term
-            lambd: int - sign of the cosine term
-            mask: torch.Tensor of shape (n_atoms, n_atoms) - mask for the diagonal elements
-
-        Returns:
-            torch.Tensor of shape (n_atoms, n_atoms)
-        """
-        fc_ij = f_cutoff(rij, cutoff)
-        fc_ik = f_cutoff(rik, cutoff)
-        fc = fc_ij * fc_ik
-
-        term1 = (1 + lambd * cos_theta) ** zeta
-        term2 = torch.exp(-eta * (rij  ** 2 + rik ** 2))
-
-        g = 2 ** (1 - zeta) * term1 * term2 * fc
-
-        # apply the mask to the symmetry functions
-        g[None, None, :] = g[None, None, :] * mask.float()
-
-        # replace NaNs with zeros
-        g[torch.isnan(g)] = 0.0
-
-        # sum the symmetry functions part over the atoms
-        g = g.sum(dim = -1).sum(dim = -1).squeeze()
-        return g
-
-def calculate_distances(cartesians: torch.Tensor) -> torch.Tensor:
     """
-    Calculate pairwise distances between atoms in a molecule
+    Calculate G2 symmetry functions for a pair of atoms.
+    Function is vectorized and can be applied to a batch of pairs.
+    
     Args:
-        cartesians: torch.Tensor of shape (n_atoms, 3)
-    Returns:
-        torch.Tensor of shape (n_atoms, n_atoms)
-    """
-    diff = cartesians.unsqueeze(1) - cartesians.unsqueeze(0)
-    # add a small number to avoid nan in gradients
-    distances = torch.sqrt(torch.sum(diff ** 2, dim = -1) + 10e-10)
-    return distances
+        r: torch.Tensor of shape (batch_size, n_atoms, n_atoms)
+        cutoff: float - cutoff radius
+        eta: float - width of the Gaussian
+        rs: float - center of the Gaussian
 
-def calculate_cosines(rij, rik, rjk):
+    Returns:
+        torch.Tensor of shape (batch_size, n_atoms)
     """
-    Calculate cosines of the angles between atom triplets in a molecule
+    fc = f_cutoff(r, cutoff)
+    return (torch.exp(-eta * (r - rs) ** 2) * fc).sum(dim=1)
+
+def g4_function(distances, triplets, cutoff, eta, zeta, lambd) -> torch.Tensor:
+    """
+    Calculate G4 symmetry functions for a triplet of atoms.
+
     Args:
-        rij: torch.Tensor of shape (n_atoms, n_atoms)
-        rik: torch.Tensor of shape (n_atoms, n_atoms)
-        rjk: torch.Tensor of shape (n_atoms, n_atoms)
+        distances: torch.Tensor of shape (batch_size, n_atoms, n_atoms)
+        triplets: torch.Tensor of shape (batch_size, n_atoms, n_atoms, 3)
+        cutoff: float - cutoff radius
+        eta: float - width of the Gaussian
+        zeta: float - exponent of the cosine term
+        lambd: int - sign of the cosine term
+
     Returns:
-        torch.Tensor of shape (n_atoms, n_atoms)
+        torch.Tensor of shape (batch_size, n_atoms)
     """
-    cosines = torch.where(torch.abs(2 * rij * rik) <= 10e-4,
-                           (rij ** 2 + rik ** 2 - rjk ** 2) / (2 * rij * rik),
-                            torch.zeros_like(rij))
+    # Smooth cutoff function for pairwise distances
+    fc = f_cutoff(distances, cutoff)  # Shape: (B, N, N)
 
-    return cosines
+    # Expand distances and displacements to compute triplets
+    rij = distances.unsqueeze(2)  # Shape: (B, N, N, 1)
+    rik = distances.unsqueeze(1)  # Shape: (B, N, 1, N)
+    rjk = torch.linalg.norm(triplets.unsqueeze(1) - triplets.unsqueeze(2), dim=-1)  # Shape: (B, N, N, N)
 
-def calculate_mask(cartesians):
+    # Valid triplets: Apply cutoff mask
+    cutoff_mask = (rij < cutoff) & (rik < cutoff) & (rjk < cutoff)  # Shape: (B, N, N, N)
+
+    # Normalize displacement vectors for angle calculation
+    disp_norm_ij = triplets / rij.clamp(min=1e-8)  # Shape: (B, N, N, 3)
+    disp_norm_ik = triplets.unsqueeze(1) / rik.unsqueeze(-1).clamp(min=1e-8)  # Shape: (B, N, N, N, 3)
+
+    # Cosine of the angle θ_ijk
+    cos_theta = torch.sum(disp_norm_ij.unsqueeze(2) * disp_norm_ik, dim=-1)  # Shape: (B, N, N, N)
+
+    # Smooth cutoff product
+    fc_triplet = (fc.unsqueeze(2) * fc.unsqueeze(1))  # Shape: (B, N, N, N)
+
+    exponent = 2 ** (1 - zeta) * torch.exp(-eta * (rij ** 2 + rik ** 2 + rjk ** 2))  # Shape: (B, N, N, N)
+
+    # Angular symmetry function G^4
+    G4 = torch.sum(fc_triplet * (1 + lambd * cos_theta) ** zeta * exponent * cutoff_mask, dim=(-2, -1))  # Shape: (B, N)
+    return G4
+
+def g5_function(distances, triplets, cutoff, eta, zeta, lambd) -> torch.Tensor:
     """
-    Calculate a mask for the diagonal elements of the symmetry functions tensor
+    Calculate G5 symmetry functions for a triplet of atoms.
+
     Args:
-        cartesians: torch.Tensor of shape (n_atoms, 3)
+        distances: torch.Tensor of shape (batch_size, n_atoms, n_atoms)
+        triplets: torch.Tensor of shape (batch_size, n_atoms, n_atoms, 3)
+        cutoff: float - cutoff radius
+        eta: float - width of the Gaussian
+        zeta: float - exponent of the cosine term
+        lambd: int - sign of the cosine term
+
     Returns:
-        torch.Tensor of shape (n_atoms, n_atoms)
+        torch.Tensor of shape (batch_size, n_atoms)
     """
-    n_atoms = cartesians.shape[0]
-    mask = (torch.arange(n_atoms, device = cartesians.device).unsqueeze(1) != torch.arange(n_atoms, device = cartesians.device)).unsqueeze(2)
-    mask = mask & mask.transpose(0, 1) & mask.transpose(1, 2)
-    return mask
+    # Smooth cutoff function for pairwise distances
+    fc = f_cutoff(distances, cutoff)  # Shape: (B, N, N)
+
+    # Expand distances and displacements to compute triplets
+    rij = distances.unsqueeze(2)  # Shape: (B, N, N, 1)
+    rik = distances.unsqueeze(1)  # Shape: (B, N, 1, N)
+
+    # Valid triplets: Apply cutoff mask
+    cutoff_mask = (rij < cutoff) & (rik < cutoff)  # Shape: (B, N, N, N)
+
+    # Normalize displacement vectors for angle calculation
+    disp_norm_ij = triplets / rij.clamp(min=1e-8)  # Shape: (B, N, N, 3)
+    disp_norm_ik = triplets.unsqueeze(1) / rik.unsqueeze(-1).clamp(min=1e-8)  # Shape: (B, N, N, N, 3)
+
+    # Cosine of the angle θ_ijk
+    cos_theta = torch.sum(disp_norm_ij.unsqueeze(2) * disp_norm_ik, dim=-1)  # Shape: (B, N, N, N)
+
+    # Smooth cutoff product
+    fc_triplet = (fc.unsqueeze(2) * fc.unsqueeze(1))  # Shape: (B, N, N, N)
+
+    exponent = 2 ** (1 - zeta) * torch.exp(-eta * (rij ** 2 + rik ** 2))  # Shape: (B, N, N, N)
+
+    # Angular symmetry function G^5
+    G5 = torch.sum(fc_triplet * (1 + lambd * cos_theta) ** zeta * exponent * cutoff_mask, dim=(-2, -1))  # Shape: (B, N)
+    return G5

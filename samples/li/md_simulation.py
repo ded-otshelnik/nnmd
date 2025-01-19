@@ -1,23 +1,24 @@
 # MD simulation of Li atoms with neural network
 
-from try_nn import calculate_input
-from get_auto_g_params import params_for_G2, params_for_G4
 import torch
 
 from nnmd.md import NNMD_calc
+from nnmd.features import calculate_sf, params_for_G2, params_for_G4
 
 from ase.md.verlet import VelocityVerlet
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 import ase.units as units
 import ase.data as ad
 
+from ase.io import Trajectory
+
 device = torch.device('cuda')
 dtype = torch.float64
 
 # params of symmetric functions
-r_cutoff_g2 = 6.0
-r_cutoff_g4 = 6.0
-n_radial = 6
+r_cutoff_g2 = 4.0
+r_cutoff_g4 = 4.0
+n_radial = 4
 n_angular = 12
 
 features = [2] * n_radial + [4] * n_angular
@@ -34,21 +35,19 @@ L = 9.0
 rVan = 1.44
 dt = 10e-3
 
-from ase.io import Trajectory
-import numpy as np
-sample_traj = Trajectory('Li_crystal_27.traj')
+sample_traj = Trajectory('input/Li_crystal_27.traj')
 start = int(len(sample_traj) * 0.8)
 
 class NN:
     def __init__(self):
         from nnmd.nn import AtomicNN
-        self.model = AtomicNN(input_size = n_angular + n_radial, hidden_size = [30, 30]).float()
-        self.model.load_state_dict(torch.load("model.pth"))
+        self.model = AtomicNN(input_size = n_angular + n_radial, hidden_size = [48, 48]).float()
+        self.model.load_state_dict(torch.load("models/atomic_nn_Li.pth"))
 
     def forward(self, cartesians, symm_func_params, h = None):
         carts = cartesians.unsqueeze(0)
         carts.requires_grad = True
-        g, dg = calculate_input(carts, symm_func_params)
+        g, dg = calculate_sf(carts, symm_func_params)
         g = g.squeeze()
         dg = dg.squeeze()
 

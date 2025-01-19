@@ -25,7 +25,6 @@ class NNMD_calc(Calculator):
         self.model: torch.nn.Module = model
         self.pbc = False
         self.atoms = atoms
-        self.predictor = None
         self.to_eV = to_eV
         self.symm_funcs_data = symm_funcs_data
 
@@ -44,25 +43,12 @@ class NNMD_calc(Calculator):
                     'elems': self._atoms_to_calc.numbers}
             yield data
 
-    def _get_prediction(self, dtype=torch.float32):
-        if self.predictor is not None:
-            return self.predictor
+    def _get_prediction(self, dtype = torch.float32):
+        positions = torch.tensor(self._atoms_to_calc.positions, dtype = dtype)
+        cell = torch.tensor(self._atoms_to_calc.cell, dtype = dtype)
+        return self.model.predict(positions, cell, self.symm_funcs_data)
 
-        self.size = len(self._atoms_to_calc)
-
-        dtypes = {'coord': dtype, 'elems': torch.int32, 'ind_1': torch.int32}
-        shapes = {'coord': [None, 3], 'elems': [None], 'ind_1': [None, 1]}
-
-        if self._atoms_to_calc.pbc.any():
-            shapes['cell'] = [1, 3, 3]
-            dtypes['cell'] = dtype
-            self.pbc = True
-        else:
-            self.pbc = False
-        data = torch.tensor(next(self._generator())['coord'], dtype = dtype)
-        return self.model.forward(data, self.symm_funcs_data)
-
-    def calculate(self, atoms = None):
+    def calculate(self, atoms = None, properties = None, system_changes = None):
         """Run a calculation. 
 
         The properties and system_changes are ignored here since we do
@@ -75,10 +61,6 @@ class NNMD_calc(Calculator):
         if atoms is not None:
             self.atoms = atoms.copy()
         self._atoms_to_calc: ase.Atoms = self.atoms
-
-        if self._atoms_to_calc.pbc.any() != self.pbc and self.predictor:
-            print('PBC condition changed, reset the predictor.')
-            self.predictor = None
 
         results = self._get_prediction()
 
