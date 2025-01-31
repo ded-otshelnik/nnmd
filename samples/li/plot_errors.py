@@ -47,8 +47,8 @@ fig, ax = plt.subplots(constrained_layout = True, figsize = (10, 6))
 ax.set_title("Среднеквадратичная ошибка (СКО) при обучении")
 
 # the main plot
-ax.plot(range(10, len(data['train_e_nn'])), data['train_e_nn'][10:], marker = 'o', label = "СКО, потенциалы")
-ax.plot(range(10, len(data['val_e_nn'])), data['val_e_nn'][10:], marker = 'o', label = "СКО, потенциалы")
+ax.plot(range(5, len(data['train_e_nn'])), data['train_e_nn'][5:], marker = 'o', label = "СКО, потенциалы, обучающая выборка")
+ax.plot(range(5, len(data['val_e_nn'])), data['val_e_nn'][5:], marker = 'o', label = "СКО, потенциалы, валидационная выборка")
 
 ax.set_xlabel("Итерации", fontsize = 15, color = 'black')
 ax.set_ylabel("СКО (эВ/\u212b)", fontsize = 15, color = 'black')
@@ -61,8 +61,8 @@ fig, ax = plt.subplots(constrained_layout = True, figsize = (10, 6))
 ax.set_title("Среднеквадратичная ошибка (СКО) при обучении")
 
 # the main plot
-ax.plot(range(5, len(data['train_f_nn'])), data['train_f_nn'][5:], marker = 'o',label = "СКО, силы на атомах")
-ax.plot(range(5, len(data['val_f_nn'])), data['val_f_nn'][5:], marker = 'o',label = "СКО, силы на атомах")
+ax.plot(range(len(data['train_f_nn'])), data['train_f_nn'], marker = 'o',label = "СКО, силы на атомах, обучающая выборка")
+ax.plot(range(len(data['val_f_nn'])), data['val_f_nn'], marker = 'o',label = "СКО, силы на атомах, валидационная выборка")
 
 ax.set_xlabel("Итерации", fontsize = 15, color = 'black')
 ax.set_ylabel("СКО (эВ/\u212b)", fontsize = 15, color = 'black')

@@ -1,8 +1,7 @@
 import re 
 import traceback
 from typing import Tuple
-
-import numpy as np
+from random import shuffle
 
 from ase.io import Trajectory
 
@@ -44,7 +43,7 @@ def traj_parser(traj_file: str) -> tuple:
         data['velocities'] = atoms.get_velocities()
         data['energy'] = atoms.get_potential_energy()
         result.append(data)
-
+    shuffle(result)
     return n_atoms, result, cell
 
 def gpaw_parser(filename, encoding = 'utf-8') -> Tuple[int, int, list, list, list]:

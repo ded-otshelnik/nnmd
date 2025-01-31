@@ -37,7 +37,7 @@ def input_parser(input_file: str) -> dict:
                 elif k == "symmetry_functions_set":
                     symmetry_functions_data = _parse_json_or_yaml(v)
                     input_data[key][k] = {}
-                    for element, functions in symmetry_functions_data['symmetry_functions_params'].items():
+                    for element, functions in symmetry_functions_data.items():
                         count = 0
                         features = []
                         params = []

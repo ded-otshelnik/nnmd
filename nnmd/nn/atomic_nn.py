@@ -24,7 +24,7 @@ class AtomicNN(nn.Module):
             self.model.append(nn.Linear(input_size, hidden_sizes))
             self.model.append(nn.Linear(hidden_sizes, output_size))
         else:
-            raise ValueError("hidden_nodes must be a list or an integer")
+            raise ValueError("hidden_sizes must be a list or an integer")
 
     def forward(self, x):
         for i, layer in enumerate(self.model):

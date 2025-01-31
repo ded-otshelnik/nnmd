@@ -2,16 +2,9 @@
 # 1. total refactoring & clean-up
 # 2. all methods except __init__ must be covered by tests
 # 3. parameters of all methods must be checked
+# 4. all methods must be documented
 
-import math
-
-from matplotlib.pylab import f
-
-# PyTorch module
-# must be imported before C++ extention
-# for compatibility
 import torch
-# set random seed for reproducibility
 torch.manual_seed(0)
 from torch import nn
 from torch.utils.data import DataLoader
@@ -49,6 +42,9 @@ class HDNN(torch.nn.Module):
         super().__init__()
         self.dtype = dtype
         self.use_cuda = use_cuda
+
+        # target device
+        self.device = torch.device('cuda') if self.use_cuda else torch.device('cpu')
     
     def _describe_training(self, train_dataset_size, val_dataset_size, test_dataset_size, batch_size, epochs):
         from importlib.metadata import version
@@ -57,15 +53,16 @@ class HDNN(torch.nn.Module):
 
         self.net_log.info(f"NNMD v{version(module_name)}\n")
         self.net_log.info(f"---Neural network parameters---")
-        self.net_log.info(f"device:                        {self.device}")
-        self.net_log.info(f"training epochs:               {epochs}")
-        self.net_log.info(f"batch size:                    {batch_size}")
-        self.net_log.info(f"optimizer:                     {self.optim.__class__.__name__}")
-        self.net_log.info(f"loss function:                 {self.criterion.__class__.__name__}")
-        self.net_log.info(f"loss function coefficient:     {self.mu}")
-        self.net_log.info(f"learning rate:                 {self.learning_rate}")
-        self.net_log.info(f"scheduler:                     {self.sched.__class__.__name__}")
-        self.net_log.info(f"L2 regularization coefficient: {self.l2_regularization}\n\n")
+        self.net_log.info(f"device:                             {self.device}")
+        self.net_log.info(f"training epochs:                    {epochs}")
+        self.net_log.info(f"batch size:                         {batch_size}")
+        self.net_log.info(f"optimizer:                          {self.optim.__class__.__name__}")
+        self.net_log.info(f"loss function:                      {self.criterion.__class__.__name__}")
+        self.net_log.info(f"energies loss function coefficient: {self.e_loss_coeff}")
+        self.net_log.info(f"forces loss function coefficient:   {self.f_loss_coeff}")
+        self.net_log.info(f"learning rate:                      {self.learning_rate}")
+        self.net_log.info(f"scheduler:                          {self.sched.__class__.__name__}")
+        self.net_log.info(f"L2 regularization coefficient:      {self.l2_regularization}\n\n")
         self.net_log.info(f"----Atomic NNs parameters----")
         self.net_log.info(f"input sizes (number of descriptors): {self.input_sizes}")
         self.net_log.info(f"hidden sizes:                        {self.hidden_sizes}")
@@ -74,7 +71,6 @@ class HDNN(torch.nn.Module):
         self.net_log.info(f"Training sample size:   {train_dataset_size}")
         self.net_log.info(f"Validation sample size: {val_dataset_size}")
         self.net_log.info(f"Test sample size:       {test_dataset_size}\n\n")
-
 
     def config(self, neural_net_data: dict, input_sizes: list[int], output_sizes: list[int], path: str = None):
         """Configures HDNN instance.
@@ -100,39 +96,45 @@ class HDNN(torch.nn.Module):
         self.learning_rate = neural_net_data['learning_rate']
         self.l2_regularization = neural_net_data['l2_regularization']
 
-        # a coefficient of forces importance in error
-        self.mu = neural_net_data['mu']
-
-        # target device
-        self.device = torch.device('cuda') if self.use_cuda else torch.device('cpu')
-
+        # coefficients of energies/forces importance in loss function
+        self.e_loss_coeff = neural_net_data['e_loss_coeff']
+        self.f_loss_coeff = neural_net_data['f_loss_coeff']
+        
         # create Atomic NNs for each atom species
-        self.atomic_nets = nn.ModuleList()
+        self.atomic_nets = []
         for i in range(len(self.species)):
-            self.atomic_nets.append(AtomicNN(input_size = self.input_sizes[i],
+            net = AtomicNN(input_size = self.input_sizes[i],
                                              hidden_sizes = self.hidden_sizes[i],
-                                             output_size = self.output_sizes[i]))
-            # initialize weights of Atomic NNs
-            for m in self.atomic_nets[i].model:
-                # Xavier weights initialization works better on linear layers
-                if isinstance(m, nn.Linear):
-                    nn.init.xavier_uniform_(m.weight)
-                    #nn.init.constant_(m.bias, 0)
-            self.atomic_nets[i] = self.atomic_nets[i].to(device = self.device)
+                                             output_size = self.output_sizes[i])
+            net = net.to(self.device)
+
             if neural_net_data['load_models']:
                 path2model = "".join([path, f"atomic_nn_{neural_net_data['atom_species'][i]}.pt"])
-                self.atomic_nets[i].load_state_dict(torch.load(path2model))
+                net.load_state_dict(torch.load(path2model))
+            else:
+                # initialize weights of Atomic NNs
+                for m in net.model:
+                    # Xavier weights initialization works better on linear layers
+                    if isinstance(m, nn.Linear):
+                        nn.init.xavier_uniform_(m.weight)
+                        nn.init.constant_(m.bias, 0)
+
+            self.atomic_nets.append(net)
 
         # loss function
-        self.criterion = RMSELoss()
+        self.criterion = torch.nn.MSELoss()
 
-        # Atomic NN optimizer
-        self.optim = torch.optim.Adam([{'params': net.parameters()} for net in self.atomic_nets],
-                                        lr = self.learning_rate,
-                                        weight_decay = self.l2_regularization)
+        params = []
+        for net in self.atomic_nets:
+            params += list(net.parameters())
+
+        # Atomic nets optimizer
+        self.optim = torch.optim.Adam(params = params,
+                                      lr = self.learning_rate,
+                                      weight_decay = self.l2_regularization)
     
-    def loss(self, e_nn: torch.Tensor, energies: torch.Tensor,
-                   f_nn: torch.Tensor, forces: torch.Tensor) -> torch.Tensor:
+    def _loss(self, e_nn: torch.Tensor, energies: torch.Tensor,
+                    f_nn: torch.Tensor, forces: torch.Tensor, n_struct: int, n_atoms: int) -> torch.Tensor:
         """Gets loss of calculations.
 
         Args:
@@ -141,8 +143,8 @@ class HDNN(torch.nn.Module):
             f_nn (torch.Tensor): calculated forces
             forces (torch.Tensor): target forces
         """
-        E_loss = self.criterion(e_nn, energies)
-        F_loss = self.criterion(f_nn, forces) * (self.mu / 3)
+        E_loss = self.e_loss_coeff * self.criterion(e_nn, energies)
+        F_loss = self.f_loss_coeff / 3 * self.criterion(f_nn, forces)
         loss = E_loss + F_loss
         return loss, E_loss, F_loss
 
@@ -165,7 +167,8 @@ class HDNN(torch.nn.Module):
         test_loader = DataLoader(test_dataset, batch_size = batch_size, shuffle = True)
 
         # scheduler for Atomic NN optimizer
-        self.sched = torch.optim.lr_scheduler.ExponentialLR(self.optim, gamma = 0.95)
+        self.sched = torch.optim.lr_scheduler.ExponentialLR(self.optim, gamma = 0.99)
+        #self.sched = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, mode = 'min', factor = 0.75, patience = 5)
         
         # output log file
         self.net_log = Logger.get_logger("Net training info", "net.log")
@@ -182,15 +185,16 @@ class HDNN(torch.nn.Module):
         # run training
         for epoch in range(epochs):
             e_loss, f_loss, loss = self._train_loop(epoch, train_loader)
-            self.net_log.info(f"Epoch {epoch + 1}: training: " + loss_info.format(e_loss = e_loss.item(),
-                                                                                    f_loss = f_loss.item(), 
-                                                                                    loss = loss.item()))
+            
+            self.net_log.info(f"Epoch {epoch + 1}: training: " + loss_info.format(e_loss = torch.sqrt(e_loss).item(),
+                                                                                  f_loss = torch.sqrt(f_loss).item(), 
+                                                                                  loss = torch.sqrt(loss).item()))
 
             e_loss, f_loss, loss = self._validate(epoch, val_loader)
             
-            self.net_log.info(f"Epoch {epoch + 1}: validation: " + loss_info.format(e_loss = e_loss.item(),
-                                                                                    f_loss = f_loss.item(), 
-                                                                                    loss = loss.item()))
+            self.net_log.info(f"Epoch {epoch + 1}: validation: " + loss_info.format(e_loss = torch.sqrt(e_loss).item(),
+                                                                                    f_loss = torch.sqrt(f_loss).item(), 
+                                                                                    loss = torch.sqrt(loss).item()))
 
             # if scheduler is used
             # update learning rate by rule
@@ -233,38 +237,38 @@ class HDNN(torch.nn.Module):
 
         for data in tqdm(train_loader, desc = f"Epoch {epoch + 1}, Training", total = len(train_loader)):
             # reset params grad to None
-            for net in self.atomic_nets:
-                for param in net.parameters():
-                    param.grad = None
-                
+            self.optim.zero_grad(set_to_none = True)
+
             # input data in batch:
             # g values (nn inputs),
             # dG values (for forces calculation),
             # energies and forces (nn targets)
             g, dG, energy, forces = data
 
-            # calculate energies using NN
-            # and gradients of G values using Autograd Engine
+            # normalize energies and forces by energy range 
+            # calculate energies and forces using NN
             e_nn = []
             f_nn = []
             for i, atom_type in enumerate(self.species):
                 e_nn_atom_type = self.atomic_nets[i](g[atom_type])
                 e_nn.append(e_nn_atom_type)
+
+                # calculate gradients of E by G
                 dE = torch.autograd.grad(e_nn_atom_type.sum(), g[atom_type],
-                                      retain_graph = True, create_graph = True)[0]
+                                    create_graph = True)[0]
 
                 # calculate forces using gradients of E values
                 # and G values gradients by Einstein summation rule
-                f_nn_atom_type = -torch.einsum('ik,ijkl->ijl', dE, dG[atom_type])
+                f_nn_atom_type = -torch.einsum('ijk,ijkl->ijl', dE, dG[atom_type])
                 f_nn.append(f_nn_atom_type)
 
             # concatenate energies and forces for all atom species
             e_nn = torch.cat(e_nn, dim = 0)
             f_nn = torch.cat(f_nn, dim = 0)
-
-            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum().squeeze(), energy, f_nn, forces)
+            batch_loss, batch_e_loss, batch_f_loss = self._loss(e_nn.sum(dim = 1), energy, 
+                                                                f_nn, forces, 
+                                                                forces.size(0), forces.size(1))
             batch_loss.backward(retain_graph = True)
-
             self.optim.step()
 
             loss += batch_loss
@@ -272,8 +276,8 @@ class HDNN(torch.nn.Module):
             f_loss += batch_f_loss
 
         # normalize total epoch losses
-        f_loss /= len(train_loader)
         e_loss /= len(train_loader)
+        f_loss /= len(train_loader)
         loss /= len(train_loader)
 
         return e_loss, f_loss, loss
@@ -297,29 +301,40 @@ class HDNN(torch.nn.Module):
 
         for data in tqdm(val_loader, desc = f"Epoch {epoch + 1}, Validation"):
             # input data in batch:
-            # positions (necessary in forces calculation),
             # g values (nn inputs),
+            # dg values (necessary in forces calculation),
             # energies and forces (nn targets)
             g, dG, energy, forces = data
 
             e_nn = []
             f_nn = []
             for i, atom_type in enumerate(self.species):
-                e_nn_atom_type = self.atomic_nets[i](g[atom_type]).sum(dim = -1)
-                e_nn.append(e_nn_atom_type)
-                dE = torch.autograd.grad(e_nn_atom_type.sum(), g[atom_type],
-                                      retain_graph = True, create_graph = True)[0]
+                # send data to device
+                dG_batch = dG[atom_type]
+                g_batch = g[atom_type]
 
+                e_nn_atom_type = self.atomic_nets[i](g_batch)
+                e_nn.append(e_nn_atom_type)
+
+                # calculate gradients of E by G
+                dE = torch.autograd.grad(e_nn_atom_type.sum(), g_batch,
+                                    create_graph = True)[0]
+                
                 # calculate forces using gradients of E values
                 # and G values gradients by Einstein summation rule
-                f_nn_atom_type = -torch.einsum('ik,ijkl->ijl', dE, dG[atom_type])
+                f_nn_atom_type = -torch.einsum('ijk,ijkl->ijl', dE, dG_batch)
                 f_nn.append(f_nn_atom_type)
 
             # concatenate energies and forces for all atom species
             e_nn = torch.cat(e_nn, dim = 0)
             f_nn = torch.cat(f_nn, dim = 0)
+
+            energy = energy.to(device = self.device)
+            forces = forces.to(device = self.device)
             
-            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum().squeeze(), energy, f_nn, forces)
+            batch_loss, batch_e_loss, batch_f_loss = self._loss(e_nn.sum(dim = 1), 
+                                                                energy, f_nn, forces, 
+                                                                forces.size(0), forces.size(1))
 
             loss += batch_loss
             e_loss += batch_e_loss
@@ -343,31 +358,40 @@ class HDNN(torch.nn.Module):
 
         for data in tqdm(test_loader, desc = f"Testing"):
             # input data in batch:
-            # positions (necessary in forces calculation),
             # g values (nn inputs),
+            # dg values (necessary in forces calculation),
             # energies and forces (nn targets)
             g, dG, energy, forces = data
 
-            # calculate energies using NN
-            # and gradients by G values using Autograd Engine
+            # calculate energies  and forces using NN
             e_nn = []
             f_nn = []
             for i, atom_type in enumerate(self.species):
-                e_nn_atom_type = self.atomic_nets[i](g[atom_type]).sum(dim = -1)
+                dG_batch = dG[atom_type]
+                g_batch = g[atom_type]
+
+                e_nn_atom_type = self.atomic_nets[i](g_batch)
                 e_nn.append(e_nn_atom_type)
-                dE = torch.autograd.grad(e_nn_atom_type.sum(), g[atom_type],
-                                      retain_graph = True, create_graph = True)[0]
+
+                # calculate gradients of E by G
+                dE = torch.autograd.grad(e_nn_atom_type.sum(), g_batch,
+                                    create_graph = True)[0]
 
                 # calculate forces using gradients of E values
                 # and G values gradients by Einstein summation rule
-                f_nn_atom_type = -torch.einsum('ik,ijkl->ijl', dE, dG[atom_type])
+                f_nn_atom_type = -torch.einsum('ijk,ijkl->ijl', dE, dG_batch)
                 f_nn.append(f_nn_atom_type)
 
             # concatenate energies and forces for all atom species
             e_nn = torch.cat(e_nn, dim = 0)
             f_nn = torch.cat(f_nn, dim = 0)
-            
-            batch_loss, batch_e_loss, batch_f_loss = self.loss(e_nn.sum().squeeze(), energy, f_nn, forces)
+
+            energy = energy.to(device = self.device)
+            forces = forces.to(device = self.device)
+
+            batch_loss, batch_e_loss, batch_f_loss = self._loss(e_nn.sum(dim = 1), energy, 
+                                                                f_nn, forces, 
+                                                                forces.size(0), forces.size(1))
 
             loss += batch_loss
             e_loss += batch_e_loss

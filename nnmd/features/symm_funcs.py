@@ -1,3 +1,4 @@
+import functools
 import torch
 
 from enum import Enum
@@ -12,7 +13,7 @@ def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
     Calculate pairwise distances and displacements with PBC.
 
     Args:
-        positions: torch.Tensor of shape (n_atoms, 3)
+        positions: torch.Tensor of shape (n_moleculs, n_atoms, 3)
         cell: torch.Tensor of shape (3, 3)
         r_cutoff: float - cutoff radius
 
@@ -20,7 +21,7 @@ def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
         torch.Tensor of shape (n_atoms, n_atoms), torch.Tensor of shape (n_atoms, n_atoms, 3)
     """
     # Create pairwise displacement matrix (num_atoms x num_atoms x 3)
-    disp = positions.unsqueeze(1) - positions.unsqueeze(0)  # (B, N, N, 3)
+    disp = positions.unsqueeze(2) - positions.unsqueeze(1)  # (B, N, N, 3)
 
     # Convert displacements to fractional coordinates
     inv_cell = torch.linalg.inv(cell.T)
@@ -33,7 +34,7 @@ def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
     cart_disp = torch.matmul(frac_disp, cell)
 
     # Compute distances
-    distances = torch.linalg.norm(cart_disp, dim=-1)  # (B, N, N)
+    distances = torch.linalg.norm(cart_disp, dim = -1)  # (B, N, N)
     return distances, cart_disp
 
 def f_cutoff(r, cutoff):
@@ -68,7 +69,7 @@ def g2_function(r: torch.Tensor, cutoff: float, eta: float, rs: float) -> torch.
         torch.Tensor of shape (batch_size, n_atoms)
     """
     fc = f_cutoff(r, cutoff)
-    return (torch.exp(-eta * (r - rs) ** 2) * fc).sum(dim=1)
+    return (torch.exp(-eta * (r - rs) ** 2) * fc).sum(dim = 2)
 
 def g4_function(distances, triplets, cutoff, eta, zeta, lambd) -> torch.Tensor:
     """
@@ -89,27 +90,23 @@ def g4_function(distances, triplets, cutoff, eta, zeta, lambd) -> torch.Tensor:
     fc = f_cutoff(distances, cutoff)  # Shape: (B, N, N)
 
     # Expand distances and displacements to compute triplets
-    rij = distances.unsqueeze(2)  # Shape: (B, N, N, 1)
-    rik = distances.unsqueeze(1)  # Shape: (B, N, 1, N)
-    rjk = torch.linalg.norm(triplets.unsqueeze(1) - triplets.unsqueeze(2), dim=-1)  # Shape: (B, N, N, N)
+    rij = distances.unsqueeze(3)  # Shape: (B, N, N, 1)
+    rik = distances.unsqueeze(2)  # Shape: (B, N, 1, N)
+    rjk = torch.linalg.norm(triplets.unsqueeze(2) - triplets.unsqueeze(3), dim = -1)  # Shape: (B, N, N, N)
 
     # Valid triplets: Apply cutoff mask
     cutoff_mask = (rij < cutoff) & (rik < cutoff) & (rjk < cutoff)  # Shape: (B, N, N, N)
 
-    # Normalize displacement vectors for angle calculation
-    disp_norm_ij = triplets / rij.clamp(min=1e-8)  # Shape: (B, N, N, 3)
-    disp_norm_ik = triplets.unsqueeze(1) / rik.unsqueeze(-1).clamp(min=1e-8)  # Shape: (B, N, N, N, 3)
-
     # Cosine of the angle θ_ijk
-    cos_theta = torch.sum(disp_norm_ij.unsqueeze(2) * disp_norm_ik, dim=-1)  # Shape: (B, N, N, N)
+    cos_theta = (rij ** 2 + rik ** 2 - rjk ** 2) / (2 * rij * rik).clamp(min = 1e-8)  # Shape: (B, N, N, N)
 
     # Smooth cutoff product
-    fc_triplet = (fc.unsqueeze(2) * fc.unsqueeze(1))  # Shape: (B, N, N, N)
+    fc_triplet = fc.unsqueeze(3) * fc.unsqueeze(2)  # Shape: (B, N, N, N)
 
-    exponent = 2 ** (1 - zeta) * torch.exp(-eta * (rij ** 2 + rik ** 2 + rjk ** 2))  # Shape: (B, N, N, N)
+    exponent = 2 ** (1 - zeta)  * torch.exp(-eta * (rij ** 2 + rik ** 2 + rjk ** 2))  # Shape: (B, N, N, N)
 
     # Angular symmetry function G^4
-    G4 = torch.sum(fc_triplet * (1 + lambd * cos_theta) ** zeta * exponent * cutoff_mask, dim=(-2, -1))  # Shape: (B, N)
+    G4 = torch.sum(fc_triplet * (1 + lambd * cos_theta) ** zeta * exponent * cutoff_mask, dim = (-2, -1))  # Shape: (B, N)
     return G4
 
 def g5_function(distances, triplets, cutoff, eta, zeta, lambd) -> torch.Tensor:
@@ -131,24 +128,21 @@ def g5_function(distances, triplets, cutoff, eta, zeta, lambd) -> torch.Tensor:
     fc = f_cutoff(distances, cutoff)  # Shape: (B, N, N)
 
     # Expand distances and displacements to compute triplets
-    rij = distances.unsqueeze(2)  # Shape: (B, N, N, 1)
-    rik = distances.unsqueeze(1)  # Shape: (B, N, 1, N)
+    rij = distances.unsqueeze(3)  # Shape: (B, N, N, 1)
+    rik = distances.unsqueeze(2)  # Shape: (B, N, 1, N)
+    rjk = torch.linalg.norm(triplets.unsqueeze(2) - triplets.unsqueeze(3), dim = -1)  # Shape: (B, N, N, N)
 
     # Valid triplets: Apply cutoff mask
     cutoff_mask = (rij < cutoff) & (rik < cutoff)  # Shape: (B, N, N, N)
 
-    # Normalize displacement vectors for angle calculation
-    disp_norm_ij = triplets / rij.clamp(min=1e-8)  # Shape: (B, N, N, 3)
-    disp_norm_ik = triplets.unsqueeze(1) / rik.unsqueeze(-1).clamp(min=1e-8)  # Shape: (B, N, N, N, 3)
-
     # Cosine of the angle θ_ijk
-    cos_theta = torch.sum(disp_norm_ij.unsqueeze(2) * disp_norm_ik, dim=-1)  # Shape: (B, N, N, N)
+    cos_theta = (rij ** 2 + rik ** 2 - rjk ** 2) / (2 * rij * rik).clamp(min = 1e-8) 
 
     # Smooth cutoff product
-    fc_triplet = (fc.unsqueeze(2) * fc.unsqueeze(1))  # Shape: (B, N, N, N)
+    fc_triplet = (fc.unsqueeze(3) * fc.unsqueeze(2))  # Shape: (B, N, N, N)
 
     exponent = 2 ** (1 - zeta) * torch.exp(-eta * (rij ** 2 + rik ** 2))  # Shape: (B, N, N, N)
 
     # Angular symmetry function G^5
-    G5 = torch.sum(fc_triplet * (1 + lambd * cos_theta) ** zeta * exponent * cutoff_mask, dim=(-2, -1))  # Shape: (B, N)
+    G5 = torch.sum(fc_triplet * (1 + lambd * cos_theta) ** zeta * exponent * cutoff_mask, dim = (-2, -1))  # Shape: (B, N)
     return G5

@@ -1,7 +1,5 @@
 import functools
-import math
 import torch
-from functorch import vmap, grad
 from .symm_funcs import calculate_distances, g2_function, g4_function, g5_function, SymmetryFunction
 
 from joblib import Parallel, cpu_count, delayed
@@ -15,7 +13,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def _internal(cart: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict) -> torch.Tensor:
+def _internal(cart: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Calculate symmetry functions for a single molecule.
     Args:
@@ -45,8 +43,9 @@ def _internal(cart: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict) -> 
         else:
             raise ValueError(f"Unknown symmetry function number: {g_func}")
 
-        # Calculate the gradient of the symmetry function
+        # Calculate the gradient of the symmetry function 
         dg_values = torch.autograd.grad(g_values.sum(), cart, create_graph = True)[0]
+        g_values = g_values / torch.norm(g_values, dim = 1, keepdim = True).expand_as(g_values)
 
         g_struct.append(g_values.detach())
         dg_struct.append(dg_values.detach())
@@ -55,11 +54,11 @@ def _internal(cart: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict) -> 
     g_struct = torch.stack(g_struct, dim = -1)
     dg_struct = torch.stack(dg_struct, dim = -1)
 
-    # Permute the symmetry functions to the shape (n_atoms, n_symm_funcs, 3)
-    dg_struct = dg_struct.permute(0, 2, 1)
+    # Permute the symmetry functions to the shape (n_batch, n_atoms, n_symm_funcs, 3)
+    dg_struct = dg_struct.permute(0, 1, 3, 2)
     return g_struct, dg_struct
 
-def calculate_sf(cartesians: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict) -> torch.Tensor:
+def calculate_sf(cartesians: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Calculate symmetry functions for a batch of molecules.
     Args:
@@ -71,10 +70,23 @@ def calculate_sf(cartesians: torch.Tensor, cell: torch.Tensor, symm_funcs_data: 
     op = functools.partial(_internal, cell = cell, symm_funcs_data = symm_funcs_data)
     
     set_seed(42)
-    cartesians.requires_grad_(True)
-    r = [op(cart) for cart in tqdm(cartesians)]
-    g, dg = zip(*r)
-            
-    g = torch.stack(g, dim = 0)
-    dg = torch.stack(dg, dim = 0)
+    cartesians.requires_grad = True
+
+    cartesians_chunks = cartesians.split(cpu_count() * 2)
+    with detect_anomaly():
+        r = Parallel(n_jobs = cpu_count())(delayed(op)(cart) for cart in tqdm(cartesians_chunks))
+        g, dg = zip(*r)
+
+        g = torch.cat(g, dim = 0)
+        dg = torch.cat(dg, dim = 0)
+
+    # Detach tensors if no further gradients are needed
+    g = g.detach()
+    dg = dg.detach()
+
+    cartesians.requires_grad = False
+
+    #assert not torch.isnan(g).any(), "NaN values in the symmetry functions"
+    #assert not torch.isnan(dg).any(), "NaN values in the gradients of the symmetry functions"
+
     return g, dg

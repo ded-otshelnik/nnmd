@@ -8,7 +8,6 @@ from nnmd.features import calculate_sf, params_for_G2, params_for_G4
 from ase.md.verlet import VelocityVerlet
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 import ase.units as units
-import ase.data as ad
 
 from ase.io import Trajectory
 
@@ -16,24 +15,33 @@ device = torch.device('cuda')
 dtype = torch.float64
 
 # params of symmetric functions
-r_cutoff_g2 = 4.0
-r_cutoff_g4 = 4.0
-n_radial = 4
-n_angular = 12
+r_cutoff = 5.28
+    
+params_g2 = [
+            [r_cutoff, 0.001, 0.0],
+            [r_cutoff, 0.01, 0.0],
+            [r_cutoff, 0.03, 0.0],
+            [r_cutoff, 0.05, 0.0],
+            [r_cutoff, 0.7, 0.0],
+            [r_cutoff, 0.1, 0.0],
+            [r_cutoff, 0.2, 0.0],
+            [r_cutoff, 0.4, 0.0],
+            [r_cutoff, 0.5, 0.0],
+            [r_cutoff, 0.7, 0.0],
+            [r_cutoff, 0.9, 0.0],
+            [r_cutoff, 1.0, 0.0],
+]
+params_g4 = [
+            [r_cutoff, 0.01, 4, -1],
+            [r_cutoff, 0.01, 4, 1]
+]
+
+n_radial = len(params_g2)
+n_angular = len(params_g4)
 
 features = [2] * n_radial + [4] * n_angular
-params = params_for_G2(n_radial, r_cutoff_g2) + params_for_G4(n_angular, r_cutoff_g4)
+params = params_g2 + params_g4
 symm_funcs_data = {'features': features, 'params': params}
-
-# mass of atom (in atomic mass units)
-m_atom = ad.atomic_masses[ad.atomic_numbers['Li']]
-# temperature of system (in Kelvin)
-T = 300.0
-# size of the box
-L = 9.0
-# Van der Waals radius
-rVan = 1.44
-dt = 10e-3
 
 sample_traj = Trajectory('input/Li_crystal_27.traj')
 start = int(len(sample_traj) * 0.8)
@@ -41,26 +49,27 @@ start = int(len(sample_traj) * 0.8)
 class NN:
     def __init__(self):
         from nnmd.nn import AtomicNN
-        self.model = AtomicNN(input_size = n_angular + n_radial, hidden_size = [48, 48]).float()
+        self.model = AtomicNN(input_size = n_angular + n_radial, hidden_sizes = [64, 64]).float()
         self.model.load_state_dict(torch.load("models/atomic_nn_Li.pth"))
 
-    def forward(self, cartesians, symm_func_params, h = None):
+    def predict(self, cartesians, cell, symm_func_params):
         carts = cartesians.unsqueeze(0)
         carts.requires_grad = True
-        g, dg = calculate_sf(carts, symm_func_params)
+        g, dg = calculate_sf(carts, cell, symm_func_params)
         g = g.squeeze()
         dg = dg.squeeze()
 
+        g.requires_grad = True
         energy = self.model(g)
         de = torch.autograd.grad(energy.sum(), g, create_graph = True)[0]
-        forces = -torch.einsum('ijk,ij->ik', dg, de)
+        forces = -torch.einsum('ij,ijk->ik', de, dg)
         return energy, forces
 
 nn = NN()
 
 # ASE calculator
 calc = NNMD_calc(model = nn, to_eV = 1.0, properties = ['energy', 'forces'], symm_funcs_data = symm_funcs_data)
-atoms = sample_traj[0]
+atoms = sample_traj[start]
 atoms.calc = calc
 
 traj_file = f'Test_md_Li_27.traj'
@@ -70,7 +79,7 @@ timestep = 1  # time step of the simulation (in fs)
 
 # Integrator for the equations of motion, timestep depends on system
 dyn = VelocityVerlet(atoms, timestep * units.fs)
-MaxwellBoltzmannDistribution(atoms, temperature_K = 300)
+#MaxwellBoltzmannDistribution(atoms, temperature_K = 300)
 
 # Saving the positions of all atoms after every time step
 with Trajectory(traj_file, 'w', atoms) as traj:

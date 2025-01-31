@@ -5,8 +5,7 @@ import inspect
 import subprocess
 
 def python_import_as_command(python_code, module_name):
-    """Refactors python code for running as terminal commands (python -c "<code>"),
-    not like file .py
+    """Refactors python code for running as terminal commands (python -c "<code>")
 
     Args:
         python_code: code that must be formatted
@@ -38,7 +37,7 @@ def _test_import(import_command, module):
     out, err = run_import_command(import_command, module)
     assert out == module, err
 
-def test_import_torch_is_installed():
+def test_import_torch():
     # arrange
     code = """
     import {MODULE}
@@ -52,23 +51,10 @@ def test_import_torch_is_installed():
 def test_import_nnmd():
     # arrange
     code = """
-    import torch
     import {MODULE}
     print({MODULE}.__name__)
     """
     module = "nnmd"
-
-    # act & assert
-    _test_import(code, module)
-
-def test_import_nnmd_cpp():
-    # arrange
-    code = """
-    import torch
-    from nnmd import {MODULE}
-    print({MODULE}.__name__)
-    """
-    module = "nnmd_cpp"
 
     # act & assert
     _test_import(code, module)

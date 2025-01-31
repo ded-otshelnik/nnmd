@@ -15,7 +15,7 @@ def params_for_G2(n_radial: int, r_cutoff: float):
     rs = r_cutoff / (n_radial - 1)
     eta = 5 * np.log(10) / (4 * (rs) ** 2)
     for i in range(n_radial):
-        params.append((r_cutoff, rs * i, eta))
+        params.append((r_cutoff, eta, rs * i))
     return params
 
 def params_for_G4(n_angular: int, r_cutoff: float):
@@ -27,16 +27,16 @@ def params_for_G4(n_angular: int, r_cutoff: float):
         r_cutoff: float - cutoff radius
 
     Returns:
-        list of tuples (r_cutoff, eta, lambd, xi)
+        list of tuples (r_cutoff, eta, zeta, lambda)
     """
     params = []
 
     ind = 1
     eta = 2 * np.log(10) / ((r_cutoff) ** 2)
     for i in range(n_angular):
-        xi = 1 + i * 30 / (n_angular - 2)
+        zeta = 1 + i * 30 / (n_angular - 2)
         for lambd in [1, -1]:
-            params.append((r_cutoff, eta, lambd, xi))
+            params.append((r_cutoff, eta, zeta, lambd))
             if ind >= n_angular:
                 break
             ind += 1
