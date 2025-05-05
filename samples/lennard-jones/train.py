@@ -5,146 +5,137 @@
 
 import os
 import shutil
-import time 
-import argparse
+import warnings
 
 import torch
+import numpy as np
 import matplotlib.pyplot as plt
 
-from nnmd.nn import Neural_Network
+from nnmd.features import calculate_params
+from nnmd.io import input_parser
+from nnmd.nn import BPNN
 from nnmd.nn.dataset import make_atomic_dataset
+from nnmd.util import train_val_test_split
 
-from lennard_jones import lennard_jones_gen
-
-params_parser = argparse.ArgumentParser(description = "Sample code of nnmd usage")
-params_parser.add_argument("-c", "--use_cuda",
-                            action = argparse.BooleanOptionalAction,
-                            help = "Enable/disable CUDA usage.")
-args = params_parser.parse_args()
-
-# check if GPU usage is needed and available 
-use_cuda = (args.use_cuda is not None) and torch.cuda.is_available()
-
-# print GPU availability status
-if use_cuda:
-    print("GPU usage is enabled")
-elif args.use_cuda and not torch.cuda.is_available():
-    print("Pytorch compiled/downloaded without CUDA support. GPU is disabled")
-else:
-    print("GPU usage is disabled")
-
-print("Getting Lennard-Jones potential: ", end = '')
-
-cartesians, e_dft, f_dft, distances = lennard_jones_gen()
-
-n_structs = len(cartesians)
-n_atoms = len(cartesians[0])
-print("done")
-
-print("Create an instance of NN:", end = ' ')
-# Global parameters of HDNN 
-epochs = 100
-batch_size = len(distances)
-# Atomic NN, nodes amount in hidden layers
-hidden_nodes = [10, 10]
-
-device = torch.device('cuda') if use_cuda else torch.device('cpu')
+warnings.filterwarnings("ignore")
 dtype = torch.float32
 
-print(f"Separate data to train and test datasets:", sep = '\n', end = ' ')
+import torch
 
-# params of symmetric functions
-symm_func_params = {"r_cutoff": 2.5,
-                    "eta": 0.01,
-                    "k": 1,
-                    "rs": 0.5,
-                    "lambda": 1,
-                    "xi": 3}
-h = 1
+from nnmd.nn import BPNN
+from nnmd.nn.dataset import make_atomic_dataset
 
-# ~80% - train, ~20% - test
-sep = int(0.8 * n_structs)
-# inputs and targets
-train_cartesians, test_cartesians = torch.as_tensor(cartesians[:sep], device = device, dtype = dtype), \
-                                    torch.as_tensor(cartesians[sep:],  device = device, dtype = dtype)
-train_e_dft, test_e_dft = torch.as_tensor(e_dft[:sep], device = device, dtype = dtype), \
-                          torch.as_tensor(e_dft[sep:], device = device, dtype = dtype)
-train_f_dft, test_f_dft = torch.as_tensor(f_dft[:sep], device = device, dtype = dtype), \
-                          torch.as_tensor(f_dft[sep:], device = device, dtype = dtype)
-train_dataset = make_atomic_dataset(train_cartesians, symm_func_params, h, device,
-                                    train_e_dft, train_f_dft, train = True)
-test_dataset = make_atomic_dataset(test_cartesians, symm_func_params, h, device) 
+print("Getting Lennard-Jones potential: ", end="")
+
+input_data = input_parser("input/input.yaml")
+
 print("done")
 
-# params that define what NN will do 
-# load pre-trained models
-load_models = True
-path = 'models'
+# parameters for symmetry functions
+
+symm_funcs_data = input_data["atomic_data"]["symmetry_functions_set"]
+print("Get info from traj simulation: done")
+
+# convert train data to atomic dataset with symmetry functions
+dataset = make_atomic_dataset(input_data['atomic_data'], symm_funcs_data)
+
+# ~80% - train, ~10% - test and validation
+train_val_test_ratio = (0.8, 0.1, 0.1)
+train_dataset, val_dataset, test_dataset = train_val_test_split(
+    dataset, train_val_test_ratio
+)
+print(f"Separate data to train and test datasets: done")
+
 # train model
-train = False
+train = not input_data["neural_network"]["train"]
 # save model params as files in <path> directory
-save = False
-# test model
-test = True
+save = not input_data["neural_network"]["save"]
+# path to save model
+path = input_data["neural_network"]["path"]
 
-# Atomic NN nodes in hidden layers
-input_nodes = 1
-hidden_nodes = [10, 10]
+# Atomic NN input_size in hidden layers
+input_sizes = input_data["atomic_data"]["n_atoms"]
+output_sizes = [1]
 
-print("Create an instance of NN and config its subnets:", end = ' ')
-net = Neural_Network()
-net.config(hidden_nodes = hidden_nodes, 
-           use_cuda = use_cuda,
-           n_atoms = n_atoms,
-           input_nodes = input_nodes,
-           load_models = load_models,
-           path = path,
-           dtype = dtype)
+print("Create an instance of NN and config its subnets:", end=" ")
+
+net = BPNN(dtype=dtype)
+net.config(input_data["neural_network"], input_sizes, output_sizes)
+
 print("done")
 
-if train:
-    # parameters of training 
-    batch_size = n_structs
-    epochs = 1
+try:
+    if train:
+        print("Training:", end=" ")
+        net.fit(train_dataset, val_dataset, test_dataset)
 
-    print("Training:", f"Training sample size: {len(train_dataset)} ", sep = '\n') 
+    if save:
+        if os.path.exists(path):
+            shutil.rmtree(path, ignore_errors=True)
+        os.mkdir(path)
 
-    start = time.time()
-    net.fit(train_dataset, batch_size, epochs)
-    end = time.time()
+        net.save_model(path)
+        print("Saving model: done")
 
-    train_time = end - start
-    print(f"Training time ({'GPU' if device.type == 'cuda' else 'CPU'}): {train_time:.3f} s")
+except KeyboardInterrupt:
+    if os.path.exists("checkpoint"):
+        shutil.rmtree("checkpoint", ignore_errors=True)
+    os.mkdir("checkpoint")
 
-if save:
-    print("Saving model: ", end = '')
+    net.save_model("checkpoint")
+    print("Training is stopped. Model is saved")
 
-    if os.path.exists(path):
-        shutil.rmtree(path, ignore_errors = True)
-    os.mkdir(path)
+print("Visualize results:", end=" ")
 
-    net.save_model(path)
-    print("done")
+print(input_data["atomic_data"]['reference_data'][0])
+dataset = input_data["atomic_data"]["reference_data"]
 
-if test:
-    print("Testing:", end = ' ')
+# get cartesian coordinates for each species
+cartesians = {
+        spec: torch.tensor(
+            np.array([data[spec]["positions"] for data in dataset]),
+            dtype=torch.float32,
+            device="cuda",
+        )
+        for spec in dataset[0].keys()
+        if spec not in ["forces", "energy", "velocities"]
+}
+cell = torch.tensor(
+    input_data["atomic_data"]["unit_cell"], dtype=torch.float32, device="cuda"
+)
 
-    start = time.time()
-    test_e_nn, test_f_nn = net.predict(test_dataset)
-    end = time.time()
+pred = net.predict(cartesians, cell, symm_funcs_data)
+pred = pred.cpu().detach().numpy()
 
-    print("done", f"Testing sample size: {len(test_dataset)} ",
-          f"Testing time ({'GPU' if device.type == 'cuda' else 'CPU'}): {(end - start):.3f} s",
-          sep = '\n')
-    
-    test_loss, test_e_loss, test_f_loss = net.loss(test_e_nn, test_e_dft, test_f_nn, test_f_dft)
-
-    test_e_loss = test_e_loss.cpu().detach().numpy()
-    test_f_loss = test_f_loss.cpu().detach().numpy()
-    test_loss = test_loss.cpu().detach().numpy()
-
-    print(f"test: RMSE E = {test_e_loss:.4f}, RMSE F = {test_f_loss:.4f}, RMSE total = {test_loss:.4f} eV")
-
-    plt.plot(distances, e_dft)
-    plt.plot(distances, test_e_nn.sum(1))
-    plt.show()
+fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+ax[0].scatter(
+    dataset["reference_data"]["energy"].cpu().detach().numpy(),
+    pred[:, 0],
+    s=1,
+    c="blue",
+    alpha=0.5,
+)
+ax[0].plot(
+    [dataset["reference_data"]["energy"].min(), dataset["reference_data"]["energy"].max()],
+    [dataset["reference_data"]["energy"].min(), dataset["reference_data"]["energy"].max()],
+    c="red",
+)
+ax[0].set_xlabel("True energy")
+ax[0].set_ylabel("Predicted energy")
+ax[0].set_title("Energy prediction")
+ax[1].scatter(
+    dataset["reference_data"]["forces"].cpu().detach().numpy(),
+    pred[:, 1],
+    s=1,
+    c="blue",
+    alpha=0.5,
+)
+ax[1].plot(
+    [dataset["reference_data"]["forces"].min(), dataset["reference_data"]["forces"].max()],
+    [dataset["reference_data"]["forces"].min(), dataset["reference_data"]["forces"].max()],
+    c="red",
+)
+ax[1].set_xlabel("True forces")
+ax[1].set_ylabel("Predicted forces")
+ax[1].set_title("Forces prediction")
+plt.show()

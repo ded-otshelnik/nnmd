@@ -1,107 +1,120 @@
-import math
 import numpy as np
-
 import torch
-
-from ..nn import HDNN
-
 from tqdm import tqdm
 
+from ..nn import BPNN
+
+
 class MDSimulation:
-    def __init__(self, N_atoms: int, cartesians: np.ndarray, nn: HDNN,
-                  mass: float, rVan: float, symm_func_params: dict, L: float, T: float, dt: float,
-                  h: float, v_initial: np.ndarray, a_initial: np.ndarray, r_cutoff: float = 4.0):
-            """Initializes MD simulation system
+    def __init__(
+        self,
+        N_atoms: int,
+        cartesians: np.ndarray,
+        nn: BPNN,
+        mass: float,
+        rVan: float,
+        symm_func_params: dict,
+        L: float,
+        T: float,
+        dt: float,
+        h: float,
+        v_initial: np.ndarray,
+        a_initial: np.ndarray,
+        r_cutoff: float = 4.0,
+    ):
+        """Initializes MD simulation system
 
-            Args:
-                N_atoms (int): number of atoms
-                cartesians (np.ndarray): initial positions
-                nn (HDNN): neural network
-                mass (float): mass of atom
-                rVan (float): van der Waals radius
-                symm_func_params (dict): params of symmetry functions set
-                L (float): size of the box
-                T (float): temperature of system (in Kelvin)
-                dt (float): step of verlet integration
-                h (float, optional): step of forces calculation.
-                v_initial (np.ndarray, optional): initial velocities.
-                a_initial (np.ndarray, optional): initial accelerations.
-                r_cutoff (float, optional): cutoff radius. Defaults to 6.0.
-            """
+        Args:
+            N_atoms (int): number of atoms
+            cartesians (np.ndarray): initial positions
+            nn (BPNN): neural network
+            mass (float): mass of atom
+            rVan (float): van der Waals radius
+            symm_func_params (dict): params of symmetry functions set
+            L (float): size of the box
+            T (float): temperature of system (in Kelvin)
+            dt (float): step of verlet integration
+            h (float, optional): step of forces calculation.
+            v_initial (np.ndarray, optional): initial velocities.
+            a_initial (np.ndarray, optional): initial accelerations.
+            r_cutoff (float, optional): cutoff radius. Defaults to 6.0.
+        """
 
-            self.cartesians = cartesians
-            self.N_atoms = N_atoms
-            self.nn = nn
+        self.cartesians = cartesians
+        self.N_atoms = N_atoms
+        self.nn = nn
 
-            # velocity projection
-            self.Vx = v_initial[:, 0]
-            self.Vy = v_initial[:, 1]
-            self.Vz = v_initial[:, 2]
-            
-            # acceleration projection
-            self.ax = a_initial[:, 0]
-            self.ay = a_initial[:, 1]
-            self.az = a_initial[:, 2]
+        # velocity projection
+        self.Vx = v_initial[:, 0]
+        self.Vy = v_initial[:, 1]
+        self.Vz = v_initial[:, 2]
 
-            # derivatives by time
-            self.dt = dt
-            self.dt1 = dt / 2
-            self.dt2 = dt ** 2 / 2
+        # acceleration projection
+        self.ax = a_initial[:, 0]
+        self.ay = a_initial[:, 1]
+        self.az = a_initial[:, 2]
 
-            # mass of atom
-            self.mass = mass
+        # derivatives by time
+        self.dt = dt
+        self.dt1 = dt / 2
+        self.dt2 = dt**2 / 2
 
-            # Van der Waals radius
-            self.rVan = rVan
+        # mass of atom
+        self.mass = mass
 
-            # size of the box
-            self.L = L
-            # temperature of system (in Kelvin)
-            self.T = T
+        # Van der Waals radius
+        self.rVan = rVan
 
-            # params of symmetric functions
-            # r_cutoff - cutoff radius
-            # eta - width of the Gaussian
-            # rs - width of the Gaussian
-            # kappa - power of the polynomial
-            # lambda - power of the polynomial
-            # zeta - width of the Gaussian
-            self.symm_func_params = symm_func_params
-            self.r_cutoff = r_cutoff
+        # size of the box
+        self.L = L
+        # temperature of system (in Kelvin)
+        self.T = T
 
-            # distance threshold between atoms
-            self.L_threshold = -L / 2
+        # params of symmetric functions
+        # r_cutoff - cutoff radius
+        # eta - width of the Gaussian
+        # rs - width of the Gaussian
+        # kappa - power of the polynomial
+        # lambda - power of the polynomial
+        # zeta - width of the Gaussian
+        self.symm_func_params = symm_func_params
+        self.r_cutoff = r_cutoff
 
-            self.h = h
+        # distance threshold between atoms
+        self.L_threshold = -L / 2
 
-            #print(f"Initial correction of velocities", file = self.log)
-            self.corr_veloc()
-            #print(f"Initial calculation of acceleration", file = self.log)
-            self.calc_acel()
-            
-            self.cartesians_history = [self.cartesians.copy()]
-            self.forces_history = [a_initial.copy() * self.mass]
-            self.velocities_history = [v_initial.copy()]
-            
+        self.h = h
+
+        # print(f"Initial correction of velocities", file = self.log)
+        self.corr_veloc()
+        # print(f"Initial calculation of acceleration", file = self.log)
+        self.calc_acel()
+
+        self.cartesians_history = [self.cartesians.copy()]
+        self.forces_history = [a_initial.copy() * self.mass]
+        self.velocities_history = [v_initial.copy()]
+
     def run_md_simulation(self, steps):
         for step in tqdm(range(steps)):
             self.verlet()
             if (step + 1) % 100 == 0:
                 self.corr_veloc()
             self.cartesians_history.append(self.cartesians.copy())
-            self.forces_history.append(np.array(list(zip(self.ax, self.ay, self.az))) * self.mass)
+            self.forces_history.append(
+                np.array(list(zip(self.ax, self.ay, self.az))) * self.mass
+            )
             self.velocities_history.append(list(zip(self.Vx, self.Vy, self.Vz)))
-            
+
     def corr_veloc(self):
         Vsx = 0
         Vsy = 0
         Vsz = 0
 
         for i in range(self.N_atoms):
-            if (self.Vx[i] * self.Vx[i] + self.Vy[i] * self.Vy[i] + self.Vz[i] * self.Vz[i]) < 1e-4:
+            if (self.Vx[i] ** 2 + self.Vy[i] ** 2 + self.Vz[i] ** 2) < 1e-4:
                 continue
-            D = np.sqrt(1. / (self.Vx[i] * self.Vx[i] + self.Vy[i] * self.Vy[i] + self.Vz[i] * self.Vz[i]))
-            self.Vx[i] *= D 
+            D = np.sqrt(1.0 / (self.Vx[i] ** 2 + self.Vy[i] ** 2 + self.Vz[i] ** 2))
+            self.Vx[i] *= D
             self.Vy[i] *= D
             self.Vz[i] *= D
             Vsx += self.Vx[i]
@@ -116,16 +129,17 @@ class MDSimulation:
             self.Vx[i] -= Vsx
             self.Vy[i] -= Vsy
             self.Vz[i] -= Vsz
-        
 
     def calc_acel(self):
-        _, f = self.nn.predict(torch.as_tensor(self.cartesians, dtype = torch.float32),
-                                self.symm_func_params,
-                                self.h)
+        _, f = self.nn.predict(
+            torch.as_tensor(self.cartesians, dtype=torch.float32),
+            self.symm_func_params,
+            self.h,
+        )
         a = f.cpu().detach().numpy() / self.mass
 
         for i in range(self.N_atoms - 1):
-             for j in range(i + 1, self.N_atoms):
+            for j in range(i + 1, self.N_atoms):
                 dx = self.cartesians[j][0] - self.cartesians[i][0]
                 if np.abs(dx) > self.L_threshold:
                     dx -= np.sign(dx) * self.L
@@ -141,17 +155,19 @@ class MDSimulation:
                     dz -= np.sign(dz) * self.L
                 if np.abs(dz) > self.r_cutoff:
                     continue
-                r = np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+                r = np.sqrt(dx**2 + dy**2 + dz**2)
                 if r > self.r_cutoff:
                     continue
                 Nx = dx / r
                 Ny = dy / r
                 Nz = dz / r
-                
+
                 if r < self.rVan:
-                    proj = Nx * (self.Vx[j] - self.Vx[i]) + \
-                           Ny * (self.Vy[j] - self.Vy[i]) + \
-                           Nz * (self.Vz[j] - self.Vz[i])
+                    proj = (
+                        Nx * (self.Vx[j] - self.Vx[i])
+                        + Ny * (self.Vy[j] - self.Vy[i])
+                        + Nz * (self.Vz[j] - self.Vz[i])
+                    )
                     dr = (self.rVan - r) / 2
                     self.cartesians[i][0] -= Nx * dr
                     self.cartesians[i][1] -= Ny * dr
@@ -179,12 +195,18 @@ class MDSimulation:
             self.cartesians[i][0] += self.Vx[i] * self.dt + self.ax[i] * self.dt2
             self.cartesians[i][1] += self.Vy[i] * self.dt + self.ay[i] * self.dt2
             self.cartesians[i][2] += self.Vz[i] * self.dt + self.az[i] * self.dt2
-            if self.cartesians[i][0] < -self.L: self.cartesians[i][0] += self.L
-            if self.cartesians[i][0] > self.L: self.cartesians[i][0] -= self.L
-            if self.cartesians[i][1] < -self.L: self.cartesians[i][1] += self.L
-            if self.cartesians[i][1] > self.L: self.cartesians[i][1] -= self.L
-            if self.cartesians[i][2] < -self.L: self.cartesians[i][2] += self.L
-            if self.cartesians[i][2] > self.L: self.cartesians[i][2] -= self.L
+            if self.cartesians[i][0] < -self.L:
+                self.cartesians[i][0] += self.L
+            if self.cartesians[i][0] > self.L:
+                self.cartesians[i][0] -= self.L
+            if self.cartesians[i][1] < -self.L:
+                self.cartesians[i][1] += self.L
+            if self.cartesians[i][1] > self.L:
+                self.cartesians[i][1] -= self.L
+            if self.cartesians[i][2] < -self.L:
+                self.cartesians[i][2] += self.L
+            if self.cartesians[i][2] > self.L:
+                self.cartesians[i][2] -= self.L
             self.Vx[i] += self.ax[i] * self.dt1
             self.Vy[i] += self.ay[i] * self.dt1
             self.Vz[i] += self.az[i] * self.dt1

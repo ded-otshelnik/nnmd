@@ -1,43 +1,60 @@
 import numpy as np
 
-def params_for_G2(n_radial: int, r_cutoff: float):
-    """
-    Generate parameters for G2 symmetry functions.
 
+def calculate_params(r_cutoff, N_g1, N_g2, N_g3, N_g4, N_g5):
+    """
+    Calculate parameters for symmetry functions.
+
+    ----
     Args:
-        n_radial: int - number of radial symmetry functions
         r_cutoff: float - cutoff radius
+        N_g1: int - number of G1 functions
+        N_g2: int - number of G2 functions
+        N_g3: int - number of G3 functions
+        N_g4: int - number of G4 functions
+        N_g5: int - number of G5 functions
 
+    ----
     Returns:
-        list of tuples (r_cutoff, rs, eta)
+        list of parameters for symmetry functions
     """
+    r_s = np.round(np.linspace(0, r_cutoff, N_g2), 6)
+    a = r_cutoff / (N_g2 - 1)
+    eta_rad = np.round(5 * np.log(10) / (4 * a**2), 6)
+
+    kappa = 1
+
+    eta_ang = np.round(2 * np.log(10) / (r_cutoff**2), 6)
+    lambd = 1
+
+    zeta_4 = np.round(
+        [
+            1 + i * 30 / (N_g4 - 2) if i > 0 else 1
+            for i in range(int(np.ceil(N_g4 / 2 - 1)) + 1)
+        ],
+        6,
+    )
+    zeta_5 = np.round(
+        [
+            1 + i * 30 / (N_g5 - 2) if i > 0 else 1
+            for i in range(int(np.ceil(N_g5 / 2 - 1)) + 1)
+        ],
+        6,
+    )
+
     params = []
-    rs = r_cutoff / (n_radial - 1)
-    eta = 5 * np.log(10) / (4 * (rs) ** 2)
-    for i in range(n_radial):
-        params.append((r_cutoff, eta, rs * i))
-    return params
+    for i in range(N_g1):
+        params.append([r_cutoff])
 
-def params_for_G4(n_angular: int, r_cutoff: float):
-    """
-    Generate parameters for G4 symmetry functions.
+    for i in range(N_g2):
+        params.append([r_cutoff, r_s[i], eta_rad])
 
-    Args:
-        n_angular: int - number of angular symmetry functions
-        r_cutoff: float - cutoff radius
+    for i in range(N_g3):
+        params.append([r_cutoff, kappa])
 
-    Returns:
-        list of tuples (r_cutoff, eta, zeta, lambda)
-    """
-    params = []
+    for i in range(N_g4):
+        params.append([r_cutoff, eta_ang, zeta_4[i // 2], (-1) ** i * lambd])
 
-    ind = 1
-    eta = 2 * np.log(10) / ((r_cutoff) ** 2)
-    for i in range(n_angular):
-        zeta = 1 + i * 30 / (n_angular - 2)
-        for lambd in [1, -1]:
-            params.append((r_cutoff, eta, zeta, lambd))
-            if ind >= n_angular:
-                break
-            ind += 1
+    for i in range(N_g5):
+        params.append([r_cutoff, eta_ang, zeta_5[i // 2], (-1) ** i * lambd])
     return params

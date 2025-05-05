@@ -1,0 +1,19 @@
+atomic_data:
+  reference_data: input/lennard_jones.traj
+  symmetry_functions_set: input/symm_lj.yaml
+
+use_cuda: True
+
+neural_network:
+  atom_species: ['Li']
+  hidden_sizes: [[10, 10]]
+  epochs: 100
+  batch_size: 500
+  learning_rate: 0.01
+  l2_regularization: 0.0
+  e_loss_coeff: 1.0
+  f_loss_coeff: 1.0
+  load_models: False
+  path: 'models'
+  train: True
+  save: True

@@ -1,43 +1,29 @@
 [project]
 name = "nnmd"
-version = "0.1.0"
-description = "ML extension with PyTorch C++ (Libtorch) and Python bindings"
+version = "0.2.0-dev"
+description = "ML library for molecular dynamics simulations"
 readme = "README.md"
-keywords = ["python", "pytorch", "libtorch", "pybind11"]
+keywords = ["python", "pytorch", "machine learning", "molecular dynamics"]
+license = {text = "MIT"}
 authors = [
     {name = "Andrey Budnikov"}
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
-    "Environment :: GPU :: NVIDIA CUDA :: 12 :: 12.1",
-    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: C++",
-    "Programming Language :: Python :: Implementation :: CPython"
+    "Programming Language :: Python :: 3.11"
 ]
+requires-python = ">=3.11"
 
 [project.urls]
 Homepage = "https://github.com/ded-otshelnik/nnmd"
 Repository = "https://github.com/ded-otshelnik/nnmd.git"
 
-[project.optional-dependencies]
-test = [
-    # dependencies of tox
-    # for auto-tests
-    "platformdirs==2.6.2",
-    "virtualenv==20.21.1",
-    "tox",
-    "tox-current-env",
-    "pytest",
-    "mypy"
-]
-
 [build-system]
-requires = ["setuptools==69.5.1",
+requires = ["setuptools",
             "ase",
-            "numpy<2.0",
-            "torch<2.5",
+            "numpy",
+            "torch",
             "tqdm",
             "pyyaml"
 ]
@@ -46,44 +32,15 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = [""]
 
-[tool.pytest.ini_options]
-# directory containing your tests
-testpaths = "tests"  
-norecursedirs = [
-    ".vscode",
-    "__pycache__"
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "tox",
+    "tox-current-env",
+    "pytest",
+    "pytest-cov",
+    "pytest-sugar",
+    "mypy",
+    "flake8",
+    "black",
 ]
-# warnings that should be ignored
-filterwarnings = [
-    "ignore::DeprecationWarning"
-]
-# custom markers that can be used using pytest.mark
-markers = [
-    "slow: lower-importance tests that take an excessive amount of time",
-]
-addopts = [
-    "--import-mode=importlib",
-]
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-env_list =
-    pytest
-    mypy
-skipsdist = true
-
-[testenv:pytest]
-description = run pytest for package
-deps =
-    pytest
-commands =
-    pytest {tty:--color=yes} {posargs} -v
-
-[testenv:mypy]
-description = run mypy for package
-deps =
-    mypy
-commands =
-    mypy . --exclude samples --exclude tests --ignore-missing-imports
-"""

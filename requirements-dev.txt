@@ -1,0 +1,16 @@
+setuptools==69.5.1
+ase
+numpy<2.0
+torch<2.5
+tqdm
+pyyaml
+platformdirs==2.6.2
+virtualenv==20.21.1
+tox
+tox-current-env
+pytest
+pytest-cov
+pytest-sugar
+mypy
+flake8
+black

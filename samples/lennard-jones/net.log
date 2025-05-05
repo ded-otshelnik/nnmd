@@ -1,0 +1,328 @@
+NNMD v0.1.0
+
+---Neural network parameters---
+device:                             cuda
+training epochs:                    100
+batch size:                         500
+optimizer:                          Adam
+loss function:                      MSELoss
+energies loss function coefficient: 1.0
+forces loss function coefficient:   1.0
+learning rate:                      0.01
+scheduler:                          ExponentialLR
+L2 regularization coefficient:      0.0
+
+
+----Atomic NNs parameters----
+input sizes (number of descriptors): [3]
+hidden sizes:                        [[10, 10]]
+output sizes (number of atoms):      [1]
+
+
+---Dataset parameters---
+Training sample size:   480
+Validation sample size: 60
+Test sample size:       60
+
+
+Epoch 1: training: MSE E = 2.917118e-01, MSE F = 1.909591e+00, MSE total = 2.201303e+00 eV
+Epoch 1: validation: MSE E = 1.891092e-01, MSE F = 2.303746e+00, MSE total = 2.492856e+00 eV
+Learning rate changed to 0.0099
+Epoch 2: training: MSE E = 2.048030e-01, MSE F = 1.909515e+00, MSE total = 2.114318e+00 eV
+Epoch 2: validation: MSE E = 1.437718e-01, MSE F = 2.303848e+00, MSE total = 2.447620e+00 eV
+Learning rate changed to 0.009801
+Epoch 3: training: MSE E = 1.446982e-01, MSE F = 1.909497e+00, MSE total = 2.054195e+00 eV
+Epoch 3: validation: MSE E = 1.224412e-01, MSE F = 2.304013e+00, MSE total = 2.426454e+00 eV
+Learning rate changed to 0.00970299
+Epoch 4: training: MSE E = 1.094399e-01, MSE F = 1.909527e+00, MSE total = 2.018967e+00 eV
+Epoch 4: validation: MSE E = 1.212709e-01, MSE F = 2.304213e+00, MSE total = 2.425484e+00 eV
+Learning rate changed to 0.0096059601
+Epoch 5: training: MSE E = 9.556954e-02, MSE F = 1.909589e+00, MSE total = 2.005159e+00 eV
+Epoch 5: validation: MSE E = 1.343637e-01, MSE F = 2.304398e+00, MSE total = 2.438762e+00 eV
+Learning rate changed to 0.009509900499
+Epoch 6: training: MSE E = 9.772445e-02, MSE F = 1.909647e+00, MSE total = 2.007372e+00 eV
+Epoch 6: validation: MSE E = 1.536429e-01, MSE F = 2.304504e+00, MSE total = 2.458147e+00 eV
+Learning rate changed to 0.00941480149401
+Epoch 7: training: MSE E = 1.084976e-01, MSE F = 1.909645e+00, MSE total = 2.018142e+00 eV
+Epoch 7: validation: MSE E = 1.707943e-01, MSE F = 2.304496e+00, MSE total = 2.475290e+00 eV
+Learning rate changed to 0.0093206534790699
+Epoch 8: training: MSE E = 1.200291e-01, MSE F = 1.909547e+00, MSE total = 2.029576e+00 eV
+Epoch 8: validation: MSE E = 1.807921e-01, MSE F = 2.304392e+00, MSE total = 2.485184e+00 eV
+Learning rate changed to 0.0092274469442792
+Epoch 9: training: MSE E = 1.271978e-01, MSE F = 1.909374e+00, MSE total = 2.036571e+00 eV
+Epoch 9: validation: MSE E = 1.825982e-01, MSE F = 2.304226e+00, MSE total = 2.486824e+00 eV
+Learning rate changed to 0.009135172474836408
+Epoch 10: training: MSE E = 1.285294e-01, MSE F = 1.909163e+00, MSE total = 2.037693e+00 eV
+Epoch 10: validation: MSE E = 1.777031e-01, MSE F = 2.304029e+00, MSE total = 2.481732e+00 eV
+Learning rate changed to 0.009043820750088045
+Epoch 11: training: MSE E = 1.249818e-01, MSE F = 1.908947e+00, MSE total = 2.033929e+00 eV
+Epoch 11: validation: MSE E = 1.685603e-01, MSE F = 2.303818e+00, MSE total = 2.472378e+00 eV
+Learning rate changed to 0.008953382542587164
+Epoch 12: training: MSE E = 1.185041e-01, MSE F = 1.908744e+00, MSE total = 2.027248e+00 eV
+Epoch 12: validation: MSE E = 1.575962e-01, MSE F = 2.303608e+00, MSE total = 2.461205e+00 eV
+Learning rate changed to 0.008863848717161293
+Epoch 13: training: MSE E = 1.110865e-01, MSE F = 1.908561e+00, MSE total = 2.019648e+00 eV
+Epoch 13: validation: MSE E = 1.467455e-01, MSE F = 2.303406e+00, MSE total = 2.450152e+00 eV
+Learning rate changed to 0.00877521022998968
+Epoch 14: training: MSE E = 1.042982e-01, MSE F = 1.908400e+00, MSE total = 2.012698e+00 eV
+Epoch 14: validation: MSE E = 1.373053e-01, MSE F = 2.303215e+00, MSE total = 2.440520e+00 eV
+Learning rate changed to 0.008687458127689783
+Epoch 15: training: MSE E = 9.913091e-02, MSE F = 1.908253e+00, MSE total = 2.007384e+00 eV
+Epoch 15: validation: MSE E = 1.299534e-01, MSE F = 2.303031e+00, MSE total = 2.432985e+00 eV
+Learning rate changed to 0.008600583546412886
+Epoch 16: training: MSE E = 9.600624e-02, MSE F = 1.908113e+00, MSE total = 2.004119e+00 eV
+Epoch 16: validation: MSE E = 1.248465e-01, MSE F = 2.302854e+00, MSE total = 2.427700e+00 eV
+Learning rate changed to 0.008514577710948757
+Epoch 17: training: MSE E = 9.486672e-02, MSE F = 1.907966e+00, MSE total = 2.002833e+00 eV
+Epoch 17: validation: MSE E = 1.217563e-01, MSE F = 2.302677e+00, MSE total = 2.424433e+00 eV
+Learning rate changed to 0.00842943193383927
+Epoch 18: training: MSE E = 9.530951e-02, MSE F = 1.907806e+00, MSE total = 2.003116e+00 eV
+Epoch 18: validation: MSE E = 1.202212e-01, MSE F = 2.302498e+00, MSE total = 2.422719e+00 eV
+Learning rate changed to 0.008345137614500876
+Epoch 19: training: MSE E = 9.673878e-02, MSE F = 1.907627e+00, MSE total = 2.004365e+00 eV
+Epoch 19: validation: MSE E = 1.196955e-01, MSE F = 2.302315e+00, MSE total = 2.422011e+00 eV
+Learning rate changed to 0.008261686238355867
+Epoch 20: training: MSE E = 9.851611e-02, MSE F = 1.907422e+00, MSE total = 2.005938e+00 eV
+Epoch 20: validation: MSE E = 1.196752e-01, MSE F = 2.302125e+00, MSE total = 2.421800e+00 eV
+Learning rate changed to 0.008179069375972308
+Epoch 21: training: MSE E = 1.000887e-01, MSE F = 1.907191e+00, MSE total = 2.007279e+00 eV
+Epoch 21: validation: MSE E = 1.197874e-01, MSE F = 2.301928e+00, MSE total = 2.421715e+00 eV
+Learning rate changed to 0.008097278682212584
+Epoch 22: training: MSE E = 1.010763e-01, MSE F = 1.906930e+00, MSE total = 2.008007e+00 eV
+Epoch 22: validation: MSE E = 1.198299e-01, MSE F = 2.301722e+00, MSE total = 2.421552e+00 eV
+Learning rate changed to 0.00801630589539046
+Epoch 23: training: MSE E = 1.013069e-01, MSE F = 1.906640e+00, MSE total = 2.007947e+00 eV
+Epoch 23: validation: MSE E = 1.197663e-01, MSE F = 2.301511e+00, MSE total = 2.421277e+00 eV
+Learning rate changed to 0.007936142836436554
+Epoch 24: training: MSE E = 1.008046e-01, MSE F = 1.906321e+00, MSE total = 2.007125e+00 eV
+Epoch 24: validation: MSE E = 1.196875e-01, MSE F = 2.301298e+00, MSE total = 2.420985e+00 eV
+Learning rate changed to 0.007856781408072189
+Epoch 25: training: MSE E = 9.974298e-02, MSE F = 1.905975e+00, MSE total = 2.005718e+00 eV
+Epoch 25: validation: MSE E = 1.197564e-01, MSE F = 2.301090e+00, MSE total = 2.420846e+00 eV
+Learning rate changed to 0.007778213593991467
+Epoch 26: training: MSE E = 9.838244e-02, MSE F = 1.905610e+00, MSE total = 2.003993e+00 eV
+Epoch 26: validation: MSE E = 1.201518e-01, MSE F = 2.300896e+00, MSE total = 2.421048e+00 eV
+Learning rate changed to 0.007700431458051552
+Epoch 27: training: MSE E = 9.700731e-02, MSE F = 1.905234e+00, MSE total = 2.002241e+00 eV
+Epoch 27: validation: MSE E = 1.210193e-01, MSE F = 2.300730e+00, MSE total = 2.421749e+00 eV
+Learning rate changed to 0.007623427143471037
+Epoch 28: training: MSE E = 9.587242e-02, MSE F = 1.904859e+00, MSE total = 2.000731e+00 eV
+Epoch 28: validation: MSE E = 1.224349e-01, MSE F = 2.300606e+00, MSE total = 2.423040e+00 eV
+Learning rate changed to 0.007547192872036326
+Epoch 29: training: MSE E = 9.516451e-02, MSE F = 1.904502e+00, MSE total = 1.999666e+00 eV
+Epoch 29: validation: MSE E = 1.243772e-01, MSE F = 2.300535e+00, MSE total = 2.424912e+00 eV
+Learning rate changed to 0.007471720943315963
+Epoch 30: training: MSE E = 9.497686e-02, MSE F = 1.904180e+00, MSE total = 1.999157e+00 eV
+Epoch 30: validation: MSE E = 1.266975e-01, MSE F = 2.300518e+00, MSE total = 2.427215e+00 eV
+Learning rate changed to 0.007397003733882804
+Epoch 31: training: MSE E = 9.528950e-02, MSE F = 1.903905e+00, MSE total = 1.999195e+00 eV
+Epoch 31: validation: MSE E = 1.290907e-01, MSE F = 2.300526e+00, MSE total = 2.429617e+00 eV
+Learning rate changed to 0.007323033696543976
+Epoch 32: training: MSE E = 9.595025e-02, MSE F = 1.903671e+00, MSE total = 1.999621e+00 eV
+Epoch 32: validation: MSE E = 1.311350e-01, MSE F = 2.300511e+00, MSE total = 2.431646e+00 eV
+Learning rate changed to 0.007249803359578536
+Epoch 33: training: MSE E = 9.669212e-02, MSE F = 1.903453e+00, MSE total = 2.000145e+00 eV
+Epoch 33: validation: MSE E = 1.324563e-01, MSE F = 2.300435e+00, MSE total = 2.432891e+00 eV
+Learning rate changed to 0.0071773053259827505
+Epoch 34: training: MSE E = 9.723885e-02, MSE F = 1.903231e+00, MSE total = 2.000469e+00 eV
+Epoch 34: validation: MSE E = 1.328802e-01, MSE F = 2.300294e+00, MSE total = 2.433174e+00 eV
+Learning rate changed to 0.007105532272722923
+Epoch 35: training: MSE E = 9.742879e-02, MSE F = 1.903002e+00, MSE total = 2.000430e+00 eV
+Epoch 35: validation: MSE E = 1.324517e-01, MSE F = 2.300103e+00, MSE total = 2.432555e+00 eV
+Learning rate changed to 0.007034476949995694
+Epoch 36: training: MSE E = 9.725288e-02, MSE F = 1.902775e+00, MSE total = 2.000028e+00 eV
+Epoch 36: validation: MSE E = 1.313653e-01, MSE F = 2.299886e+00, MSE total = 2.431252e+00 eV
+Learning rate changed to 0.006964132180495737
+Epoch 37: training: MSE E = 9.681416e-02, MSE F = 1.902565e+00, MSE total = 1.999379e+00 eV
+Epoch 37: validation: MSE E = 1.298777e-01, MSE F = 2.299665e+00, MSE total = 2.429543e+00 eV
+Learning rate changed to 0.00689449085869078
+Epoch 38: training: MSE E = 9.626269e-02, MSE F = 1.902377e+00, MSE total = 1.998640e+00 eV
+Epoch 38: validation: MSE E = 1.282397e-01, MSE F = 2.299454e+00, MSE total = 2.427693e+00 eV
+Learning rate changed to 0.006825545950103872
+Epoch 39: training: MSE E = 9.574005e-02, MSE F = 1.902216e+00, MSE total = 1.997956e+00 eV
+Epoch 39: validation: MSE E = 1.266542e-01, MSE F = 2.299261e+00, MSE total = 2.425915e+00 eV
+Learning rate changed to 0.0067572904906028335
+Epoch 40: training: MSE E = 9.534498e-02, MSE F = 1.902077e+00, MSE total = 1.997422e+00 eV
+Epoch 40: validation: MSE E = 1.252575e-01, MSE F = 2.299088e+00, MSE total = 2.424346e+00 eV
+Learning rate changed to 0.006689717585696805
+Epoch 41: training: MSE E = 9.512024e-02, MSE F = 1.901950e+00, MSE total = 1.997070e+00 eV
+Epoch 41: validation: MSE E = 1.241198e-01, MSE F = 2.298932e+00, MSE total = 2.423052e+00 eV
+Learning rate changed to 0.006622820409839836
+Epoch 42: training: MSE E = 9.505729e-02, MSE F = 1.901824e+00, MSE total = 1.996881e+00 eV
+Epoch 42: validation: MSE E = 1.232586e-01, MSE F = 2.298788e+00, MSE total = 2.422046e+00 eV
+Learning rate changed to 0.006556592205741438
+Epoch 43: training: MSE E = 9.511204e-02, MSE F = 1.901685e+00, MSE total = 1.996798e+00 eV
+Epoch 43: validation: MSE E = 1.226579e-01, MSE F = 2.298649e+00, MSE total = 2.421307e+00 eV
+Learning rate changed to 0.006491026283684023
+Epoch 44: training: MSE E = 9.522496e-02, MSE F = 1.901525e+00, MSE total = 1.996750e+00 eV
+Epoch 44: validation: MSE E = 1.222864e-01, MSE F = 2.298511e+00, MSE total = 2.420797e+00 eV
+Learning rate changed to 0.006426116020847182
+Epoch 45: training: MSE E = 9.533934e-02, MSE F = 1.901337e+00, MSE total = 1.996676e+00 eV
+Epoch 45: validation: MSE E = 1.221127e-01, MSE F = 2.298373e+00, MSE total = 2.420486e+00 eV
+Learning rate changed to 0.006361854860638711
+Epoch 46: training: MSE E = 9.541423e-02, MSE F = 1.901117e+00, MSE total = 1.996531e+00 eV
+Epoch 46: validation: MSE E = 1.221128e-01, MSE F = 2.298235e+00, MSE total = 2.420348e+00 eV
+Learning rate changed to 0.006298236312032323
+Epoch 47: training: MSE E = 9.543087e-02, MSE F = 1.900867e+00, MSE total = 1.996298e+00 eV
+Epoch 47: validation: MSE E = 1.222729e-01, MSE F = 2.298099e+00, MSE total = 2.420372e+00 eV
+Learning rate changed to 0.006235253948912
+Epoch 48: training: MSE E = 9.539287e-02, MSE F = 1.900591e+00, MSE total = 1.995984e+00 eV
+Epoch 48: validation: MSE E = 1.225861e-01, MSE F = 2.297969e+00, MSE total = 2.420555e+00 eV
+Learning rate changed to 0.00617290140942288
+Epoch 49: training: MSE E = 9.532160e-02, MSE F = 1.900295e+00, MSE total = 1.995617e+00 eV
+Epoch 49: validation: MSE E = 1.230464e-01, MSE F = 2.297850e+00, MSE total = 2.420897e+00 eV
+Learning rate changed to 0.006111172395328651
+Epoch 50: training: MSE E = 9.524859e-02, MSE F = 1.899987e+00, MSE total = 1.995235e+00 eV
+Epoch 50: validation: MSE E = 1.236394e-01, MSE F = 2.297745e+00, MSE total = 2.421384e+00 eV
+Learning rate changed to 0.0060500606713753645
+Epoch 51: training: MSE E = 9.520588e-02, MSE F = 1.899673e+00, MSE total = 1.994879e+00 eV
+Epoch 51: validation: MSE E = 1.243334e-01, MSE F = 2.297653e+00, MSE total = 2.421986e+00 eV
+Learning rate changed to 0.005989560064661611
+Epoch 52: training: MSE E = 9.521657e-02, MSE F = 1.899364e+00, MSE total = 1.994581e+00 eV
+Epoch 52: validation: MSE E = 1.250705e-01, MSE F = 2.297570e+00, MSE total = 2.422641e+00 eV
+Learning rate changed to 0.005929664464014994
+Epoch 53: training: MSE E = 9.528627e-02, MSE F = 1.899063e+00, MSE total = 1.994350e+00 eV
+Epoch 53: validation: MSE E = 1.257669e-01, MSE F = 2.297488e+00, MSE total = 2.423255e+00 eV
+Learning rate changed to 0.0058703678193748445
+Epoch 54: training: MSE E = 9.539868e-02, MSE F = 1.898773e+00, MSE total = 1.994172e+00 eV
+Epoch 54: validation: MSE E = 1.263268e-01, MSE F = 2.297393e+00, MSE total = 2.423720e+00 eV
+Learning rate changed to 0.005811664141181096
+Epoch 55: training: MSE E = 9.552006e-02, MSE F = 1.898492e+00, MSE total = 1.994012e+00 eV
+Epoch 55: validation: MSE E = 1.266724e-01, MSE F = 2.297277e+00, MSE total = 2.423949e+00 eV
+Learning rate changed to 0.0057535474997692845
+Epoch 56: training: MSE E = 9.561370e-02, MSE F = 1.898217e+00, MSE total = 1.993831e+00 eV
+Epoch 56: validation: MSE E = 1.267685e-01, MSE F = 2.297135e+00, MSE total = 2.423903e+00 eV
+Learning rate changed to 0.005696012024771591
+Epoch 57: training: MSE E = 9.565654e-02, MSE F = 1.897950e+00, MSE total = 1.993607e+00 eV
+Epoch 57: validation: MSE E = 1.266281e-01, MSE F = 2.296970e+00, MSE total = 2.423599e+00 eV
+Learning rate changed to 0.005639051904523875
+Epoch 58: training: MSE E = 9.564669e-02, MSE F = 1.897691e+00, MSE total = 1.993337e+00 eV
+Epoch 58: validation: MSE E = 1.263015e-01, MSE F = 2.296788e+00, MSE total = 2.423089e+00 eV
+Learning rate changed to 0.005582661385478636
+Epoch 59: training: MSE E = 9.559990e-02, MSE F = 1.897439e+00, MSE total = 1.993039e+00 eV
+Epoch 59: validation: MSE E = 1.258573e-01, MSE F = 2.296595e+00, MSE total = 2.422452e+00 eV
+Learning rate changed to 0.0055268347716238495
+Epoch 60: training: MSE E = 9.553978e-02, MSE F = 1.897197e+00, MSE total = 1.992737e+00 eV
+Epoch 60: validation: MSE E = 1.253669e-01, MSE F = 2.296400e+00, MSE total = 2.421767e+00 eV
+Learning rate changed to 0.005471566423907611
+Epoch 61: training: MSE E = 9.548806e-02, MSE F = 1.896963e+00, MSE total = 1.992451e+00 eV
+Epoch 61: validation: MSE E = 1.248917e-01, MSE F = 2.296207e+00, MSE total = 2.421099e+00 eV
+Learning rate changed to 0.005416850759668535
+Epoch 62: training: MSE E = 9.545810e-02, MSE F = 1.896735e+00, MSE total = 1.992193e+00 eV
+Epoch 62: validation: MSE E = 1.244771e-01, MSE F = 2.296021e+00, MSE total = 2.420498e+00 eV
+Learning rate changed to 0.005362682252071849
+Epoch 63: training: MSE E = 9.545300e-02, MSE F = 1.896508e+00, MSE total = 1.991961e+00 eV
+Epoch 63: validation: MSE E = 1.241519e-01, MSE F = 2.295842e+00, MSE total = 2.419994e+00 eV
+Learning rate changed to 0.005309055429551131
+Epoch 64: training: MSE E = 9.546772e-02, MSE F = 1.896278e+00, MSE total = 1.991746e+00 eV
+Epoch 64: validation: MSE E = 1.239302e-01, MSE F = 2.295673e+00, MSE total = 2.419603e+00 eV
+Learning rate changed to 0.00525596487525562
+Epoch 65: training: MSE E = 9.549323e-02, MSE F = 1.896042e+00, MSE total = 1.991535e+00 eV
+Epoch 65: validation: MSE E = 1.238155e-01, MSE F = 2.295513e+00, MSE total = 2.419328e+00 eV
+Learning rate changed to 0.005203405226503063
+Epoch 66: training: MSE E = 9.552097e-02, MSE F = 1.895796e+00, MSE total = 1.991317e+00 eV
+Epoch 66: validation: MSE E = 1.238042e-01, MSE F = 2.295361e+00, MSE total = 2.419165e+00 eV
+Learning rate changed to 0.005151371174238033
+Epoch 67: training: MSE E = 9.554581e-02, MSE F = 1.895539e+00, MSE total = 1.991085e+00 eV
+Epoch 67: validation: MSE E = 1.238879e-01, MSE F = 2.295217e+00, MSE total = 2.419105e+00 eV
+Learning rate changed to 0.005099857462495652
+Epoch 68: training: MSE E = 9.556712e-02, MSE F = 1.895273e+00, MSE total = 1.990840e+00 eV
+Epoch 68: validation: MSE E = 1.240538e-01, MSE F = 2.295081e+00, MSE total = 2.419135e+00 eV
+Learning rate changed to 0.005048858887870696
+Epoch 69: training: MSE E = 9.558798e-02, MSE F = 1.894999e+00, MSE total = 1.990587e+00 eV
+Epoch 69: validation: MSE E = 1.242848e-01, MSE F = 2.294952e+00, MSE total = 2.419237e+00 eV
+Learning rate changed to 0.004998370298991989
+Epoch 70: training: MSE E = 9.561307e-02, MSE F = 1.894721e+00, MSE total = 1.990334e+00 eV
+Epoch 70: validation: MSE E = 1.245580e-01, MSE F = 2.294828e+00, MSE total = 2.419386e+00 eV
+Learning rate changed to 0.00494838659600207
+Epoch 71: training: MSE E = 9.564617e-02, MSE F = 1.894442e+00, MSE total = 1.990088e+00 eV
+Epoch 71: validation: MSE E = 1.248458e-01, MSE F = 2.294707e+00, MSE total = 2.419553e+00 eV
+Learning rate changed to 0.004898902730042049
+Epoch 72: training: MSE E = 9.568819e-02, MSE F = 1.894164e+00, MSE total = 1.989853e+00 eV
+Epoch 72: validation: MSE E = 1.251166e-01, MSE F = 2.294585e+00, MSE total = 2.419702e+00 eV
+Learning rate changed to 0.004849913702741628
+Epoch 73: training: MSE E = 9.573624e-02, MSE F = 1.893891e+00, MSE total = 1.989627e+00 eV
+Epoch 73: validation: MSE E = 1.253393e-01, MSE F = 2.294457e+00, MSE total = 2.419796e+00 eV
+Learning rate changed to 0.004801414565714212
+Epoch 74: training: MSE E = 9.578443e-02, MSE F = 1.893624e+00, MSE total = 1.989408e+00 eV
+Epoch 74: validation: MSE E = 1.254882e-01, MSE F = 2.294320e+00, MSE total = 2.419808e+00 eV
+Learning rate changed to 0.0047534004200570695
+Epoch 75: training: MSE E = 9.582593e-02, MSE F = 1.893362e+00, MSE total = 1.989188e+00 eV
+Epoch 75: validation: MSE E = 1.255482e-01, MSE F = 2.294172e+00, MSE total = 2.419720e+00 eV
+Learning rate changed to 0.004705866415856499
+Epoch 76: training: MSE E = 9.585577e-02, MSE F = 1.893107e+00, MSE total = 1.988963e+00 eV
+Epoch 76: validation: MSE E = 1.255186e-01, MSE F = 2.294011e+00, MSE total = 2.419530e+00 eV
+Learning rate changed to 0.004658807751697934
+Epoch 77: training: MSE E = 9.587260e-02, MSE F = 1.892858e+00, MSE total = 1.988731e+00 eV
+Epoch 77: validation: MSE E = 1.254120e-01, MSE F = 2.293839e+00, MSE total = 2.419251e+00 eV
+Learning rate changed to 0.004612219674180955
+Epoch 78: training: MSE E = 9.587894e-02, MSE F = 1.892615e+00, MSE total = 1.988494e+00 eV
+Epoch 78: validation: MSE E = 1.252518e-01, MSE F = 2.293660e+00, MSE total = 2.418911e+00 eV
+Learning rate changed to 0.004566097477439145
+Epoch 79: training: MSE E = 9.587993e-02, MSE F = 1.892375e+00, MSE total = 1.988255e+00 eV
+Epoch 79: validation: MSE E = 1.250660e-01, MSE F = 2.293475e+00, MSE total = 2.418541e+00 eV
+Learning rate changed to 0.004520436502664754
+Epoch 80: training: MSE E = 9.588098e-02, MSE F = 1.892138e+00, MSE total = 1.988019e+00 eV
+Epoch 80: validation: MSE E = 1.248823e-01, MSE F = 2.293289e+00, MSE total = 2.418172e+00 eV
+Learning rate changed to 0.004475232137638106
+Epoch 81: training: MSE E = 9.588599e-02, MSE F = 1.891902e+00, MSE total = 1.987788e+00 eV
+Epoch 81: validation: MSE E = 1.247241e-01, MSE F = 2.293106e+00, MSE total = 2.417830e+00 eV
+Learning rate changed to 0.004430479816261725
+Epoch 82: training: MSE E = 9.589662e-02, MSE F = 1.891665e+00, MSE total = 1.987561e+00 eV
+Epoch 82: validation: MSE E = 1.246083e-01, MSE F = 2.292926e+00, MSE total = 2.417534e+00 eV
+Learning rate changed to 0.004386175018099108
+Epoch 83: training: MSE E = 9.591258e-02, MSE F = 1.891424e+00, MSE total = 1.987336e+00 eV
+Epoch 83: validation: MSE E = 1.245448e-01, MSE F = 2.292751e+00, MSE total = 2.417295e+00 eV
+Learning rate changed to 0.004342313267918117
+Epoch 84: training: MSE E = 9.593259e-02, MSE F = 1.891178e+00, MSE total = 1.987110e+00 eV
+Epoch 84: validation: MSE E = 1.245368e-01, MSE F = 2.292581e+00, MSE total = 2.417118e+00 eV
+Learning rate changed to 0.004298890135238936
+Epoch 85: training: MSE E = 9.595551e-02, MSE F = 1.890925e+00, MSE total = 1.986881e+00 eV
+Epoch 85: validation: MSE E = 1.245816e-01, MSE F = 2.292416e+00, MSE total = 2.416998e+00 eV
+Learning rate changed to 0.004255901233886547
+Epoch 86: training: MSE E = 9.598090e-02, MSE F = 1.890666e+00, MSE total = 1.986647e+00 eV
+Epoch 86: validation: MSE E = 1.246715e-01, MSE F = 2.292256e+00, MSE total = 2.416927e+00 eV
+Learning rate changed to 0.004213342221547681
+Epoch 87: training: MSE E = 9.600905e-02, MSE F = 1.890402e+00, MSE total = 1.986411e+00 eV
+Epoch 87: validation: MSE E = 1.247942e-01, MSE F = 2.292098e+00, MSE total = 2.416892e+00 eV
+Learning rate changed to 0.004171208799332205
+Epoch 88: training: MSE E = 9.604035e-02, MSE F = 1.890133e+00, MSE total = 1.986174e+00 eV
+Epoch 88: validation: MSE E = 1.249346e-01, MSE F = 2.291941e+00, MSE total = 2.416876e+00 eV
+Learning rate changed to 0.004129496711338883
+Epoch 89: training: MSE E = 9.607480e-02, MSE F = 1.889862e+00, MSE total = 1.985937e+00 eV
+Epoch 89: validation: MSE E = 1.250757e-01, MSE F = 2.291782e+00, MSE total = 2.416858e+00 eV
+Learning rate changed to 0.004088201744225493
+Epoch 90: training: MSE E = 9.611140e-02, MSE F = 1.889589e+00, MSE total = 1.985701e+00 eV
+Epoch 90: validation: MSE E = 1.252013e-01, MSE F = 2.291619e+00, MSE total = 2.416820e+00 eV
+Learning rate changed to 0.004047319726783238
+Epoch 91: training: MSE E = 9.614838e-02, MSE F = 1.889316e+00, MSE total = 1.985465e+00 eV
+Epoch 91: validation: MSE E = 1.252978e-01, MSE F = 2.291450e+00, MSE total = 2.416748e+00 eV
+Learning rate changed to 0.004006846529515406
+Epoch 92: training: MSE E = 9.618352e-02, MSE F = 1.889045e+00, MSE total = 1.985228e+00 eV
+Epoch 92: validation: MSE E = 1.253573e-01, MSE F = 2.291273e+00, MSE total = 2.416631e+00 eV
+Learning rate changed to 0.003966778064220252
+Epoch 93: training: MSE E = 9.621506e-02, MSE F = 1.888773e+00, MSE total = 1.984988e+00 eV
+Epoch 93: validation: MSE E = 1.253779e-01, MSE F = 2.291089e+00, MSE total = 2.416466e+00 eV
+Learning rate changed to 0.003927110283578049
+Epoch 94: training: MSE E = 9.624221e-02, MSE F = 1.888503e+00, MSE total = 1.984745e+00 eV
+Epoch 94: validation: MSE E = 1.253643e-01, MSE F = 2.290896e+00, MSE total = 2.416261e+00 eV
+Learning rate changed to 0.0038878391807422685
+Epoch 95: training: MSE E = 9.626539e-02, MSE F = 1.888233e+00, MSE total = 1.984499e+00 eV
+Epoch 95: validation: MSE E = 1.253258e-01, MSE F = 2.290698e+00, MSE total = 2.416024e+00 eV
+Learning rate changed to 0.0038489607889348456
+Epoch 96: training: MSE E = 9.628593e-02, MSE F = 1.887963e+00, MSE total = 1.984249e+00 eV
+Epoch 96: validation: MSE E = 1.252749e-01, MSE F = 2.290496e+00, MSE total = 2.415771e+00 eV
+Learning rate changed to 0.0038104711810454973
+Epoch 97: training: MSE E = 9.630554e-02, MSE F = 1.887691e+00, MSE total = 1.983996e+00 eV
+Epoch 97: validation: MSE E = 1.252245e-01, MSE F = 2.290292e+00, MSE total = 2.415516e+00 eV
+Learning rate changed to 0.0037723664692350424
+Epoch 98: training: MSE E = 9.632584e-02, MSE F = 1.887416e+00, MSE total = 1.983742e+00 eV
+Epoch 98: validation: MSE E = 1.251860e-01, MSE F = 2.290086e+00, MSE total = 2.415272e+00 eV
+Learning rate changed to 0.003734642804542692
+Epoch 99: training: MSE E = 9.634802e-02, MSE F = 1.887138e+00, MSE total = 1.983486e+00 eV
+Epoch 99: validation: MSE E = 1.251682e-01, MSE F = 2.289882e+00, MSE total = 2.415050e+00 eV
+Learning rate changed to 0.003697296376497265
+Epoch 100: training: MSE E = 9.637278e-02, MSE F = 1.886854e+00, MSE total = 1.983227e+00 eV
+Epoch 100: validation: MSE E = 1.251765e-01, MSE F = 2.289680e+00, MSE total = 2.414856e+00 eV
+Learning rate changed to 0.0036603234127322924
+Testing: MSE E = 1.056932e-01, MSE F = 2.778415e+00, MSE total = 2.884109e+00 eV
