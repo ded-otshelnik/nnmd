@@ -19,7 +19,7 @@ jobs:
     # Define job steps
     steps:
       - name: Clean up disk space
-        run: bash scripts/cleanup.sh
+        run: bash ./scripts/cleanup.sh
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v2
