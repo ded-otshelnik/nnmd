@@ -3,18 +3,23 @@ import torch.nn as nn
 
 
 class AtomicNN(nn.Module):
-    """Model implements a multilayer perceprton
-    with sigmoid activation function for one atom
+    """Model implements a multilayer perceptron
+    for one species with a single output for one atom.
     """
 
     def __init__(
-        self, input_size: int, hidden_sizes: list[int] | int, output_size: int = 1
+        self, input_size: int,
+        hidden_sizes: list[int] | int,
+        output_size: int = 1,
+        activation: str = torch.sigmoid,
     ):
         """Create an instance of AtomicNN
 
         Args:
-            hidden_size (list[int] | int): configuration of hidden layers nodes
             input_size (int): inputs amount of NN
+            hidden_sizes (list[int] | int): configuration of hidden layers nodes
+            output_size (int): outputs amount of NN
+            activation (str): activation function to use in hidden layers
         """
         super().__init__()
 
@@ -32,9 +37,11 @@ class AtomicNN(nn.Module):
         else:
             raise ValueError("hidden_sizes must be a list or an integer")
 
+        self.activation = activation
+
     def forward(self, x):
         for i, layer in enumerate(self.model):
             x = layer(x)
             if i != len(self.model) - 1:
-                x = torch.sigmoid(x)
+                x = self.activation(x)
         return x

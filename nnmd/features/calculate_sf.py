@@ -5,6 +5,7 @@ from tqdm import tqdm
 
 from .symm_funcs import (
     calculate_distances,
+    g1_function,
     g2_function,
     g4_function,
     g5_function,
@@ -12,7 +13,7 @@ from .symm_funcs import (
 )
 
 
-def set_seed(seed):
+def _set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
@@ -56,6 +57,9 @@ def calculate_sf(
             symm_funcs_data["features"], symm_funcs_data["params"]
         ):
             match SymmetryFunction(g_func):
+                case SymmetryFunction.G1:
+                    # g_params = [cutoff]
+                    g_values = g1_function(distances, *g_params)
                 case SymmetryFunction.G2:
                     # g_params = [cutoff, eta, rs]
                     g_values = g2_function(distances, *g_params)
@@ -67,7 +71,9 @@ def calculate_sf(
                     g_values = g5_function(distances, *g_params)
                 case _:
                     raise ValueError(f"Unknown symmetry function number: {g_func}")
-            dg_values = torch.autograd.grad(g_values.sum(), cart, create_graph=True)[0]
+            dg_values = torch.autograd.grad(g_values, cart,
+                                            grad_outputs=torch.ones_like(g_values),
+                                            create_graph=True)[0]
 
             g_struct.append(g_values.detach())
             dg_struct.append(dg_values.detach())
@@ -80,27 +86,28 @@ def calculate_sf(
         g_struct = g_struct / torch.norm(g_struct, p=2, dim=-1, keepdim=True)
 
         # Permute to the shape (n_batch, n_atoms, n_symm_funcs, 3)
-        #print(g_struct.shape, dg_struct.shape)
         dg_struct = dg_struct.permute(0, 1, 3, 2)
 
-        # if torch.isnan(g_struct).sum().item() != 0:
-        #     raise ValueError("NaN values in the symmetry functions")
-        # if torch.isnan(dg_struct).sum().item() != 0:
-        #     raise ValueError("NaN values in the gradients of the symmetry functions")
+        if torch.isnan(g_struct).sum().item() != 0:
+            raise ValueError("NaN values in the symmetry functions")
+        if torch.isnan(dg_struct).sum().item() != 0:
+            raise ValueError("NaN values in the gradients of the symmetry functions")
 
         return g_struct, dg_struct
 
     op = functools.partial(closure, cell=cell, symm_funcs_data=symm_funcs_data)
 
-    set_seed(42)
-    cartesians.requires_grad = True
+    # for reproducibility setting a seed is essential
+    _set_seed(42)
 
+    cartesians.requires_grad = True
     cartesians_chunks = torch.chunk(cartesians, len(cartesians) // 100 + 1, dim=0)
 
     r = [
         op(cart)
         for cart in tqdm(cartesians_chunks,
                           desc="Calculating symmetry functions",
+                          total=len(cartesians_chunks),
                           disable=kwargs.get("disable_tqdm", False))
     ]
     g, dg = zip(*r)

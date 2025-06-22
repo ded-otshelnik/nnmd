@@ -1,10 +1,13 @@
 # MD simulation of Li atoms with neural network
+import warnings
+warnings.filterwarnings("ignore")
 
 import torch
 
 from nnmd.md import NNMD_calc
 from nnmd.nn import BPNN
 from nnmd.io import input_parser
+from nnmd.features import calculate_params
 
 from ase.md.verlet import VelocityVerlet
 import ase.units as units
@@ -16,11 +19,8 @@ dtype = torch.float32
 
 input_data = input_parser("input/input.yaml")
 
-symm_funcs_data = input_data["atomic_data"]["symmetry_functions_set"]
-input_sizes = input_data["neural_network"]["input_sizes"]
-
 net = BPNN(dtype=dtype)
-net.config(input_data["neural_network"], path="models/")
+net.config(input_data["neural_network"])
 
 sample_traj = Trajectory("input/Li_crystal_27.traj")
 start = int(len(sample_traj) * 0.8)
@@ -31,7 +31,7 @@ atoms = sample_traj[start]
 calc = NNMD_calc(
     model=net,
     properties=["energy", "forces"],
-    symm_funcs_data=symm_funcs_data,
+    symm_funcs_data=input_data["atomic_data"]["symmetry_functions_set"],
     atoms=atoms,
 )
 
@@ -44,7 +44,6 @@ timestep = 1  # time step of the simulation (in fs)
 
 # Integrator for the equations of motion, timestep depends on system
 dyn = VelocityVerlet(atoms, timestep * units.fs)
-# MaxwellBoltzmannDistribution(atoms, temperature_K = 300)
 
 # Saving the positions of all atoms after every time step
 with Trajectory(traj_file, "w", atoms) as traj:

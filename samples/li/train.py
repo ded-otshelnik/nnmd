@@ -12,11 +12,12 @@ from nnmd.util import train_val_test_split
 warnings.filterwarnings("ignore")
 dtype = torch.float32
 
-print("Getting info from traj file: ", end=" ")
+print("Getting info from traj file:", end=" ")
 input_data = input_parser("input/input.yaml")
 n_atoms = input_data["atomic_data"]["n_atoms"]
 print("done")
 
+# Atomic NN input_size in hidden layers
 # convert train data to atomic dataset with symmetry functions
 dataset = make_atomic_dataset(input_data["atomic_data"])
 
@@ -29,17 +30,14 @@ print(f"Separate data to train and test datasets: done")
 
 print("Create an instance of NN and config its subnets:", end=" ")
 
-# train model
 train = input_data["neural_network"]["train"]
+
 # save model params as files in <path> directory
 save = input_data["neural_network"]["save"]
 path = input_data["neural_network"]["path"]
 
-# Atomic NN input_size in hidden layers
-input_sizes = input_data["neural_network"]["input_sizes"]
-
 net = BPNN(dtype=dtype)
-net.config(input_data["neural_network"], input_sizes)
+net.config(input_data["neural_network"])
 
 print("done")
 

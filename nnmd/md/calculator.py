@@ -27,13 +27,22 @@ class NNMD_calc(Calculator):
         self.implemented_properties = properties
         self.model: torch.nn.Module = model
         self.atoms: ase.Atoms = atoms
+        self.species = set(atoms.get_chemical_symbols()) if atoms else set()
         self.pbc = atoms.pbc
         self.symm_funcs_data = symm_funcs_data
 
     def _get_prediction(self):
-        positions = {"Li": torch.tensor(self._atoms_to_calc.positions,
-                                        dtype=self.model.dtype,
-                                        device=self.model.device)}
+        """Get prediction from the model."""
+
+        positions = {}
+        for spec in self.species:
+            mask = self._atoms_to_calc.get_atomic_numbers() == spec
+            positions[spec] = torch.tensor(
+                self._atoms_to_calc.positions[mask],
+                dtype=self.model.dtype,
+                device=self.model.device,
+            )
+
         cell = torch.tensor(self._atoms_to_calc.cell.array,
                             dtype=self.model.dtype,
                             device=self.model.device)
@@ -53,7 +62,7 @@ class NNMD_calc(Calculator):
 
         results = self._get_prediction()
 
-        # the below conversion works for energy, forces, and stress,
+        # the below conversion works for energy and forces,
         # it is assumed that the distance unit is angstrom
         results = {
             "energy": results[0].sum().item(),

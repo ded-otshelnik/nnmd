@@ -1,4 +1,3 @@
-from nnmd.features.symm_funcs import SymmetryFunction
 import yaml
 import json
 

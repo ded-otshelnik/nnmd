@@ -4,7 +4,7 @@
 # 3. parameters of all methods must be checked
 # 4. all methods must be documented
 
-from math import e
+from logging import warning
 import os
 
 import torch
@@ -23,6 +23,11 @@ DEBUG = os.environ.get("DEBUG", True)
 if DEBUG:
     from tqdm import tqdm
 
+
+available_optimizers = {
+    "adam": torch.optim.Adam,
+    "adamw": torch.optim.AdamW,
+}
 
 class RMSELoss(torch.nn.Module):
     def __init__(self):
@@ -94,8 +99,7 @@ class BPNN(torch.nn.Module):
 
     def config(
         self,
-        neural_net_data: dict,
-        path: str = None,
+        neural_net_data: dict
     ):
         """Configures BPNN instance.
 
@@ -134,7 +138,7 @@ class BPNN(torch.nn.Module):
 
             if neural_net_data["load_models"]:
                 path2model = "".join(
-                    [path, f"atomic_nn_{neural_net_data['atom_species'][i]}.pth"]
+                    [neural_net_data['path'], f"/atomic_nn_{neural_net_data['atom_species'][i]}.pt"]
                 )
                 net.load_state_dict(torch.load(path2model))
             else:
@@ -154,8 +158,20 @@ class BPNN(torch.nn.Module):
         for net in self.atomic_nets:
             params += list(net.parameters())
 
-        # Atomic nets optimizer
-        self.optim = torch.optim.Adam(
+        # if no optimizer is specified in neural_net_data,
+        # use Adam as default optimizer
+        if neural_net_data["optimizer"] is None:
+            optim_class = "adam"
+            print("Optimizer is not specified, using default: Adam")
+        elif neural_net_data["optimizer"] not in available_optimizers:
+            raise ValueError(
+                f"Optimizer {neural_net_data['optimizer']} is not available. "
+                f"Available optimizers: {list(available_optimizers.keys())}"
+            )
+        else:
+            optim_class = neural_net_data["optimizer"]
+
+        self.optim = available_optimizers[optim_class](
             params=params, lr=self.learning_rate, weight_decay=self.l2_regularization
         )
 
@@ -202,8 +218,6 @@ class BPNN(torch.nn.Module):
 
         # scheduler for Atomic NN optimizer
         self.sched = torch.optim.lr_scheduler.ExponentialLR(self.optim, gamma=0.99)
-        # self.sched = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, mode = 'min', factor = 0.75, patience = 5)
-
         # output log file
         self.net_log = Logger.get_logger("Net training info", "net.log")
 
@@ -223,7 +237,7 @@ class BPNN(torch.nn.Module):
             e_loss, f_loss, loss = self._train_loop(epoch, train_loader)
 
             self.net_log.info(
-                f"Epoch {epoch + 1}: training: "
+                f"Epoch {epoch + 1}: training:   "
                 + loss_info.format(
                     e_loss=e_loss.item(),
                     f_loss=f_loss.item(),
@@ -296,7 +310,6 @@ class BPNN(torch.nn.Module):
             # energies and forces (nn targets)
             g, dG, energy, forces = data
 
-            # normalize energies and forces by energy range
             # calculate energies and forces using NN
             e_nn = []
             f_nn = []
@@ -472,7 +485,11 @@ class BPNN(torch.nn.Module):
             net.eval()
 
         for i, spec in enumerate(self.species):
-            cartesians[spec] = cartesians[spec].unsqueeze(0).to(device=self.device)
+            cartesians[spec] = cartesians[spec].to(device=self.device)
+
+            if cartesians[spec].dim() == 2:
+                # add batch dimension if it is not present
+                cartesians[spec] = cartesians[spec].unsqueeze(0)
 
             g, dg = calculate_sf(cartesians[spec], cell, symm_func_params[spec], disable_tqdm=True)
             g = g.squeeze(0)
@@ -484,7 +501,8 @@ class BPNN(torch.nn.Module):
             de = torch.autograd.grad(
                 e_nn_atom_type.sum(), g, create_graph=True
             )[0]
-            f_nn_atom_type = -torch.einsum("ij,ijl->il", de, dg)
+
+            f_nn_atom_type = -torch.einsum("ijk,ijkl->ijl", de, dg) if dg.dim() > 3 else -torch.einsum("ij,ijk->ik", de, dg)
 
             # concatenate energies and forces for all atom species
             if i == 0:
@@ -494,14 +512,13 @@ class BPNN(torch.nn.Module):
                 e_nn = torch.cat((e_nn, e_nn_atom_type), dim=0)
                 f_nn = torch.cat((f_nn, f_nn_atom_type), dim=0)
 
-
-        return e_nn.sum(-1), f_nn
+        return e_nn.sum(1).squeeze(), f_nn.squeeze()
 
     def save_model(self, path: str):
         """Saves trained model to file.
         It makes possible to load pre-trained net for calculations
         """
-        path_format = path + "/atomic_nn_{}.pth"
+        path_format = path + "/atomic_nn_{}.pt"
         for i, net in enumerate(self.atomic_nets):
             torch.save(
                 net.state_dict(),

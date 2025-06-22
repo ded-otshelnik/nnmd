@@ -16,7 +16,7 @@ data = {
     "val_total": [],
 }
 
-with open("net.log", "r") as file:
+with open("net_adamw.log", "r") as file:
     line = file.readline()
     while line:
         try:
@@ -41,86 +41,104 @@ with open("net.log", "r") as file:
             traceback.print_exc()
             exit(1)
 
-shift = 10
-data = {key: np.array(value)[shift:100] for key, value in data.items()}
+shift = 5
+data = {key: np.array(value)[shift::2] for key, value in data.items()}
+n = len(data["train_e_nn"])
 
-fig, ax = plt.subplots(2, constrained_layout=True, figsize=(18, 12))
+data["train_e_nn"] = [data["train_e_nn"][i] if np.abs(data["train_e_nn"][i]-data["train_e_nn"][i-1]) < 0.1 else data["train_e_nn"][i-1] for i in range(len(data["train_e_nn"]))]
+data["val_e_nn"] = [data["val_e_nn"][i] if np.abs(data["val_e_nn"][i]-data["val_e_nn"][i-1]) < 0.1 else data["val_e_nn"][i-1] for i in range(len(data["val_e_nn"]))]
+data["train_f_nn"] = [data["train_f_nn"][i] if np.abs(data["train_f_nn"][i]-data["train_f_nn"][i-1]) < 0.1 else data["train_f_nn"][i-1] for i in range(len(data["train_f_nn"]))]
+data["val_f_nn"] = [data["val_f_nn"][i] if np.abs(data["val_f_nn"][i]-data["val_f_nn"][i-1]) < 0.1 else data["val_f_nn"][i-1] for i in range(len(data["val_f_nn"]))]
 
+data["train_e_nn"] = np.array(data["train_e_nn"])
+data["val_e_nn"] = np.array(data["val_e_nn"])
+data["train_f_nn"] = np.array(data["train_f_nn"])
+data["val_f_nn"] = np.array(data["val_f_nn"])
+
+fig, ax = plt.subplots(1, 2, constrained_layout=True, figsize=(24, 8))
 ax[0].plot(
-    range(shift, len(data["train_e_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["train_e_nn"],
     marker="o",
-    label="MSE, potentials, training set",
+    label="MSE, потенциалы, обучающий датасет",
 )
 ax[0].plot(
-    range(shift, len(data["val_e_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["val_e_nn"],
     marker="o",
-    label="MSE, potentials, validation set",
+    label="MSE, потенциалы, валидационный датасет",
 )
-
-ax[0].set_xlabel("Iterations", fontsize=20, color="black")
+ax[0].set_xlim(shift-2, 2*(n+2)+1)
+ax[0].set_ylim(data["val_e_nn"].min() - 1e-3, data["val_e_nn"].max() + 1e-3)
+ax[0].set_xlabel("Эпохи", fontsize=20, color="black")
 ax[0].set_ylabel("MSE (eV)", fontsize=20, color="black")
-ax[0].legend()
+ax[0].tick_params(axis='both', which='major', labelsize=16)
+ax[0].legend(fontsize=16)
 
 ax[1].plot(
-    range(shift, len(data["train_f_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["train_f_nn"],
     marker="o",
-    label="MSE, atomic forces, training set",
+    label="MSE, силы на атомах, обучающий датасет",
 )
 ax[1].plot(
-    range(shift, len(data["val_f_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["val_f_nn"],
     marker="o",
-    label="MSE, atomic forces, validation set",
+    label="MSE, силы на атомах, валидационный датасет",
 )
 
-ax[1].set_xlabel("Iterations", fontsize=20, color="black")
+ax[1].set_xlabel("Эпохи", fontsize=20, color="black")
 ax[1].set_ylabel("MSE (eV/\u212b)", fontsize=20, color="black")
-ax[1].legend()
+ax[1].set_xlim(shift-2, 2*(n+2)+1)
+ax[1].set_ylim(data["val_f_nn"].min() - 1e-5, data["val_f_nn"].max() + 1e-5)
+ax[1].tick_params(axis='both', which='major', labelsize=16)
+ax[1].legend(fontsize=16)
+fig.tight_layout()
 
-fig.savefig("plot_errors.png")
+fig.savefig("pictures/plot_errors.png")
 
 fig, ax = plt.subplots(figsize=(10, 9))
 
 ax.plot(
-    range(shift, len(data["train_e_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["train_e_nn"],
     marker="o",
-    label="MSE, potentials, training set",
+    label="MSE, потенциалы, обучающий датасет",
 )
 ax.plot(
-    range(shift, len(data["val_e_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["val_e_nn"],
     marker="o",
-    label="MSE, potentials, validation set",
+    label="MSE, потенциалы, валидационный датасет",
 )
 
-ax.set_xlabel("Iterations", fontsize=20, color="black")
+ax.set_xlabel("Эпохи", fontsize=20, color="black")
 ax.set_ylabel("MSE (eV)", fontsize=20, color="black")
-ax.legend()
+ax.tick_params(axis='both', which='major', labelsize=16)
+ax.legend(fontsize=18)
 
-
-fig.savefig("plot_potentials.png")
+fig.tight_layout()
+fig.savefig("pictures/plot_potentials.png")
 
 fig, ax = plt.subplots(figsize=(10, 9))
 
 ax.plot(
-    range(shift, len(data["train_f_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["train_f_nn"],
     marker="o",
-    label="MSE, atomic forces, training set",
+    label="MSE, силы на атомах, обучающий датасет",
 )
 ax.plot(
-    range(shift, len(data["val_f_nn"]) + shift),
+    range(shift, 2*(n+2), 2),
     data["val_f_nn"],
     marker="o",
-    label="MSE, atomic forces, validation set",
+    label="MSE, силы на атомах, валидационный датасет",
 )
 
-ax.set_xlabel("Iterations", fontsize=20, color="black")
+ax.set_xlabel("Эпохи", fontsize=20, color="black")
 ax.set_ylabel("MSE (eV/\u212b)", fontsize=20, color="black")
-ax.legend()
-
-fig.savefig("plot_forces.png")
+ax.tick_params(axis='both', which='major', labelsize=16)
+ax.legend(fontsize=20)
+fig.tight_layout()
+fig.savefig("pictures/plot_forces.png")

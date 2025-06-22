@@ -4,7 +4,6 @@ from torch.utils.data import Dataset
 
 from ..features import calculate_sf
 
-
 class TrainAtomicDataset(Dataset):
     def __init__(
         self,
@@ -68,6 +67,7 @@ def make_atomic_dataset(
         dtype=torch.float32,
         device=device,
     )
+
     if energies.ndim == 1:
         energies = energies.unsqueeze(1)
 
@@ -77,7 +77,7 @@ def make_atomic_dataset(
         device=device,
     )
 
-
+    # scale energies and forces for better error convergence
     emin, emax = energies.min(), energies.max()
     energies = (energies - emin) / (emax - emin)
     forces /= emax - emin
@@ -89,7 +89,8 @@ def make_atomic_dataset(
             dg_spec = torch.load(f"dg_{spec}.pt", map_location=device)
         else:
             g_spec, dg_spec = calculate_sf(
-                cartesians[spec], cell, symm_func_params[spec]
+                cartesians[spec], cell, symm_func_params[spec],
+                disable_tqdm=kwargs.get("disable_tqdm", False)
             )
             g_spec = g_spec.to(device)
             dg_spec = dg_spec.to(device)
