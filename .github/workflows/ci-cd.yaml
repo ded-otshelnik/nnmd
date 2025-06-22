@@ -27,7 +27,9 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Clean up disk space
-        run: bash ./scripts/cleanup.sh
+        run: |
+          pwd
+          bash ./scripts/cleanup.sh
 
 
       - name: Install poetry
