@@ -29,7 +29,7 @@ jobs:
       - name: Clean up disk space
         run: |
           pwd
-          bash ./scripts/cleanup.sh
+          bash .github/scripts/cleanup.sh
 
 
       - name: Install poetry
