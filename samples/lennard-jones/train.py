@@ -32,7 +32,7 @@ input_data = input_parser("input/input.yaml")
 print("done")
 
 # convert train data to atomic dataset with symmetry functions
-dataset = make_atomic_dataset(input_data['atomic_data'])
+dataset = make_atomic_dataset(input_data["atomic_data"])
 
 # ~80% - train, ~10% - test and validation
 train_val_test_ratio = (0.8, 0.1, 0.1)

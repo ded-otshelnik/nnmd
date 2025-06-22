@@ -11,7 +11,7 @@ def g4_function(
     cutoff: float,
     eta: float,
     zeta: float,
-    lambd: int
+    lambd: int,
 ) -> torch.Tensor:
     """
     Calculate G4 symmetry functions for a triplet of atoms.
@@ -62,6 +62,7 @@ n = 1000
 rij = torch.linspace(a, b, n).unsqueeze(1).unsqueeze(2)
 angles = torch.linspace(0, 360, 1000) * torch.pi / torch.full((1000,), 180)
 
+
 def test_g2_eta(rij, fname):
     fig, ax = plt.subplots(figsize=(10, 8))
     ax.set_xlim(a, b)
@@ -76,6 +77,7 @@ def test_g2_eta(rij, fname):
 
     ax.legend()
     plt.savefig(fname)
+
 
 def test_g2_rs(rij, fname):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -94,6 +96,7 @@ def test_g2_rs(rij, fname):
     ax.grid()
     fig.tight_layout()
     plt.savefig(fname)
+
 
 def test_g4(angles, lambda_, fname):
     fig, ax = plt.subplots(figsize=(10, 6))

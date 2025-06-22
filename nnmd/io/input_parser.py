@@ -28,11 +28,14 @@ def input_parser(input_file: str) -> dict:
                     input_data[key][k] = data
                 elif k == "symmetry_functions_set":
                     symmetry_functions_data = _parse_json_or_yaml(v)
-                    input_data[key][k] = _symmetry_functions_parser(symmetry_functions_data)
+                    input_data[key][k] = _symmetry_functions_parser(
+                        symmetry_functions_data
+                    )
 
                     # input sizes for each element depend on symmetry functions count
-                    input_data["neural_network"]["input_sizes"] = _get_input_sizes(input_data[key][k])
-
+                    input_data["neural_network"]["input_sizes"] = _get_input_sizes(
+                        input_data[key][k]
+                    )
 
     input_data["atomic_data"]["n_atoms"] = n_atoms
     input_data["atomic_data"]["unit_cell"] = unit_cell
@@ -66,13 +69,18 @@ def _symmetry_functions_parser(symmetry_functions_data: dict) -> dict:
         for key, params in functions.items():
 
             # Get lengths of the parameters for zipping
-            max_length = max(len(value) if isinstance(value, list) else 1 for value in params.values())
+            max_length = max(
+                len(value) if isinstance(value, list) else 1
+                for value in params.values()
+            )
 
             for i in range(max_length):
                 params_group = []
                 for param_value in params.values():
                     if isinstance(param_value, list):
-                        params_group.append(param_value[i] if i < len(param_value) else param_value[-1])
+                        params_group.append(
+                            param_value[i] if i < len(param_value) else param_value[-1]
+                        )
                     else:
                         params_group.append(param_value)
 

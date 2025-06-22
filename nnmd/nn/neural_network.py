@@ -4,7 +4,6 @@
 # 3. parameters of all methods must be checked
 # 4. all methods must be documented
 
-from logging import warning
 import os
 
 import torch
@@ -28,6 +27,7 @@ available_optimizers = {
     "adam": torch.optim.Adam,
     "adamw": torch.optim.AdamW,
 }
+
 
 class RMSELoss(torch.nn.Module):
     def __init__(self):
@@ -91,16 +91,15 @@ class BPNN(torch.nn.Module):
         )
         self.net_log.info("----Atomic NNs parameters----")
         self.net_log.info(f"input sizes (number of descriptors): {self.input_sizes}")
-        self.net_log.info(f"hidden sizes:                        {self.hidden_sizes}\n\n")
+        self.net_log.info(
+            f"hidden sizes:                        {self.hidden_sizes}\n\n"
+        )
         self.net_log.info("---Dataset parameters---")
         self.net_log.info(f"Training sample size:   {train_dataset_size}")
         self.net_log.info(f"Validation sample size: {val_dataset_size}")
         self.net_log.info(f"Test sample size:       {test_dataset_size}\n\n")
 
-    def config(
-        self,
-        neural_net_data: dict
-    ):
+    def config(self, neural_net_data: dict):
         """Configures BPNN instance.
 
         Args:
@@ -132,13 +131,16 @@ class BPNN(torch.nn.Module):
             net = AtomicNN(
                 input_size=self.input_sizes[i],
                 hidden_sizes=self.hidden_sizes[i],
-                output_size=1
+                output_size=1,
             )
             net = net.to(self.device)
 
             if neural_net_data["load_models"]:
                 path2model = "".join(
-                    [neural_net_data['path'], f"/atomic_nn_{neural_net_data['atom_species'][i]}.pt"]
+                    [
+                        neural_net_data["path"],
+                        f"/atomic_nn_{neural_net_data['atom_species'][i]}.pt",
+                    ]
                 )
                 net.load_state_dict(torch.load(path2model))
             else:
@@ -331,7 +333,10 @@ class BPNN(torch.nn.Module):
             e_nn = torch.cat(e_nn, dim=0)
             f_nn = torch.cat(f_nn, dim=0)
             batch_loss, batch_e_loss, batch_f_loss = self._loss(
-                e_nn.sum(dim=1), energy, f_nn, forces,
+                e_nn.sum(dim=1),
+                energy,
+                f_nn,
+                forces,
             )
             batch_loss.backward(retain_graph=True)
             self.optim.step()
@@ -397,7 +402,10 @@ class BPNN(torch.nn.Module):
             forces = forces.to(device=self.device)
 
             batch_loss, batch_e_loss, batch_f_loss = self._loss(
-                e_nn.sum(dim=1), energy, f_nn, forces,
+                e_nn.sum(dim=1),
+                energy,
+                f_nn,
+                forces,
             )
 
             loss += batch_loss
@@ -455,7 +463,10 @@ class BPNN(torch.nn.Module):
             forces = forces.to(device=self.device)
 
             batch_loss, batch_e_loss, batch_f_loss = self._loss(
-                e_nn.sum(dim=1), energy, f_nn, forces,
+                e_nn.sum(dim=1),
+                energy,
+                f_nn,
+                forces,
             )
 
             loss += batch_loss
@@ -491,18 +502,22 @@ class BPNN(torch.nn.Module):
                 # add batch dimension if it is not present
                 cartesians[spec] = cartesians[spec].unsqueeze(0)
 
-            g, dg = calculate_sf(cartesians[spec], cell, symm_func_params[spec], disable_tqdm=True)
+            g, dg = calculate_sf(
+                cartesians[spec], cell, symm_func_params[spec], disable_tqdm=True
+            )
             g = g.squeeze(0)
             dg = dg.squeeze(0)
             g.requires_grad = True
 
             # calculate energies and forces using NN
             e_nn_atom_type = self.atomic_nets[i](g)
-            de = torch.autograd.grad(
-                e_nn_atom_type.sum(), g, create_graph=True
-            )[0]
+            de = torch.autograd.grad(e_nn_atom_type.sum(), g, create_graph=True)[0]
 
-            f_nn_atom_type = -torch.einsum("ijk,ijkl->ijl", de, dg) if dg.dim() > 3 else -torch.einsum("ij,ijk->ik", de, dg)
+            f_nn_atom_type = (
+                -torch.einsum("ijk,ijkl->ijl", de, dg)
+                if dg.dim() > 3
+                else -torch.einsum("ij,ijk->ik", de, dg)
+            )
 
             # concatenate energies and forces for all atom species
             if i == 0:

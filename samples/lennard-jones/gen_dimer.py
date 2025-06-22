@@ -10,12 +10,9 @@ import ase.units as units
 
 # Create a simple system of atoms
 traj_file = "input/lennard_jones_dimer.traj"
-positions = [
-    [0, 0, 0],
-    [0.97, 0, 0]
-]
+positions = [[0, 0, 0], [0.97, 0, 0]]
 n_atoms = len(positions)
-atoms = Atoms(f'H{n_atoms}', positions=positions)
+atoms = Atoms(f"H{n_atoms}", positions=positions)
 
 # Set the initial velocities
 MaxwellBoltzmannDistribution(atoms, temperature_K=300)

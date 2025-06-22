@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 
 from ..features import calculate_sf
 
+
 class TrainAtomicDataset(Dataset):
     def __init__(
         self,
@@ -89,8 +90,10 @@ def make_atomic_dataset(
             dg_spec = torch.load(f"dg_{spec}.pt", map_location=device)
         else:
             g_spec, dg_spec = calculate_sf(
-                cartesians[spec], cell, symm_func_params[spec],
-                disable_tqdm=kwargs.get("disable_tqdm", False)
+                cartesians[spec],
+                cell,
+                symm_func_params[spec],
+                disable_tqdm=kwargs.get("disable_tqdm", False),
             )
             g_spec = g_spec.to(device)
             dg_spec = dg_spec.to(device)
@@ -103,7 +106,9 @@ def make_atomic_dataset(
 
         sf_data[spec] = (g_spec, dg_spec)
 
-    print("Atomic dataset created with the following species:", ", ".join(sf_data.keys()))
+    print(
+        "Atomic dataset created with the following species:", ", ".join(sf_data.keys())
+    )
     print(f"Total species in dataset: {len(sf_data)}")
     print(f"Shapes of g and dg tensors: {g_spec.shape}, {dg_spec.shape}")
     print(f"Shapes of energies and forces tensors: {energies.shape}, {forces.shape}")

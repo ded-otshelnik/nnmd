@@ -13,6 +13,7 @@ class SymmetryFunction(Enum):
     G4 = 4
     G5 = 5
 
+
 def _pairwise_filter(distances, r_cutoff):
     """
     Filter pairs based on cutoff distance.
@@ -27,6 +28,7 @@ def _pairwise_filter(distances, r_cutoff):
     mask = (distances < r_cutoff) & (distances > 0)
 
     return mask
+
 
 def _triplets_filter(distances: torch.Tensor, r_cutoff: float) -> torch.Tensor:
     """
@@ -120,6 +122,7 @@ def g1_function(r: torch.Tensor, cutoff: float) -> torch.Tensor:
     G1 = G1.sum(dim=-1)
     return G1
 
+
 def g2_function(r: torch.Tensor, cutoff: float, eta: float, rs: float) -> torch.Tensor:
     """
     Calculate G2 symmetry functions for a pair of atoms.
@@ -134,10 +137,10 @@ def g2_function(r: torch.Tensor, cutoff: float, eta: float, rs: float) -> torch.
     Returns:
         torch.Tensor of shape (batch_size, n_atoms)
     """
-     # exclude self-interaction
+    # exclude self-interaction
     mask = _pairwise_filter(r, cutoff)
 
-    G2 = torch.exp(-eta * (r - rs)**2) * f_cutoff(r, cutoff)
+    G2 = torch.exp(-eta * (r - rs) ** 2) * f_cutoff(r, cutoff)
     G2 = torch.where(mask, G2, torch.zeros_like(G2))
     G2 = G2.sum(dim=-1)
     return G2
@@ -166,12 +169,16 @@ def g4_function(
 
     # Valid triplets distances are cutoffs and more than 0
     mask = _triplets_filter(distances, cutoff)  # Shape: (B, N, N, N)
-    fc_triplet = fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)  # Shape: (B, N, N, N)
+    fc_triplet = (
+        fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)
+    )  # Shape: (B, N, N, N)
 
     # Cosine of the angle θ_ijk (refactor, can causes nans)
-    cos_theta = torch.where((torch.abs(2 * rij * rik) >= 10e-4),
-                             (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
-                             torch.zeros_like(mask))
+    cos_theta = torch.where(
+        (torch.abs(2 * rij * rik) >= 10e-4),
+        (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
+        torch.zeros_like(mask),
+    )
 
     exponent = 2 ** (1 - zeta) * torch.exp(
         -eta * (rij**2 + rik**2 + rjk**2)
@@ -179,10 +186,13 @@ def g4_function(
 
     # For pow with float power data is converted to complex
     # to avoid nan in pow
-    cosine_part = torch.where(torch.abs(cos_theta) > 10e-4,
-                              torch.pow((1 + lambd * torch.abs(cos_theta))
-                                        .to(dtype=torch.complex64), zeta).real,
-                              torch.zeros_like(cos_theta))
+    cosine_part = torch.where(
+        torch.abs(cos_theta) > 10e-4,
+        torch.pow(
+            (1 + lambd * torch.abs(cos_theta)).to(dtype=torch.complex64), zeta
+        ).real,
+        torch.zeros_like(cos_theta),
+    )
 
     # Angular symmetry function G^4
     G4 = cosine_part * exponent * fc_triplet
@@ -193,6 +203,7 @@ def g4_function(
     )  # Shape: (B, N)
 
     return G4
+
 
 def g5_function(
     distances: torch.Tensor, cutoff: float, eta: float, zeta: int, lambd: int
@@ -217,12 +228,16 @@ def g5_function(
 
     # Valid triplets distances are cutoffs and more than 0
     mask = _triplets_filter(distances, cutoff)  # Shape: (B, N, N, N)
-    fc_triplet = fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)  # Shape: (B, N, N, N)
+    fc_triplet = (
+        fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)
+    )  # Shape: (B, N, N, N)
 
     # Cosine of the angle θ_ijk (refactor, can causes nans)
-    cos_theta = torch.where((torch.abs(2 * rij * rik) >= 10e-4),
-                             (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
-                             torch.zeros_like(mask))
+    cos_theta = torch.where(
+        (torch.abs(2 * rij * rik) >= 10e-4),
+        (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
+        torch.zeros_like(mask),
+    )
 
     exponent = 2 ** (1 - zeta) * torch.exp(
         -eta * (rij**2 + rik**2)
@@ -230,10 +245,13 @@ def g5_function(
 
     # For pow with float power data is converted to complex
     # to avoid nan in pow
-    cosine_part = torch.where(torch.abs(cos_theta) > 10e-4,
-                              torch.pow((1 + lambd * torch.abs(cos_theta))
-                                        .to(dtype=torch.complex64), zeta).real,
-                              torch.zeros_like(cos_theta))
+    cosine_part = torch.where(
+        torch.abs(cos_theta) > 10e-4,
+        torch.pow(
+            (1 + lambd * torch.abs(cos_theta)).to(dtype=torch.complex64), zeta
+        ).real,
+        torch.zeros_like(cos_theta),
+    )
 
     # Angular symmetry function G^5
     G5 = cosine_part * exponent * fc_triplet

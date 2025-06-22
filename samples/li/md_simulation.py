@@ -1,5 +1,6 @@
 # MD simulation of Li atoms with neural network
 import warnings
+
 warnings.filterwarnings("ignore")
 
 import torch

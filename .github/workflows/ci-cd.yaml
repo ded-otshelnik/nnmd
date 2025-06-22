@@ -33,7 +33,7 @@ jobs:
       run: |
         poetry install --no-interaction --no-root
 
-    - name: Run tests
+    - name: Run tests and linters
       run: |
         poetry run pip install -r requirements-dev.txt
         poetry run tox run --verbose

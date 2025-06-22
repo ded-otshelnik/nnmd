@@ -8,7 +8,8 @@ class AtomicNN(nn.Module):
     """
 
     def __init__(
-        self, input_size: int,
+        self,
+        input_size: int,
         hidden_sizes: list[int] | int,
         output_size: int = 1,
         activation: str = torch.sigmoid,

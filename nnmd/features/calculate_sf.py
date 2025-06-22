@@ -71,9 +71,12 @@ def calculate_sf(
                     g_values = g5_function(distances, *g_params)
                 case _:
                     raise ValueError(f"Unknown symmetry function number: {g_func}")
-            dg_values = torch.autograd.grad(g_values, cart,
-                                            grad_outputs=torch.ones_like(g_values),
-                                            create_graph=True)[0]
+            dg_values = torch.autograd.grad(
+                g_values,
+                cart,
+                grad_outputs=torch.ones_like(g_values),
+                create_graph=True,
+            )[0]
 
             g_struct.append(g_values.detach())
             dg_struct.append(dg_values.detach())
@@ -105,10 +108,12 @@ def calculate_sf(
 
     r = [
         op(cart)
-        for cart in tqdm(cartesians_chunks,
-                          desc="Calculating symmetry functions",
-                          total=len(cartesians_chunks),
-                          disable=kwargs.get("disable_tqdm", False))
+        for cart in tqdm(
+            cartesians_chunks,
+            desc="Calculating symmetry functions",
+            total=len(cartesians_chunks),
+            disable=kwargs.get("disable_tqdm", False),
+        )
     ]
     g, dg = zip(*r)
 

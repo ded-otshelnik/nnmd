@@ -43,9 +43,11 @@ class NNMD_calc(Calculator):
                 device=self.model.device,
             )
 
-        cell = torch.tensor(self._atoms_to_calc.cell.array,
-                            dtype=self.model.dtype,
-                            device=self.model.device)
+        cell = torch.tensor(
+            self._atoms_to_calc.cell.array,
+            dtype=self.model.dtype,
+            device=self.model.device,
+        )
         return self.model.predict(positions, cell, self.symm_funcs_data)
 
     def calculate(self, atoms=None, properties=None, system_changes=None):
