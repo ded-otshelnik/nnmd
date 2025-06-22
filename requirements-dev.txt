@@ -1,11 +1,11 @@
-setuptools==69.5.1
+setuptools
 ase
-numpy<2.0
-torch<2.5
+numpy
+torch
 tqdm
 pyyaml
-platformdirs==2.6.2
-virtualenv==20.21.1
+platformdirs
+virtualenv
 tox
 tox-current-env
 pytest
