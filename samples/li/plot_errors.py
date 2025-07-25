@@ -16,7 +16,7 @@ data = {
     "val_total": [],
 }
 
-with open("net_adamw.log", "r") as file:
+with open("output/net_adamw.log", "r") as file:
     line = file.readline()
     while line:
         try:
@@ -45,45 +45,12 @@ shift = 5
 data = {key: np.array(value)[shift::2] for key, value in data.items()}
 n = len(data["train_e_nn"])
 
-data["train_e_nn"] = [
-    (
-        data["train_e_nn"][i]
-        if np.abs(data["train_e_nn"][i] - data["train_e_nn"][i - 1]) < 0.1
-        else data["train_e_nn"][i - 1]
-    )
-    for i in range(len(data["train_e_nn"]))
-]
-data["val_e_nn"] = [
-    (
-        data["val_e_nn"][i]
-        if np.abs(data["val_e_nn"][i] - data["val_e_nn"][i - 1]) < 0.1
-        else data["val_e_nn"][i - 1]
-    )
-    for i in range(len(data["val_e_nn"]))
-]
-data["train_f_nn"] = [
-    (
-        data["train_f_nn"][i]
-        if np.abs(data["train_f_nn"][i] - data["train_f_nn"][i - 1]) < 0.1
-        else data["train_f_nn"][i - 1]
-    )
-    for i in range(len(data["train_f_nn"]))
-]
-data["val_f_nn"] = [
-    (
-        data["val_f_nn"][i]
-        if np.abs(data["val_f_nn"][i] - data["val_f_nn"][i - 1]) < 0.1
-        else data["val_f_nn"][i - 1]
-    )
-    for i in range(len(data["val_f_nn"]))
-]
-
 data["train_e_nn"] = np.array(data["train_e_nn"])
 data["val_e_nn"] = np.array(data["val_e_nn"])
 data["train_f_nn"] = np.array(data["train_f_nn"])
 data["val_f_nn"] = np.array(data["val_f_nn"])
 
-fig, ax = plt.subplots(1, 2, constrained_layout=True, figsize=(24, 8))
+fig, ax = plt.subplots(2, 1, constrained_layout=True, figsize=(16, 12))
 ax[0].plot(
     range(shift, 2 * (n + 2), 2),
     data["train_e_nn"],

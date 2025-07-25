@@ -1,7 +1,7 @@
 import yaml
 import json
 
-from .atomic_parser import traj_parser
+from .atomic_parser import gpaw_parser, traj_parser
 
 
 def input_parser(input_file: str) -> dict:
@@ -24,8 +24,17 @@ def input_parser(input_file: str) -> dict:
         if key == "atomic_data" and isinstance(value, dict):
             for k, v in value.items():
                 if k == "reference_data":
-                    n_atoms, data, unit_cell = traj_parser(v)
-                    input_data[key][k] = data
+                    if v.endswith(".traj"):
+                        n_atoms, data, unit_cell = traj_parser(v)
+                        input_data[key][k] = data
+                    # assuming that file contains data in gpaw format
+                    elif v.endswith("txt"):
+                        n_atoms, data, unit_cell = gpaw_parser(v)
+                        input_data[key][k] = data
+                    else:
+                        raise ValueError(
+                            "Unsupported reference data format: {}".format(v)
+                        )
                 elif k == "symmetry_functions_set":
                     symmetry_functions_data = _parse_json_or_yaml(v)
                     input_data[key][k] = _symmetry_functions_parser(

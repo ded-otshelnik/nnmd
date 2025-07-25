@@ -104,14 +104,14 @@ def calculate_sf(
     _set_seed(42)
 
     cartesians.requires_grad = True
-    cartesians_chunks = torch.chunk(cartesians, len(cartesians) // 100 + 1, dim=0)
+    cartesians_chunks = torch.chunk(cartesians, len(cartesians) // 10 + 1, dim=0)
 
     r = [
         op(cart)
         for cart in tqdm(
-            cartesians_chunks,
+            cartesians.unsqueeze(-3),
             desc="Calculating symmetry functions",
-            total=len(cartesians_chunks),
+            total=len(cartesians),
             disable=kwargs.get("disable_tqdm", False),
         )
     ]

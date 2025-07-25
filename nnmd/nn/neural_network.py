@@ -144,12 +144,13 @@ class BPNN(torch.nn.Module):
                 )
                 net.load_state_dict(torch.load(path2model))
             else:
-                # initialize weights of Atomic NNs
-                for m in net.model:
-                    # Xavier weights initialization works better on linear layers
-                    if isinstance(m, nn.Linear):
-                        nn.init.xavier_uniform_(m.weight)
-                        nn.init.constant_(m.bias, 0)
+                # # initialize weights of Atomic NNs
+                # for m in net.model:
+                #     # Xavier weights initialization works better on linear layers
+                #     if isinstance(m, nn.Linear):
+                #         nn.init.xavier_uniform_(m.weight)
+                #         nn.init.constant_(m.bias, 0)
+                pass
 
             self.atomic_nets.append(net)
 
@@ -172,9 +173,15 @@ class BPNN(torch.nn.Module):
             )
         else:
             optim_class = neural_net_data["optimizer"]
-
+        params_optim = {
+            "params": params,
+            "lr": self.learning_rate,
+            "weight_decay": self.l2_regularization,
+            "betas": (0.8, 0.9999),
+            "amsgrad": True,
+        }
         self.optim = available_optimizers[optim_class](
-            params=params, lr=self.learning_rate, weight_decay=self.l2_regularization
+            **params_optim
         )
 
     def _loss(

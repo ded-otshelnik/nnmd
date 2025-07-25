@@ -1,6 +1,7 @@
 import re
 import traceback
 
+import numpy as np
 from ase.io import Trajectory
 
 
@@ -54,13 +55,12 @@ def gpaw_parser(filename, encoding="utf-8") -> tuple[int, int, list, list, list]
     with open(filename, encoding=encoding) as file:
         # flags that marks positions and forces
         positions_marker, forces_marker = False, False
-        cartesians, forces, energies = (
-            [],
-            [],
-            [],
-        )
+
+        result = []
+        cell = None
 
         line = file.readline()
+        data = {}
         while line:
             try:
                 # if cartesians values are found
@@ -75,20 +75,36 @@ def gpaw_parser(filename, encoding="utf-8") -> tuple[int, int, list, list, list]
                     forces_marker = True
                     line = file.readline()
                     continue
+
                 # if energy value is found
                 elif line.startswith("Extrapolated"):
-                    energies.append(float(re.findall(r"[-+]?\d+.\d+", line)[0]))
+                    energy = float(re.findall(r"[-+]?\d+.\d+", line)[0])
+                    data["energy"] = energy
+                    line = file.readline()
+                    continue
+
+                if cell is None and line.startswith("Unit cell"):
+                    cell = []
+                    while len(line.strip("\n ")) != 0:
+                        line = file.readline()
+                        matched_group = re.findall(r"[-+]?\d+.\d+", line)[:3]
+                        if matched_group:
+                            cell.append(list(map(float, matched_group)))
+                    cell = np.array(cell).reshape(3, 3)
                     line = file.readline()
                     continue
 
                 # parse atomic positions on iteration
                 if positions_marker:
-                    cartesians_iter = []
                     while line.strip("\n ") != "":
                         coord = re.findall(r"[^(,][-+]?\d+.\d+[^,)]", line[4:])[:-3]
-                        cartesians_iter.append([float(i) for i in coord])
+                        spec = re.findall(r"\w+", line[4:])[0]
+                        if spec not in data:
+                            data[spec] = {"positions": []}
+                        data[spec]["positions"].append([float(i) for i in coord])
                         line = file.readline()
-                    cartesians.append(cartesians_iter)
+
+                    data[spec]["positions"] = np.array(data[spec]["positions"])
                     positions_marker = False
 
                 # parse atomic forces on iteration
@@ -98,13 +114,20 @@ def gpaw_parser(filename, encoding="utf-8") -> tuple[int, int, list, list, list]
                         force = re.findall(r"[-+]?\d+.\d+", line[4:])
                         forces_iter.append([float(i) for i in force])
                         line = file.readline()
-                    forces.append(forces_iter)
+
+                    data["forces"] = forces_iter
                     forces_marker = False
 
-                # move to next
+                # if data is collected (positions, forces and energy)
+                if len(data.keys()) == 3:
+                    result.append(data)
+                    data = {}
+
                 line = file.readline()
             except Exception:
                 traceback.print_exc()
                 exit(1)
 
-        return len(cartesians), cartesians, forces, energies
+        # get number of atoms
+        n_atoms = len(result[0]["forces"])
+        return n_atoms, result, cell

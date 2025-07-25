@@ -5,6 +5,7 @@ import re
 import traceback
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 import numpy as np
 import pandas as pd
 
@@ -17,7 +18,7 @@ data = {
     "val_total": [],
 }
 
-with open("net.log", "r") as file:
+with open("output/net_dimer.log", "r") as file:
     line = file.readline()
     while line:
         try:
@@ -43,7 +44,7 @@ with open("net.log", "r") as file:
             exit(1)
 
 shift = 30
-data = {key: np.array(value)[shift:100] for key, value in data.items()}
+data = {key: np.array(value)[shift:400] for key, value in data.items()}
 
 fig, ax = plt.subplots(2, constrained_layout=True, figsize=(18, 12))
 
@@ -51,37 +52,41 @@ ax[0].plot(
     range(shift, len(data["train_e_nn"]) + shift),
     data["train_e_nn"],
     marker="o",
-    label="MSE, potentials, training set",
+    label="MSE, потенциалы, обучающий датасет",
 )
 ax[0].plot(
     range(shift, len(data["val_e_nn"]) + shift),
     data["val_e_nn"],
     marker="o",
-    label="MSE, potentials, validation set",
+    label="MSE, потенциалы, валидационный датасет",
 )
 
-ax[0].set_xlabel("Iterations", fontsize=20, color="black")
+ax[0].set_xlabel("Эпохи", fontsize=20, color="black")
 ax[0].set_ylabel("MSE (eV)", fontsize=20, color="black")
-ax[0].legend()
+ax[0].tick_params(axis="both", which="major", labelsize=16)
+ax[0].ticklabel_format(style="scientific", axis="y", scilimits=(0, 0))
+ax[0].legend(fontsize=16)
 
 ax[1].plot(
     range(shift, len(data["train_f_nn"]) + shift),
     data["train_f_nn"],
     marker="o",
-    label="MSE, atomic forces, training set",
+    label="MSE, атомные силы, обучающий датасет",
 )
 ax[1].plot(
     range(shift, len(data["val_f_nn"]) + shift),
     data["val_f_nn"],
     marker="o",
-    label="MSE, atomic forces, validation set",
+    label="MSE, атомные силы, валидационный датасет",
 )
 
-ax[1].set_xlabel("Iterations", fontsize=20, color="black")
+ax[1].set_xlabel("Эпохи", fontsize=20, color="black")
 ax[1].set_ylabel("MSE (eV/\u212b)", fontsize=20, color="black")
-ax[1].legend()
+ax[1].tick_params(axis="both", which="major", labelsize=16)
+ax[1].ticklabel_format(style="scientific", axis="y", scilimits=(0, 0))
+ax[1].legend(fontsize=16)
 
-fig.savefig("plot_errors.png")
+fig.savefig("plot_errors_.png")
 
 fig, ax = plt.subplots(figsize=(10, 9))
 
@@ -89,18 +94,20 @@ ax.plot(
     range(shift, len(data["train_e_nn"]) + shift),
     data["train_e_nn"],
     marker="o",
-    label="MSE, potentials, training set",
+    label="MSE, потенциалы, обучающий датасет",
 )
 ax.plot(
     range(shift, len(data["val_e_nn"]) + shift),
     data["val_e_nn"],
     marker="o",
-    label="MSE, potentials, validation set",
+    label="MSE, потенциалы, валидационный датасет",
 )
 
-ax.set_xlabel("Iterations", fontsize=20, color="black")
+ax.set_xlabel("Эпохи", fontsize=20, color="black")
 ax.set_ylabel("MSE (eV)", fontsize=20, color="black")
-ax.legend()
+ax.legend(fontsize=16)
+ax.tick_params(axis="both", which="major", labelsize=16)
+ax.ticklabel_format(style="scientific", axis="y", scilimits=(0, 0))
 
 
 fig.savefig("plot_potentials.png")
@@ -111,17 +118,19 @@ ax.plot(
     range(shift, len(data["train_f_nn"]) + shift),
     data["train_f_nn"],
     marker="o",
-    label="MSE, atomic forces, training set",
+    label="MSE, атомные силы, обучающий датасет",
 )
 ax.plot(
     range(shift, len(data["val_f_nn"]) + shift),
     data["val_f_nn"],
     marker="o",
-    label="MSE, atomic forces, validation set",
+    label="MSE, атомные силы, валидационный датасет",
 )
 
-ax.set_xlabel("Iterations", fontsize=20, color="black")
+ax.set_xlabel("Эпохи", fontsize=20, color="black")
 ax.set_ylabel("MSE (eV/\u212b)", fontsize=20, color="black")
-ax.legend()
+ax.legend(fontsize=16)
+ax.tick_params(axis="both", which="major", labelsize=16)
+ax.ticklabel_format(style="scientific", axis="y", scilimits=(0, 0))
 
 fig.savefig("plot_forces.png")
