@@ -7,13 +7,15 @@ from .atomic_parser import gpaw_parser, traj_parser
 def input_parser(input_file: str) -> dict:
     """Parses input file with atomic data and neural network parameters.
     It supports json and yaml formats.
+
     Args:
         input_file (str): Path to input file
+
     Raises:
         ValueError: Unsupported file format
 
     Returns:
-        dict: Parsed data
+        dict: Parsed atomic data and neural network parameters.
     """
     input_data = _parse_json_or_yaml(input_file)
 
@@ -114,7 +116,7 @@ def _get_input_sizes(features: dict) -> list:
         list: List of input sizes for each element
     """
     input_sizes = []
-    for element, data in features.items():
+    for _, data in features.items():
         n_features = data["n_features"]
         input_sizes.append(n_features)
     return input_sizes

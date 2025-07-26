@@ -7,7 +7,7 @@ import torch
 from nnmd.io import input_parser
 from nnmd.nn import BPNN
 from nnmd.nn.dataset import make_atomic_dataset
-from nnmd.util import train_val_test_split
+from nnmd._util import train_val_test_split
 from nnmd.features import calculate_params
 
 warnings.filterwarnings("ignore")
@@ -21,9 +21,9 @@ N1, N2, N3, N4, N5 = 0, 25, 0, 0, 25
 r_cutoff = 38.0
 params = calculate_params(r_cutoff, N1, N2, N3, N4, N5)
 features = [1] * N1 + [2] * N2 + [3] * N3 + [4] * N4 + [5] * N5
-input_data['atomic_data']['symmetry_functions_set']['Cu'] = {
+input_data["atomic_data"]["symmetry_functions_set"]["Cu"] = {
     "params": params,
-    "features": features
+    "features": features,
 }
 input_data["neural_network"]["input_sizes"] = [
     N1 + N2 + N3 + N4 + N5

@@ -1,0 +1,174 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-26 20:36+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api/nnmd.features.rst:2
+msgid "nnmd.features"
+msgstr ""
+
+#: nnmd.features.symm_funcs.SymmetryFunction:1 of
+msgid "Базовые классы: :py:class:`~enum.Enum`"
+msgstr ""
+
+#: nnmd.features.symm_funcs.SymmetryFunction:1 of
+msgid ""
+"Enumeration of implemented symmetry functions. Each symmetry function "
+"corresponds to a specific type of symmetry function."
+msgstr ""
+
+#: nnmd.features.symm_funcs.calculate_distances:1 of
+msgid "Calculate pairwise distances and displacements with PBC."
+msgstr ""
+
+#: ../../source/api/nnmd.features.rst
+msgid "Параметры"
+msgstr ""
+
+#: nnmd.features.symm_funcs.calculate_distances:3 of
+msgid "torch.Tensor of shape (n_moleculs, n_atoms, 3)"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:5
+#: nnmd.features.symm_funcs.calculate_distances:4 of
+msgid "torch.Tensor of shape (3, 3)"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:4
+#: nnmd.features.symm_funcs.calculate_distances:5
+#: nnmd.features.symm_funcs.f_cutoff:5 nnmd.features.symm_funcs.g1_function:5
+#: nnmd.features.symm_funcs.g2_function:5
+#: nnmd.features.symm_funcs.g4_function:4
+#: nnmd.features.symm_funcs.g5_function:4 of
+msgid "float - cutoff radius"
+msgstr ""
+
+#: ../../source/api/nnmd.features.rst
+msgid "Результат"
+msgstr ""
+
+#: nnmd.features.symm_funcs.calculate_distances:7
+#: nnmd.features.symm_funcs.f_cutoff:4 nnmd.features.symm_funcs.f_cutoff:7 of
+msgid "torch.Tensor of shape (n_atoms, n_atoms)"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:1 of
+msgid ""
+"Calculate parameters for symmetry functions by auto-scheme for a given "
+"cutoff radius and number of functions."
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:5 of
+msgid "int - number of G1 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:6 of
+msgid "int - number of G2 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:7 of
+msgid "int - number of G3 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:8 of
+msgid "int - number of G4 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:9 of
+msgid "int - number of G5 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:11 of
+msgid "list of parameters for symmetry functions"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:1 of
+msgid "Calculate symmetry functions for a batch of molecules."
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:3 of
+msgid "torch.Tensor of shape (n_molecules, n_atoms, 3)"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:4 of
+msgid "dict - dictionary with symmetry functions data"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:7 of
+msgid "torch.Tensor of shape (n_molecules, n_atoms, n_symm_funcs)"
+msgstr ""
+
+#: nnmd.features.symm_funcs.f_cutoff:1 of
+msgid ""
+"Calculate the cutoff function for the pair of atoms. Function is "
+"vectorized and can be applied to a batch of pairs."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g1_function:1 of
+msgid ""
+"Calculate G1 symmetry functions for a pair of atoms. Function is "
+"vectorized and can be applied to a batch of pairs."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g1_function:4
+#: nnmd.features.symm_funcs.g2_function:4
+#: nnmd.features.symm_funcs.g4_function:3
+#: nnmd.features.symm_funcs.g5_function:3 of
+msgid "torch.Tensor of shape (batch_size, n_atoms, n_atoms)"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g1_function:7
+#: nnmd.features.symm_funcs.g2_function:9
+#: nnmd.features.symm_funcs.g4_function:9
+#: nnmd.features.symm_funcs.g5_function:9 of
+msgid "torch.Tensor of shape (batch_size, n_atoms)"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g2_function:1 of
+msgid ""
+"Calculate G2 symmetry functions for a pair of atoms. Function is "
+"vectorized and can be applied to a batch of pairs."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g2_function:6
+#: nnmd.features.symm_funcs.g4_function:5
+#: nnmd.features.symm_funcs.g5_function:5 of
+msgid "float - width of the Gaussian"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g2_function:7 of
+msgid "float - center of the Gaussian"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g4_function:1 of
+msgid "Calculate G4 symmetry functions for a triplet of atoms."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g4_function:6
+#: nnmd.features.symm_funcs.g5_function:6 of
+msgid "float - exponent of the cosine term"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g4_function:7
+#: nnmd.features.symm_funcs.g5_function:7 of
+msgid "int - sign of the cosine term"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g5_function:1 of
+msgid "Calculate G5 symmetry functions for a triplet of atoms."
+msgstr ""
+

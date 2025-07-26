@@ -8,25 +8,18 @@ import os
 
 import torch
 
-from torch import nn
 from torch.utils.data import DataLoader
 
 from . import AtomicNN
 from .dataset import TrainAtomicDataset
-from ..util._logger import Logger
+from .._util._logger import Logger
 from ..features import calculate_sf
 
 torch.manual_seed(0)
-DEBUG = os.environ.get("DEBUG", True)
+DEBUG = os.environ.get("DEBUG", False)
 
 if DEBUG:
     from tqdm import tqdm
-
-
-available_optimizers = {
-    "adam": torch.optim.Adam,
-    "adamw": torch.optim.AdamW,
-}
 
 
 class RMSELoss(torch.nn.Module):
@@ -36,6 +29,17 @@ class RMSELoss(torch.nn.Module):
 
     def forward(self, yhat, y):
         return torch.sqrt(self.mse(yhat, y))
+
+
+available_optimizers = {
+    "adam": torch.optim.Adam,
+    "adamw": torch.optim.AdamW,
+}
+available_losses = {
+    "mse": torch.nn.MSELoss,
+    "mae": torch.nn.L1Loss,
+    "rmse": RMSELoss,
+}
 
 
 class BPNN(torch.nn.Module):
@@ -103,10 +107,7 @@ class BPNN(torch.nn.Module):
         """Configures BPNN instance.
 
         Args:
-            neural_net_data (dict): data about high-dimentional neural network and its atomic subnets
-            input_size (int): size of input data, number of descriptors
-            path (str): path to pre-trained models. If not None and parameter in neural_network_data ("load_models") is True,
-            models will be loaded
+            neural_net_data (dict): data about BPNN and its atomic subnets
         """
         self.neural_net_data = neural_net_data
 
@@ -121,11 +122,11 @@ class BPNN(torch.nn.Module):
         self.learning_rate = neural_net_data["learning_rate"]
         self.l2_regularization = neural_net_data["l2_regularization"]
 
-        # coefficients of energies/forces importance in loss function
+        # weights of energies/forces errors in loss function
         self.e_loss_coeff = neural_net_data["e_loss_coeff"]
         self.f_loss_coeff = neural_net_data["f_loss_coeff"]
 
-        # create Atomic NNs for each atom species
+        # Atomic NNs for each atom species
         self.atomic_nets = []
         for i in range(len(self.species)):
             net = AtomicNN(
@@ -144,25 +145,30 @@ class BPNN(torch.nn.Module):
                 )
                 net.load_state_dict(torch.load(path2model))
             else:
-                # # initialize weights of Atomic NNs
-                # for m in net.model:
-                #     # Xavier weights initialization works better on linear layers
-                #     if isinstance(m, nn.Linear):
-                #         nn.init.xavier_uniform_(m.weight)
-                #         nn.init.constant_(m.bias, 0)
-                pass
+                # initialize weights of Atomic NNs
+                for m in net.model:
+                    # Xavier weights initialization works well on linear layers
+                    if isinstance(m, torch.nn.Linear):
+                        torch.nn.init.xavier_uniform_(m.weight)
+
+                        # bias initialization
+                        # TODO: set bias to min energy for
+                        # absolute values reconstruction
+                        torch.nn.init.constant_(m.bias, 0)
+                        # m.bias.requires_grad = False
 
             self.atomic_nets.append(net)
 
         # loss function
+        # TODO: set loss as parameter
         self.criterion = torch.nn.MSELoss()
 
+        # single optimizer will be used
+        # for all atomic subnets
         params = []
         for net in self.atomic_nets:
             params += list(net.parameters())
 
-        # if no optimizer is specified in neural_net_data,
-        # use Adam as default optimizer
         if neural_net_data["optimizer"] is None:
             optim_class = "adam"
             print("Optimizer is not specified, using default: Adam")
@@ -173,6 +179,7 @@ class BPNN(torch.nn.Module):
             )
         else:
             optim_class = neural_net_data["optimizer"]
+
         params_optim = {
             "params": params,
             "lr": self.learning_rate,
@@ -180,9 +187,11 @@ class BPNN(torch.nn.Module):
             "betas": (0.8, 0.9999),
             "amsgrad": True,
         }
-        self.optim = available_optimizers[optim_class](
-            **params_optim
-        )
+        if optim_class == "adamw":
+            params_optim["betas"] = (0.9, 0.999)
+            params_optim["amsgrad"] = True
+
+        self.optim = available_optimizers[optim_class](**params_optim)
 
     def _loss(
         self,
@@ -193,6 +202,7 @@ class BPNN(torch.nn.Module):
     ) -> torch.Tensor:
         """Gets loss of calculations.
 
+        ----
         Args:
             e_nn (torch.Tensor): calculated energy
             energy (torch.Tensor): target energy
@@ -239,7 +249,9 @@ class BPNN(torch.nn.Module):
         curr_lr = self.optim.param_groups[0]["lr"]
 
         # format of loss info message
-        loss_info = "MSE E = {e_loss:e}, MSE F = {f_loss:e}, MSE total = {loss:e} eV"
+        loss_info = (
+            "{loss} E = {e_loss:e}, {loss} F = {f_loss:e}, {loss} total = {total:e} eV"
+        )
 
         # run training
         for epoch in range(epochs):
@@ -250,7 +262,8 @@ class BPNN(torch.nn.Module):
                 + loss_info.format(
                     e_loss=e_loss.item(),
                     f_loss=f_loss.item(),
-                    loss=loss.item(),
+                    loss=self.criterion.__class__.__name__,
+                    total=loss.item(),
                 )
             )
 
@@ -261,7 +274,8 @@ class BPNN(torch.nn.Module):
                 + loss_info.format(
                     e_loss=e_loss.item(),
                     f_loss=f_loss.item(),
-                    loss=loss.item(),
+                    loss=self.criterion.__class__.__name__,
+                    total=loss.item(),
                 )
             )
 
@@ -284,7 +298,10 @@ class BPNN(torch.nn.Module):
         self.net_log.info(
             "Testing: "
             + loss_info.format(
-                e_loss=e_loss.item(), f_loss=f_loss.item(), loss=loss.item()
+                e_loss=e_loss.item(),
+                f_loss=f_loss.item(),
+                loss=loss.item(),
+                total=loss.item(),
             )
         )
 

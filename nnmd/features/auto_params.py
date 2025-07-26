@@ -3,9 +3,9 @@ import numpy as np
 
 def calculate_params(r_cutoff, N_g1, N_g2, N_g3, N_g4, N_g5):
     """
-    Calculate parameters for symmetry functions.
+    Calculate parameters for symmetry functions by auto-scheme
+    for a given cutoff radius and number of functions.
 
-    ----
     Args:
         r_cutoff: float - cutoff radius
         N_g1: int - number of G1 functions
@@ -14,7 +14,6 @@ def calculate_params(r_cutoff, N_g1, N_g2, N_g3, N_g4, N_g5):
         N_g4: int - number of G4 functions
         N_g5: int - number of G5 functions
 
-    ----
     Returns:
         list of parameters for symmetry functions
     """

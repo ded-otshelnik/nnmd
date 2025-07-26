@@ -7,15 +7,15 @@ from ase.io import Trajectory
 
 def traj_parser(traj_file: str) -> tuple:
     """Extracts positions, energies, forces and velocities from ASE trajectory file
-    with respect to each species
+    with respect to each species.
 
     Args:
-        traj_file (str): ASE trajectory file
+        traj_file (str): ASE trajectory file.
 
     Returns:
-        list[int]: number of atoms in each species
-        list[tuple[dict, np.ndarray]]: list of dictionaries with positions, forces and velocities
-        for each species and energy of the system
+        tuple: number of atoms in each species, list of dictionaries with
+        positions, forces, velocities and energies for each atomic structure,
+        unit cell.
     """
     traj = Trajectory(traj_file)
 
@@ -27,7 +27,6 @@ def traj_parser(traj_file: str) -> tuple:
     # get number of atoms in each species
     n_atoms = list(len(traj[0][traj[0].symbols == spec]) for spec in species)
 
-    # result list
     result = []
 
     # collect necessary data from each atomic structure and species
@@ -45,13 +44,18 @@ def traj_parser(traj_file: str) -> tuple:
     return n_atoms, result, cell
 
 
-def gpaw_parser(filename, encoding="utf-8") -> tuple[int, int, list, list, list]:
-    """Parse info of gpaw simulation
+def gpaw_parser(filename, encoding="utf-8") -> tuple:
+    """Parse info of gpaw simulation.
 
     Args:
-        filename: file of gpaw simulation
+        filename: file of gpaw simulation.
         encoding (str, optional): Defaults to 'utf-8'.
+
+    Returns:
+        tuple: number of atoms, list of dictionaries with positions, forces and energy,
+        unit cell.
     """
+
     with open(filename, encoding=encoding) as file:
         # flags that marks positions and forces
         positions_marker, forces_marker = False, False

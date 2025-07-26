@@ -6,6 +6,7 @@ from enum import Enum
 class SymmetryFunction(Enum):
     """
     Enumeration of implemented symmetry functions.
+    Each symmetry function corresponds to a specific type of symmetry function.
     """
 
     G1 = 1
@@ -64,7 +65,8 @@ def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
     # Create pairwise displacement matrix (num_atoms x num_atoms x 3)
     disp = positions.unsqueeze(2) - positions.unsqueeze(1)
 
-    # Apply periodic boundary conditions if cell is provided (i.e., if it has a non-zero volume)
+    # Apply periodic boundary conditions if cell is provided
+    # (i.e., if it has a non-zero volume)
     if cell.sum() > 0:
         # Convert displacements to fractional coordinates
         inv_cell = torch.linalg.inv(cell.T)

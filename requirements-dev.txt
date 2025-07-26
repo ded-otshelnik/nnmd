@@ -11,6 +11,7 @@ tox-current-env
 pytest
 pytest-cov
 pytest-sugar
+pre-commit
 mypy
 flake8
 black

@@ -7,7 +7,7 @@ import torch
 from nnmd.io import input_parser
 from nnmd.nn import BPNN
 from nnmd.nn.dataset import make_atomic_dataset
-from nnmd.util import train_val_test_split
+from nnmd._util import train_val_test_split
 
 warnings.filterwarnings("ignore")
 dtype = torch.float32

@@ -28,10 +28,12 @@ def calculate_sf(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Calculate symmetry functions for a batch of molecules.
+
     Args:
         cartesians: torch.Tensor of shape (n_molecules, n_atoms, 3)
         symm_funcs_data: dict - dictionary with symmetry functions data
         cell: torch.Tensor of shape (3, 3)
+
     Returns:
         torch.Tensor of shape (n_molecules, n_atoms, n_symm_funcs)
     """
@@ -42,10 +44,14 @@ def calculate_sf(
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Calculate symmetry functions for a single molecule.
+
+        ----
         Args:
             cart: torch.Tensor of shape (n_atoms, 3)
             cell: torch.Tensor of shape (3, 3)
             symm_funcs_data: dict - dictionary with symmetry functions data
+
+        ----
         Returns:
             torch.Tensor of shape (n_atoms, n_symm_funcs)
         """
@@ -58,19 +64,22 @@ def calculate_sf(
         ):
             match SymmetryFunction(g_func):
                 case SymmetryFunction.G1:
-                    # g_params = [cutoff]
+                    # Parameters: r_cutoff
                     g_values = g1_function(distances, *g_params)
                 case SymmetryFunction.G2:
-                    # g_params = [cutoff, eta, rs]
+                    # Parameters: r_cutoff, eta, rs
                     g_values = g2_function(distances, *g_params)
                 case SymmetryFunction.G4:
-                    # g_params = [cutoff, eta, zeta, lambd]
+                    # Parameters: r_cutoff, eta, zeta, lambda
                     g_values = g4_function(distances, *g_params)
                 case SymmetryFunction.G5:
-                    # g_params = [cutoff, eta, zeta, lambd]
+                    # Parameters: r_cutoff, eta, zeta, lambda
                     g_values = g5_function(distances, *g_params)
                 case _:
                     raise ValueError(f"Unknown symmetry function number: {g_func}")
+
+            # gradients of the symmetry functions
+            # will be used for forces calculation
             dg_values = torch.autograd.grad(
                 g_values,
                 cart,
@@ -86,6 +95,7 @@ def calculate_sf(
         g_struct = torch.stack(g_struct, dim=-1)
         dg_struct = torch.stack(dg_struct, dim=-1)
 
+        # Normalize the symmetry functions
         g_struct = g_struct / torch.norm(g_struct, p=2, dim=-1, keepdim=True)
 
         # Permute to the shape (n_batch, n_atoms, n_symm_funcs, 3)
@@ -109,7 +119,7 @@ def calculate_sf(
     r = [
         op(cart)
         for cart in tqdm(
-            cartesians.unsqueeze(-3),
+            cartesians_chunks,
             desc="Calculating symmetry functions",
             total=len(cartesians),
             disable=kwargs.get("disable_tqdm", False),

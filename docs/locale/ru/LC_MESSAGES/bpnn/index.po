@@ -1,0 +1,107 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-26 20:36+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/bpnn/index.rst:2
+msgid "Behler-Parrinello Neural Network"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:4
+msgid ""
+"**Behler-Parrinello Neural Network (BPNN)** is a type of neural network "
+"specifically designed to approximate potential energy surfaces in "
+"molecular dynamics simulations :cite:`bpnn, behler2021`."
+msgstr ""
+
+#: ../../source/bpnn/index.rst:7
+msgid ""
+"It uses special architecture called **High-Dimensional Neural Network "
+"(HDNN)** that contains 2 main parts: 1. **Symmetry Functions** - to "
+"encode the local environment of atoms in a system. 2. Subnets - **Atomic "
+"Networks (AtomicNN)** - for each sort of atoms (chemical species) in the "
+"system."
+msgstr ""
+
+#: ../../source/bpnn/index.rst:12
+msgid ""
+"The BPNN architecture is a generalization of the Behler-Parrinello "
+"approach to neural networks, which allows for the representation of "
+"complex potential energy surfaces in high-dimensional spaces."
+msgstr ""
+
+#: ../../source/bpnn/index.rst:15
+msgid "Plot of schematic Behler-Parrinello-Neural-Network architecture."
+msgstr ""
+
+#: ../../source/bpnn/index.rst:22
+msgid "Atomic-Centered Symmetry Functions"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:24
+msgid ""
+"For the BPNN to work, it is necessary to encode the local environment of "
+"atoms in a system. This is done using **Atomic-Centered Symmetry "
+"Functions (ACSF)** :cite:`acsf` that is used as an input to the network."
+msgstr ""
+
+#: ../../source/bpnn/index.rst:27
+msgid ""
+"ACSFs are designed to be invariant to translations, rotations, and "
+"permutations of atoms in the system so it encodes uniquely the local "
+"environment of each atom. There are two types of ACSFs: 1. **Radial "
+"Functions** - depend only on the distance between atoms."
+msgstr ""
+
+#: ../../source/bpnn/index.rst:31
+msgid ""
+"G_1^i = \\sum_j^{N_{\\text{atoms}}} f_c (R_{ij}),\n"
+"\n"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:32
+msgid ""
+"G_2^i = \\sum_j^{N_{\\text{atoms}}} e^{-\\eta (R_{ij} - R_s)^2} f_c "
+"(R_{ij}),\n"
+"\n"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:33
+msgid ""
+"G_2^i = \\sum_j^{N_{\\text{atoms}}} \\kappa \\cos(R_{ij}) f_c (R_{ij}),\n"
+"\n"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:35
+msgid "where :math:`f_c` is a cutoff function that can be defined as:"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:37
+msgid ""
+"f_c (R_{ij}) = \\begin{cases}\n"
+"\\frac{1}{2} \\left( 1 + \\cos\\left(\\frac{\\pi "
+"R_{ij}}{R_{\\text{cut}}}\\right) \\right), & \\text{for} R_{ij} < "
+"R_{\\text{cut}} \\\\\n"
+"0, & \\text{for} R_{ij} \\geq R_{\\text{cut}} \\\\\n"
+"\\end{cases}\n"
+"\n"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:42
+msgid "**Angular Functions** - depend on the angles between bonds."
+msgstr ""
+

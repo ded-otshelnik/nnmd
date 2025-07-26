@@ -1,0 +1,147 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-26 20:36+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api/nnmd.nn.rst:2
+msgid "nnmd.nn"
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN:1 nnmd.nn.bpnn.BPNN:1 of
+msgid "Базовые классы: :py:class:`~torch.nn.modules.module.Module`"
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN:1 of
+msgid ""
+"Model implements a multilayer perceptron for one species with a single "
+"output for one atom."
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN.forward:1 of
+msgid "Define the computation performed at every call."
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN.forward:3 of
+msgid "Should be overridden by all subclasses."
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN.forward:6 of
+msgid ""
+"Although the recipe for forward pass needs to be defined within this "
+"function, one should call the :class:`Module` instance afterwards instead"
+" of this since the former takes care of running the registered hooks "
+"while the latter silently ignores them."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN:1 of
+msgid "Class implement high-dimentional NN for system of atoms."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN:3 of
+msgid ""
+"For each atom it defines special Atomic NN which provide machine-trained "
+"potentials."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.config:1 of
+msgid "Configures BPNN instance."
+msgstr ""
+
+#: ../../source/api/nnmd.nn.rst
+msgid "Параметры"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.config:3 of
+msgid "data about BPNN and its atomic subnets"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:1 of
+msgid "Train method of neural network."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:3 of
+msgid "input dataset with data about atoms"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:5 of
+msgid "size of batch"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:7 of
+msgid "amount of training epochs"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.predict:1 of
+msgid "Calculates energy and forces for structs of atoms"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.predict:3 of
+msgid "positions of atoms"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.predict:5 of
+msgid "parameters of symmetric functions"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.save_model:1 of
+msgid ""
+"Saves trained model to file. It makes possible to load pre-trained net "
+"for calculations"
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset:1 of
+msgid "Базовые классы: :py:class:`~torch.utils.data.dataset.Dataset`"
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset.make_atomic_dataset:1 of
+msgid "Create atomic dataset with symmetric functions."
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset.make_atomic_dataset:3 of
+msgid ""
+"dictionary with positions by species,             unit cell, forces and "
+"velocities."
+msgstr ""
+
+#: ../../source/api/nnmd.nn.rst
+msgid "Результат"
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset.make_atomic_dataset:6 of
+msgid "dataset with symmetric functions."
+msgstr ""
+
+#: ../../source/api/nnmd.nn.rst
+msgid "Тип результата"
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:1 of
+msgid "Split dataset into train, validation, and test sets."
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:3 of
+msgid "dataset to split"
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:5 of
+msgid "ratios of train, validation, and test sets"
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:8 of
+msgid "train, validation"
+msgstr ""
+

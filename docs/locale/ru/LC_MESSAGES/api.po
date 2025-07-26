@@ -1,0 +1,392 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-26 20:30+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api/index.rst:2
+msgid "NNMD Documentation"
+msgstr ""
+
+#: ../../source/api/nnmd.features.rst:2
+msgid "nnmd.features"
+msgstr ""
+
+#: nnmd.features.symm_funcs.SymmetryFunction:1 of
+msgid "Bases: :py:class:`~enum.Enum`"
+msgstr ""
+
+#: nnmd.features.symm_funcs.SymmetryFunction:1 of
+msgid ""
+"Enumeration of implemented symmetry functions. Each symmetry function "
+"corresponds to a specific type of symmetry function."
+msgstr ""
+
+#: nnmd.features.symm_funcs.calculate_distances:1 of
+msgid "Calculate pairwise distances and displacements with PBC."
+msgstr ""
+
+#: ../../source/api/nnmd.features.rst ../../source/api/nnmd.io.rst
+#: ../../source/api/nnmd.md.rst ../../source/api/nnmd.nn.rst
+msgid "Parameters"
+msgstr ""
+
+#: nnmd.features.symm_funcs.calculate_distances:3 of
+msgid "torch.Tensor of shape (n_moleculs, n_atoms, 3)"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:5
+#: nnmd.features.symm_funcs.calculate_distances:4 of
+msgid "torch.Tensor of shape (3, 3)"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:4
+#: nnmd.features.symm_funcs.calculate_distances:5
+#: nnmd.features.symm_funcs.f_cutoff:5 nnmd.features.symm_funcs.g1_function:5
+#: nnmd.features.symm_funcs.g2_function:5
+#: nnmd.features.symm_funcs.g4_function:4
+#: nnmd.features.symm_funcs.g5_function:4 of
+msgid "float - cutoff radius"
+msgstr ""
+
+#: ../../source/api/nnmd.features.rst ../../source/api/nnmd.io.rst
+#: ../../source/api/nnmd.nn.rst
+msgid "Returns"
+msgstr ""
+
+#: nnmd.features.symm_funcs.calculate_distances:7
+#: nnmd.features.symm_funcs.f_cutoff:4 nnmd.features.symm_funcs.f_cutoff:7 of
+msgid "torch.Tensor of shape (n_atoms, n_atoms)"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:1 of
+msgid ""
+"Calculate parameters for symmetry functions by auto-scheme for a given "
+"cutoff radius and number of functions."
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:5 of
+msgid "int - number of G1 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:6 of
+msgid "int - number of G2 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:7 of
+msgid "int - number of G3 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:8 of
+msgid "int - number of G4 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:9 of
+msgid "int - number of G5 functions"
+msgstr ""
+
+#: nnmd.features.auto_params.calculate_params:11 of
+msgid "list of parameters for symmetry functions"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:1 of
+msgid "Calculate symmetry functions for a batch of molecules."
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:3 of
+msgid "torch.Tensor of shape (n_molecules, n_atoms, 3)"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:4 of
+msgid "dict - dictionary with symmetry functions data"
+msgstr ""
+
+#: nnmd.features.calculate_sf.calculate_sf:7 of
+msgid "torch.Tensor of shape (n_molecules, n_atoms, n_symm_funcs)"
+msgstr ""
+
+#: nnmd.features.symm_funcs.f_cutoff:1 of
+msgid ""
+"Calculate the cutoff function for the pair of atoms. Function is "
+"vectorized and can be applied to a batch of pairs."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g1_function:1 of
+msgid ""
+"Calculate G1 symmetry functions for a pair of atoms. Function is "
+"vectorized and can be applied to a batch of pairs."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g1_function:4
+#: nnmd.features.symm_funcs.g2_function:4
+#: nnmd.features.symm_funcs.g4_function:3
+#: nnmd.features.symm_funcs.g5_function:3 of
+msgid "torch.Tensor of shape (batch_size, n_atoms, n_atoms)"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g1_function:7
+#: nnmd.features.symm_funcs.g2_function:9
+#: nnmd.features.symm_funcs.g4_function:9
+#: nnmd.features.symm_funcs.g5_function:9 of
+msgid "torch.Tensor of shape (batch_size, n_atoms)"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g2_function:1 of
+msgid ""
+"Calculate G2 symmetry functions for a pair of atoms. Function is "
+"vectorized and can be applied to a batch of pairs."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g2_function:6
+#: nnmd.features.symm_funcs.g4_function:5
+#: nnmd.features.symm_funcs.g5_function:5 of
+msgid "float - width of the Gaussian"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g2_function:7 of
+msgid "float - center of the Gaussian"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g4_function:1 of
+msgid "Calculate G4 symmetry functions for a triplet of atoms."
+msgstr ""
+
+#: nnmd.features.symm_funcs.g4_function:6
+#: nnmd.features.symm_funcs.g5_function:6 of
+msgid "float - exponent of the cosine term"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g4_function:7
+#: nnmd.features.symm_funcs.g5_function:7 of
+msgid "int - sign of the cosine term"
+msgstr ""
+
+#: nnmd.features.symm_funcs.g5_function:1 of
+msgid "Calculate G5 symmetry functions for a triplet of atoms."
+msgstr ""
+
+#: ../../source/api/nnmd.io.rst:2
+msgid "nnmd.io"
+msgstr ""
+
+#: nnmd.io.atomic_parser.gpaw_parser:1 of
+msgid "Parse info of gpaw simulation."
+msgstr ""
+
+#: nnmd.io.atomic_parser.gpaw_parser:3 of
+msgid "file of gpaw simulation."
+msgstr ""
+
+#: nnmd.io.atomic_parser.gpaw_parser:4 of
+msgid "Defaults to 'utf-8'."
+msgstr ""
+
+#: nnmd.io.atomic_parser.gpaw_parser:7 of
+msgid ""
+"number of atoms, list of dictionaries with positions, forces and energy, "
+"unit cell."
+msgstr ""
+
+#: ../../source/api/nnmd.io.rst ../../source/api/nnmd.nn.rst
+msgid "Return type"
+msgstr ""
+
+#: nnmd.io.input_parser.input_parser:1 of
+msgid ""
+"Parses input file with atomic data and neural network parameters. It "
+"supports json and yaml formats."
+msgstr ""
+
+#: nnmd.io.input_parser.input_parser:4 of
+msgid "Path to input file"
+msgstr ""
+
+#: ../../source/api/nnmd.io.rst
+msgid "Raises"
+msgstr ""
+
+#: nnmd.io.input_parser.input_parser:7 of
+msgid "Unsupported file format"
+msgstr ""
+
+#: nnmd.io.input_parser.input_parser:9 of
+msgid "Parsed atomic data and neural network parameters."
+msgstr ""
+
+#: nnmd.io.atomic_parser.traj_parser:1 of
+msgid ""
+"Extracts positions, energies, forces and velocities from ASE trajectory "
+"file with respect to each species."
+msgstr ""
+
+#: nnmd.io.atomic_parser.traj_parser:4 of
+msgid "ASE trajectory file."
+msgstr ""
+
+#: nnmd.io.atomic_parser.traj_parser:7 of
+msgid ""
+"number of atoms in each species, list of dictionaries with positions, "
+"forces, velocities and energies for each atomic structure, unit cell."
+msgstr ""
+
+#: ../../source/api/nnmd.md.rst:2
+msgid "nnmd.md"
+msgstr ""
+
+#: nnmd.md.verlet.MDSimulation:1 of
+msgid "Bases: :py:class:`object`"
+msgstr ""
+
+#: nnmd.md.calculator.NNMD_calc:1 of
+msgid "Bases: :py:class:`~ase.calculators.calculator.Calculator`"
+msgstr ""
+
+#: nnmd.md.calculator.NNMD_calc:1 of
+msgid "NNMD interface with ASE as a calculator"
+msgstr ""
+
+#: nnmd.md.calculator.NNMD_calc.calculate:1 of
+msgid "Run a calculation."
+msgstr ""
+
+#: nnmd.md.calculator.NNMD_calc.calculate:3 of
+msgid "ase Atoms object"
+msgstr ""
+
+#: nnmd.md.calculator.NNMD_calc.calculate:4 of
+msgid "properties to calculate (inherited from ASE calculator class)"
+msgstr ""
+
+#: nnmd.md.calculator.NNMD_calc.calculate:5 of
+msgid "changes in the system (inherited from ASE calculator class)"
+msgstr ""
+
+#: ../../source/api/nnmd.nn.rst:2
+msgid "nnmd.nn"
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN:1 nnmd.nn.bpnn.BPNN:1 of
+msgid "Bases: :py:class:`~torch.nn.modules.module.Module`"
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN:1 of
+msgid ""
+"Model implements a multilayer perceptron for one species with a single "
+"output for one atom."
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN.forward:1 of
+msgid "Define the computation performed at every call."
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN.forward:3 of
+msgid "Should be overridden by all subclasses."
+msgstr ""
+
+#: nnmd.nn.atomic_nn.AtomicNN.forward:6 of
+msgid ""
+"Although the recipe for forward pass needs to be defined within this "
+"function, one should call the :class:`Module` instance afterwards instead"
+" of this since the former takes care of running the registered hooks "
+"while the latter silently ignores them."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN:1 of
+msgid "Class implement high-dimentional NN for system of atoms."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN:3 of
+msgid ""
+"For each atom it defines special Atomic NN which provide machine-trained "
+"potentials."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.config:1 of
+msgid "Configures BPNN instance."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.config:3 of
+msgid "data about BPNN and its atomic subnets"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:1 of
+msgid "Train method of neural network."
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:3 of
+msgid "input dataset with data about atoms"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:5 of
+msgid "size of batch"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.fit:7 of
+msgid "amount of training epochs"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.predict:1 of
+msgid "Calculates energy and forces for structs of atoms"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.predict:3 of
+msgid "positions of atoms"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.predict:5 of
+msgid "parameters of symmetric functions"
+msgstr ""
+
+#: nnmd.nn.bpnn.BPNN.save_model:1 of
+msgid ""
+"Saves trained model to file. It makes possible to load pre-trained net "
+"for calculations"
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset:1 of
+msgid "Bases: :py:class:`~torch.utils.data.dataset.Dataset`"
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset.make_atomic_dataset:1 of
+msgid "Create atomic dataset with symmetric functions."
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset.make_atomic_dataset:3 of
+msgid ""
+"dictionary with positions by species,             unit cell, forces and "
+"velocities."
+msgstr ""
+
+#: nnmd.nn.dataset.TrainAtomicDataset.make_atomic_dataset:6 of
+msgid "dataset with symmetric functions."
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:1 of
+msgid "Split dataset into train, validation, and test sets."
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:3 of
+msgid "dataset to split"
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:5 of
+msgid "ratios of train, validation, and test sets"
+msgstr ""
+
+#: nnmd.nn.train_val_test_split.train_val_test_split:8 of
+msgid "train, validation"
+msgstr ""
+
