@@ -22,7 +22,7 @@ msgstr ""
 
 #: ../../source/basics/index.rst:2
 msgid "Getting started"
-msgstr ""
+msgstr "Начальные шаги"
 
 #: ../../source/basics/install.rst:2
 msgid "Installation"

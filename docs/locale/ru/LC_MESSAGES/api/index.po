@@ -19,5 +19,5 @@ msgstr ""
 
 #: ../../source/api/index.rst:2
 msgid "NNMD Documentation"
-msgstr ""
+msgstr "Документация проекта"
 

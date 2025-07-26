@@ -33,14 +33,18 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = []
+source_suffix = ['.rst', '.md']
 
 language = "en"  # Set the default language for the documentation
+supported_languages = {
+    "en": "NNMD %s documentation in English",
+    "ru": "Документация NNMD %s на русском языке",
+}
 locale_dirs = ["./../locale/"]  # path is example but recommended.
 gettext_compact = False
 
 # Figures are enumerated and can be reference by the :numref: directive
 numfig = True
-
 numfig_format = {
     "figure": "Figure %s",
     "table": "Table %s",

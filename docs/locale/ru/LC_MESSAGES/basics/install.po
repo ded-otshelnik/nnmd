@@ -22,15 +22,17 @@ msgstr ""
 
 #: ../../source/basics/install.rst:2
 msgid "Installation"
-msgstr ""
+msgstr "Установка"
 
 #: ../../source/basics/install.rst:4
 msgid "To install the NNMD package, you can use pip:"
-msgstr ""
+msgstr "Чтобы установить пакет NNMD, можно воспользоваться командой pip:"
 
 #: ../../source/basics/install.rst:10
 msgid ""
 "You can also install it from the source code by cloning the repository "
 "and running the setup script:"
 msgstr ""
+"Вы также можете установить пакет с исходного кода, клонировав репозиторий "
+"и запустив скрипт:"
 

@@ -19,7 +19,7 @@ msgstr ""
 
 #: ../../source/bpnn/index.rst:2
 msgid "Behler-Parrinello Neural Network"
-msgstr ""
+msgstr "Нейронная сеть Белера-Парринелло"
 
 #: ../../source/bpnn/index.rst:4
 msgid ""
@@ -27,6 +27,11 @@ msgid ""
 "specifically designed to approximate potential energy surfaces in "
 "molecular dynamics simulations :cite:`bpnn, behler2021`."
 msgstr ""
+"Нейронная сеть Белера-Парринелло (Behler-Parrinello Neural Network - BPNN) "
+"представляет собой особый тип нейронных сетей, которые специально созданы, чтобы "
+"аппроксимировать межатомные потенциалы в молекулярно-динамических экспериментах"
+" :cite:`bpnn, behler2021`."
+
 
 #: ../../source/bpnn/index.rst:7
 msgid ""
@@ -35,7 +40,12 @@ msgid ""
 "encode the local environment of atoms in a system. 2. Subnets - **Atomic "
 "Networks (AtomicNN)** - for each sort of atoms (chemical species) in the "
 "system."
-msgstr ""
+msgstr "BPNN является **нейронной сетью высокой размерности"
+" (High-Dimensional Neural Network - HDNN)**, которая состоит из двух частей:"
+"1. **Функции симметрии** - для описания локального окружения атомов системы. "
+"2. Подсети - **Атомные сети (AtomicNN)** - для каждого сорта атомов (химических "
+"элементов) в системе."
+
 
 #: ../../source/bpnn/index.rst:12
 msgid ""
@@ -43,14 +53,17 @@ msgid ""
 "approach to neural networks, which allows for the representation of "
 "complex potential energy surfaces in high-dimensional spaces."
 msgstr ""
+"Архитектура BPNN - генерализация подхода Белера-Парринелло к "
+"нейронным сетям, позволяющий представлять сложные поверхности "
+"потенциальной энергии в пространствах высокой размерности."
 
 #: ../../source/bpnn/index.rst:15
 msgid "Plot of schematic Behler-Parrinello-Neural-Network architecture."
-msgstr ""
+msgstr "Схема архитектуры BPNN"
 
 #: ../../source/bpnn/index.rst:22
 msgid "Atomic-Centered Symmetry Functions"
-msgstr ""
+msgstr "Атомно-центрированные функции симметрии"
 
 #: ../../source/bpnn/index.rst:24
 msgid ""
@@ -58,6 +71,10 @@ msgid ""
 "atoms in a system. This is done using **Atomic-Centered Symmetry "
 "Functions (ACSF)** :cite:`acsf` that is used as an input to the network."
 msgstr ""
+"Чтобы BPNN могла успешно применяться, необходимо описать локальное окружение "
+"атомов системы. Это достигается через применение **атомно-центрированных "
+"симметричных функций (функций Белера-Парринелло)** :cite:`acsf`, которые "
+"используются как входные значения нейронной сети."
 
 #: ../../source/bpnn/index.rst:27
 msgid ""
@@ -66,12 +83,19 @@ msgid ""
 "environment of each atom. There are two types of ACSFs: 1. **Radial "
 "Functions** - depend only on the distance between atoms."
 msgstr ""
+"Функции Белера-Парринелло сделаны так, чтобы они были инвариантны "
+"относительно ротации, трансляции и перестановки атомов одного сорта "
+"и при этом уникальным образом описывали локальное окружение каждого "
+"атома. Существует два типа таких функций: 1. **Радиальные функции** - "
+"зависят только от межатомных расстояний."
 
 #: ../../source/bpnn/index.rst:31
 msgid ""
 "G_1^i = \\sum_j^{N_{\\text{atoms}}} f_c (R_{ij}),\n"
 "\n"
 msgstr ""
+"G_1^i = \\sum_j^{N_{\\text{atoms}}} f_c (R_{ij}),\n"
+"\n"
 
 #: ../../source/bpnn/index.rst:32
 msgid ""
@@ -79,29 +103,41 @@ msgid ""
 "(R_{ij}),\n"
 "\n"
 msgstr ""
+"G_2^i = \\sum_j^{N_{\\text{atoms}}} e^{-\\eta (R_{ij} - R_s)^2} f_c "
+"(R_{ij}),\n"
+"\n"
 
 #: ../../source/bpnn/index.rst:33
 msgid ""
-"G_2^i = \\sum_j^{N_{\\text{atoms}}} \\kappa \\cos(R_{ij}) f_c (R_{ij}),\n"
+"G_3^i = \\sum_j^{N_{\\text{atoms}}} \\kappa \\cos(R_{ij}) f_c (R_{ij}),\n"
 "\n"
 msgstr ""
+"G_3^i = \\sum_j^{N_{\\text{atoms}}} \\kappa \\cos(R_{ij}) f_c (R_{ij}),\n"
+"\n"
 
 #: ../../source/bpnn/index.rst:35
 msgid "where :math:`f_c` is a cutoff function that can be defined as:"
-msgstr ""
+msgstr "где :math:`f_c` является функцией отсечки, определяемой следующим образом:"
 
 #: ../../source/bpnn/index.rst:37
 msgid ""
 "f_c (R_{ij}) = \\begin{cases}\n"
 "\\frac{1}{2} \\left( 1 + \\cos\\left(\\frac{\\pi "
-"R_{ij}}{R_{\\text{cut}}}\\right) \\right), & \\text{for} R_{ij} < "
+"R_{ij}}{R_{\\text{cut}}}\\right) \\right), & \\text{если} R_{ij} < "
 "R_{\\text{cut}} \\\\\n"
-"0, & \\text{for} R_{ij} \\geq R_{\\text{cut}} \\\\\n"
+"0, & \\text{если} R_{ij} \\geq R_{\\text{cut}} \\\\\n"
 "\\end{cases}\n"
 "\n"
 msgstr ""
+"f_c (R_{ij}) = \\begin{cases}\n"
+"\\frac{1}{2} \\left( 1 + \\cos\\left(\\frac{\\pi "
+"R_{ij}}{R_{\\text{cut}}}\\right) \\right), & \\text{если} R_{ij} < "
+"R_{\\text{cut}} \\\\\n"
+"0, & \\text{если} R_{ij} \\geq R_{\\text{cut}} \\\\\n"
+"\\end{cases}\n"
+"\n"
 
 #: ../../source/bpnn/index.rst:42
 msgid "**Angular Functions** - depend on the angles between bonds."
-msgstr ""
+msgstr "**Угловые функции** - помимо расстояний учитываются углы между связями.""
 

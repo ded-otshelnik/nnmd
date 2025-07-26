@@ -22,7 +22,7 @@ msgstr ""
 
 #: ../../source/introduction.rst:2
 msgid "Introduction"
-msgstr ""
+msgstr "Введение"
 
 #: ../../source/introduction.rst:4
 msgid ""
@@ -31,4 +31,8 @@ msgid ""
 "Parrinello neural networks to approximate potential energy surfaces in "
 "molecular dynamics simulations."
 msgstr ""
+"**NNMD - Neural Networks for Molecular Dynamics** - проект, целью которого "
+"является реализация всеобъемлющего инструментария для создания и обучения "
+"нейронных сетей Белера-Парринелло, чтобы аппроксимировать поверхности "
+"потенциальной энергии в молекулярно-динамических экспериментах"
 
