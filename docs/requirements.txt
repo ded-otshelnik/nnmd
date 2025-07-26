@@ -1,9 +1,5 @@
 sphinx
-sphinx-autodoc
-sphinx-napoleon
-sphinx-viewcode
 sphinxcontrib-bibtex
-sphinx-mathjax
 sphinx-copybutton
 sphinx-design
 sphinx-rtd-theme
