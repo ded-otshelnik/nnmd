@@ -19,11 +19,11 @@ msgstr ""
 
 #: ../../source/api/index.rst:2
 msgid "NNMD Documentation"
-msgstr ""
+msgstr "NNMD Documentation"
 
 #: ../../source/api/nnmd.features.rst:2
 msgid "nnmd.features"
-msgstr ""
+msgstr "nnmd.features"
 
 #: nnmd.features.symm_funcs.SymmetryFunction:1 of
 msgid "Bases: :py:class:`~enum.Enum`"
@@ -34,6 +34,8 @@ msgid ""
 "Enumeration of implemented symmetry functions. Each symmetry function "
 "corresponds to a specific type of symmetry function."
 msgstr ""
+"Перечисление имплементированных функций симметрии. Каждая функция "
+"отвечает конкретном"
 
 #: nnmd.features.symm_funcs.calculate_distances:1 of
 msgid "Calculate pairwise distances and displacements with PBC."

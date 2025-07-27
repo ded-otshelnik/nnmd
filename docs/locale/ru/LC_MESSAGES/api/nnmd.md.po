@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-07-26 20:36+0300\n"
+"POT-Creation-Date: 2025-07-27 14:26+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,35 +21,43 @@ msgstr ""
 msgid "nnmd.md"
 msgstr ""
 
-#: nnmd.md.verlet.MDSimulation:1 of
-msgid "Базовые классы: :py:class:`object`"
+#: ../../source/api/nnmd.md.rst:4
+msgid ""
+"Module `nnmd.md` contains utilities for molecular dynamics (MD) "
+"simulations, including `ASE <https://wiki.fysik.dtu.dk/ase/>`_ interface."
 msgstr ""
+"Модуль `nnmd.md` содержит утилиты для молекулярно-динамических (MD) "
+"симуляций, включая интерфейс `ASE <https://wiki.fysik.dtu.dk/ase/>`_."
+
+#: nnmd.md.verlet.MDSimulation:1 of
+msgid "Bases: :py:class:`object`"
+msgstr "Базовые классы: :py:class:`object`"
 
 #: nnmd.md.calculator.NNMD_calc:1 of
-msgid "Базовые классы: :py:class:`~ase.calculators.calculator.Calculator`"
-msgstr ""
+msgid "Bases: :py:class:`~ase.calculators.calculator.Calculator`"
+msgstr "Базовые классы: :py:class:`~ase.calculators.calculator.Calculator`"
 
 #: nnmd.md.calculator.NNMD_calc:1 of
 msgid "NNMD interface with ASE as a calculator"
-msgstr ""
+msgstr "Интерфейс NNMD с ASE в качестве калькулятора"
 
 #: nnmd.md.calculator.NNMD_calc.calculate:1 of
 msgid "Run a calculation."
-msgstr ""
+msgstr "Запустить расчет."
 
 #: ../../source/api/nnmd.md.rst
-msgid "Параметры"
-msgstr ""
+msgid "Parameters"
+msgstr "Параметры"
 
 #: nnmd.md.calculator.NNMD_calc.calculate:3 of
 msgid "ase Atoms object"
-msgstr ""
+msgstr "объект ase Atoms"
 
 #: nnmd.md.calculator.NNMD_calc.calculate:4 of
 msgid "properties to calculate (inherited from ASE calculator class)"
-msgstr ""
+msgstr "характеристики для расчета (унаследованы от класса калькулятора ASE)"
 
 #: nnmd.md.calculator.NNMD_calc.calculate:5 of
 msgid "changes in the system (inherited from ASE calculator class)"
-msgstr ""
+msgstr "изменения в системе (унаследованы от класса калькулятора ASE)"
 

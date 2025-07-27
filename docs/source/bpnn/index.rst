@@ -26,11 +26,12 @@ This is done using **Atomic-Centered Symmetry Functions (ACSF)** :cite:`acsf` th
 
 ACSFs are designed to be invariant to translations, rotations, and permutations of atoms in the system
 so it encodes uniquely the local environment of each atom. There are two types of ACSFs:
+
 1. **Radial Functions** - depend only on the distance between atoms.
 
 .. math:: G_1^i = \sum_j^{N_{\text{atoms}}} f_c (R_{ij}),
 .. math:: G_2^i = \sum_j^{N_{\text{atoms}}} e^{-\eta (R_{ij} - R_s)^2} f_c (R_{ij}),
-.. math:: G_2^i = \sum_j^{N_{\text{atoms}}} \kappa \cos(R_{ij}) f_c (R_{ij}),
+.. math:: G_3^i = \sum_j^{N_{\text{atoms}}} \kappa \cos(R_{ij}) f_c (R_{ij}),
 
 where :math:`f_c` is a cutoff function that can be defined as:
 
@@ -40,3 +41,5 @@ where :math:`f_c` is a cutoff function that can be defined as:
     \end{cases}
 
 2. **Angular Functions** - depend on the angles between bonds.
+
+.. math:: 

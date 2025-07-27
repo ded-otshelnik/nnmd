@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-07-26 20:36+0300\n"
+"POT-Creation-Date: 2025-07-27 16:12+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,71 +21,95 @@ msgstr ""
 msgid "nnmd.io"
 msgstr ""
 
-#: nnmd.io.atomic_parser.gpaw_parser:1 of
+#: ../../source/api/nnmd.io.rst:4
+msgid ""
+"Module `nnmd.io` provides I/O utilities for parsing data for various "
+"formats."
+msgstr ""
+"Модуль `nnmd.io` предоставляет утилиты ввода-вывода для разбора данных в "
+"различных форматах."
+
+#: ../../source/api/nnmd.io.rst:7
+msgid "Package provides support for following formats:"
+msgstr "Пакет предоставляет поддержку следующих форматов:"
+
+#: ../../source/api/nnmd.io.rst:9
+msgid "GPAW input files (.txt)"
+msgstr "Файлы GPAW (.txt)"
+
+#: ../../source/api/nnmd.io.rst:10
+msgid "ASE trajectory files (.traj)"
+msgstr "Файлы траекторий ASE (.traj)"
+
+#: nnmd.io.gpaw.gpaw_parser:1 of
 msgid "Parse info of gpaw simulation."
-msgstr ""
+msgstr "Парсит информацию о симуляции GPAW."
 
 #: ../../source/api/nnmd.io.rst
-msgid "Параметры"
-msgstr ""
+msgid "Parameters"
+msgstr "Параметры"
 
-#: nnmd.io.atomic_parser.gpaw_parser:3 of
+#: nnmd.io.gpaw.gpaw_parser:3 of
 msgid "file of gpaw simulation."
-msgstr ""
-
-#: nnmd.io.atomic_parser.gpaw_parser:4 of
-msgid "Defaults to 'utf-8'."
-msgstr ""
+msgstr "Файл симуляции GPAW."
 
 #: ../../source/api/nnmd.io.rst
-msgid "Результат"
-msgstr ""
+msgid "Returns"
+msgstr "Возвращает"
 
-#: nnmd.io.atomic_parser.gpaw_parser:7 of
+#: nnmd.io.gpaw.gpaw_parser:5 of
 msgid ""
 "number of atoms, list of dictionaries with positions, forces and energy, "
-"unit cell."
-msgstr ""
+"unit cell and pbc."
+msgstr ""число атомов, список словарей с позициями, силами и энергией, "
+"ячейка и периодические граничные условия (PBC)."
 
 #: ../../source/api/nnmd.io.rst
-msgid "Тип результата"
-msgstr ""
+msgid "Return type"
+msgstr "Результат"
 
 #: nnmd.io.input_parser.input_parser:1 of
 msgid ""
 "Parses input file with atomic data and neural network parameters. It "
 "supports json and yaml formats."
 msgstr ""
+"Парсит входной файл с атомными данными и параметрами нейронной сети. "
+"Поддерживает форматы json и yaml."
 
 #: nnmd.io.input_parser.input_parser:4 of
 msgid "Path to input file"
-msgstr ""
+msgstr "Путь к входному файлу"
 
 #: ../../source/api/nnmd.io.rst
-msgid "Исключение"
-msgstr ""
+msgid "Raises"
+msgstr "Вызывает следующие исключения"
 
 #: nnmd.io.input_parser.input_parser:7 of
 msgid "Unsupported file format"
-msgstr ""
+msgstr "Неподдерживаемый формат файла"
 
 #: nnmd.io.input_parser.input_parser:9 of
 msgid "Parsed atomic data and neural network parameters."
-msgstr ""
+msgstr "Обработанные атомные данные и параметры нейронной сети."
 
-#: nnmd.io.atomic_parser.traj_parser:1 of
+#: nnmd.io.ase.traj_parser:1 of
 msgid ""
 "Extracts positions, energies, forces and velocities from ASE trajectory "
 "file with respect to each species."
 msgstr ""
+"Извлекает позиции, энергии, силы и скорости из файла траектории ASE с "
+"учетом каждого сорта атомов."
 
-#: nnmd.io.atomic_parser.traj_parser:4 of
+#: nnmd.io.ase.traj_parser:4 of
 msgid "ASE trajectory file."
-msgstr ""
+msgstr "Файл траектории ASE."
 
-#: nnmd.io.atomic_parser.traj_parser:7 of
+#: nnmd.io.ase.traj_parser:7 of
 msgid ""
 "number of atoms in each species, list of dictionaries with positions, "
-"forces, velocities and energies for each atomic structure, unit cell."
-msgstr ""
+"forces, velocities and energies for each atomic structure, unit cell and "
+"pbc."
+msgstr "число атомов в каждом виде, список словарей с позициями, "
+"силами, скоростями и энергиями для каждой атомной структуры, "
+"ячейка и периодические граничные условия (PBC)."
 
