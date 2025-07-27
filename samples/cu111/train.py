@@ -5,9 +5,8 @@ import warnings
 import torch
 
 from nnmd.io import input_parser
-from nnmd.nn import BPNN
-from nnmd.nn.dataset import make_atomic_dataset
-from nnmd._util import train_val_test_split
+from nnmd.nn import BPNN, train_val_test_split
+from nnmd.nn.dataset import TrainAtomicDataset
 from nnmd.features import calculate_params
 
 warnings.filterwarnings("ignore")
@@ -31,7 +30,7 @@ input_data["neural_network"]["input_sizes"] = [
 
 # Atomic NN input_size in hidden layers
 # convert train data to atomic dataset with symmetry functions
-dataset = make_atomic_dataset(input_data["atomic_data"], saved=True)
+dataset = TrainAtomicDataset.make_atomic_dataset(input_data["atomic_data"])
 
 # ~80% - train, ~10% - test and validation
 train_val_test_ratio = (0.8, 0.1, 0.1)

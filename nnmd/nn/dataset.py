@@ -53,13 +53,14 @@ class TrainAtomicDataset(Dataset):
 
         # convert data to torch tensors
         cell = torch.tensor(dataset["unit_cell"], dtype=torch.float32, device=device)
+        pbc = torch.tensor(dataset["pbc"], dtype=torch.float32, device=device)
 
         # get cartesian coordinates for each species
         cartesians = {
             spec: torch.tensor(
                 np.array([data[spec]["positions"] for data in atoms]),
                 dtype=torch.float32,
-                device="cuda",
+                device=device,
             )
             for spec in atoms[0].keys()
             if spec not in ["forces", "energy", "velocities"]
@@ -94,6 +95,7 @@ class TrainAtomicDataset(Dataset):
                 g_spec, dg_spec = calculate_sf(
                     cartesians[spec],
                     cell,
+                    pbc,
                     symm_func_params[spec],
                     disable_tqdm=kwargs.get("disable_tqdm", False),
                 )

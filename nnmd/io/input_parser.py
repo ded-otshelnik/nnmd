@@ -1,7 +1,8 @@
 import yaml
 import json
 
-from .atomic_parser import gpaw_parser, traj_parser
+from .gpaw import gpaw_parser
+from .ase import traj_parser
 
 
 def input_parser(input_file: str) -> dict:
@@ -21,17 +22,17 @@ def input_parser(input_file: str) -> dict:
 
     n_atoms = None
     unit_cell = None
+    pbc = None
 
     for key, value in input_data.items():
         if key == "atomic_data" and isinstance(value, dict):
             for k, v in value.items():
                 if k == "reference_data":
                     if v.endswith(".traj"):
-                        n_atoms, data, unit_cell = traj_parser(v)
+                        n_atoms, data, unit_cell, pbc = traj_parser(v)
                         input_data[key][k] = data
-                    # assuming that file contains data in gpaw format
                     elif v.endswith("txt"):
-                        n_atoms, data, unit_cell = gpaw_parser(v)
+                        n_atoms, data, unit_cell, pbc = gpaw_parser(v)
                         input_data[key][k] = data
                     else:
                         raise ValueError(
@@ -50,6 +51,7 @@ def input_parser(input_file: str) -> dict:
 
     input_data["atomic_data"]["n_atoms"] = n_atoms
     input_data["atomic_data"]["unit_cell"] = unit_cell
+    input_data["atomic_data"]["pbc"] = pbc
 
     return input_data
 

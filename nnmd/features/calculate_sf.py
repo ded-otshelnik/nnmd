@@ -23,16 +23,18 @@ def _set_seed(seed):
 def calculate_sf(
     cartesians: torch.Tensor,
     cell: torch.Tensor,
+    pbc: torch.Tensor,
     symm_funcs_data: dict,
     **kwargs,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Calculate symmetry functions for a batch of molecules.
+    Calculate symmetry functions for a batch of atomic systems.
 
     Args:
-        cartesians: torch.Tensor of shape (n_molecules, n_atoms, 3)
+        cartesians: torch.Tensor of shape (n_batch, n_atoms, 3)
+        cell: torch.Tensor of shape (3, 3) - the three vectors defining unit cell
+        pbc: torch.Tensor of shape (3,) - periodic boundary conditions
         symm_funcs_data: dict - dictionary with symmetry functions data
-        cell: torch.Tensor of shape (3, 3)
 
     Returns:
         torch.Tensor of shape (n_molecules, n_atoms, n_symm_funcs)
@@ -40,22 +42,22 @@ def calculate_sf(
     torch.autograd.set_detect_anomaly(True)
 
     def closure(
-        cart: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict
+        cart: torch.Tensor, cell: torch.Tensor, pbc: torch.Tensor, symm_funcs_data: dict
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Calculate symmetry functions for a single molecule.
 
-        ----
+
         Args:
-            cart: torch.Tensor of shape (n_atoms, 3)
-            cell: torch.Tensor of shape (3, 3)
+            cart: torch.Tensor of shape (n_atoms, 3) - cartesian coordinates of atoms
+            cell: torch.Tensor of shape (3, 3) - the three vectors defining unit cell
+            pbc: torch.Tensor of shape (3,) - periodic boundary conditions
             symm_funcs_data: dict - dictionary with symmetry functions data
 
-        ----
         Returns:
             torch.Tensor of shape (n_atoms, n_symm_funcs)
         """
-        distances = calculate_distances(cart, cell)
+        distances = calculate_distances(cart, cell, pbc)
 
         g_struct = []
         dg_struct = []
@@ -78,7 +80,7 @@ def calculate_sf(
                 case _:
                     raise ValueError(f"Unknown symmetry function number: {g_func}")
 
-            # gradients of the symmetry functions
+            # Gradients of the symmetry functions
             # will be used for forces calculation
             dg_values = torch.autograd.grad(
                 g_values,
@@ -108,13 +110,12 @@ def calculate_sf(
 
         return g_struct, dg_struct
 
-    op = functools.partial(closure, cell=cell, symm_funcs_data=symm_funcs_data)
+    op = functools.partial(closure, cell=cell, pbc=pbc, symm_funcs_data=symm_funcs_data)
 
-    # for reproducibility setting a seed is essential
     _set_seed(42)
 
     cartesians.requires_grad = True
-    cartesians_chunks = torch.chunk(cartesians, len(cartesians) // 10 + 1, dim=0)
+    cartesians_chunks = torch.chunk(cartesians, len(cartesians) // 2 + 1, dim=0)
 
     r = [
         op(cart)

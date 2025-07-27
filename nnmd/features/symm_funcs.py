@@ -6,7 +6,7 @@ from enum import Enum
 class SymmetryFunction(Enum):
     """
     Enumeration of implemented symmetry functions.
-    Each symmetry function corresponds to a specific type of symmetry function.
+    Each value corresponds to a specific type of symmetry function.
     """
 
     G1 = 1
@@ -50,39 +50,56 @@ def _triplets_filter(distances: torch.Tensor, r_cutoff: float) -> torch.Tensor:
     return mask
 
 
-def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
+def map_positions_pbc(
+    positions: torch.Tensor, cell: torch.Tensor, pbc: torch.Tensor
+) -> torch.Tensor:
     """
-    Calculate pairwise distances and displacements with PBC.
+    Calculate positions with periodic boundary conditions (PBC).
 
     Args:
-        positions: torch.Tensor of shape (n_moleculs, n_atoms, 3)
+        positions: torch.Tensor of shape (batch_size, n_atoms, 3)
+        cell: torch.Tensor of shape (3, 3)
+        pbc: bool or list[bool] - periodic boundary conditions for each direction
+
+    Returns:
+        torch.Tensor of shape (n_atoms, 3)
+    """
+
+    # Step 1: convert coordinates from standard cartesian coordinate to unit
+    # cell coordinates
+    # if cell has zero determinant (no actual cell), return positions as it is
+    if torch.det(cell) == 0:
+        return positions
+
+    inv_cell = torch.linalg.inv(cell)
+    positions_cell = positions @ inv_cell
+
+    # Step 2: wrap cell coordinates into [0, 1)
+    positions_cell -= positions_cell.floor() * pbc.to(positions_cell.dtype)
+
+    # Step 3: convert from cell coordinates back to
+    # standard cartesian coordinates
+    return positions_cell @ cell
+
+
+def calculate_distances(
+    positions: torch.Tensor, cell: torch.Tensor, pbc: torch.Tensor
+) -> torch.Tensor:
+    """
+    Calculate pairwise distances with PBC.
+
+    Args:
+        positions: torch.Tensor of shape (batch_size, n_atoms, 3)
         cell: torch.Tensor of shape (3, 3)
         r_cutoff: float - cutoff radius
 
     Returns:
         torch.Tensor of shape (n_atoms, n_atoms)
     """
-    # Create pairwise displacement matrix (num_atoms x num_atoms x 3)
-    disp = positions.unsqueeze(2) - positions.unsqueeze(1)
+    positions_pbc = map_positions_pbc(positions, cell, pbc)
 
-    # Apply periodic boundary conditions if cell is provided
-    # (i.e., if it has a non-zero volume)
-    if cell.sum() > 0:
-        # Convert displacements to fractional coordinates
-        inv_cell = torch.linalg.inv(cell.T)
-        frac_disp = torch.matmul(disp, inv_cell.T)
-
-        # Apply the minimum image convention
-        frac_disp -= torch.round(frac_disp)
-
-        # Convert back to Cartesian coordinates
-        cart_disp = torch.matmul(frac_disp, cell)
-
-        # Compute distances
-        distances = torch.linalg.norm(cart_disp, dim=-1)  # (B, N, N)
-    else:
-        # Compute distances in Cartesian coordinates
-        distances = torch.linalg.norm(disp, dim=-1)
+    diff = positions_pbc.unsqueeze(1) - positions_pbc.unsqueeze(2)
+    distances = torch.norm(diff, dim=-1)
 
     return distances
 
@@ -90,7 +107,6 @@ def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
 def f_cutoff(r: torch.Tensor, cutoff: float) -> torch.Tensor:
     """
     Calculate the cutoff function for the pair of atoms.
-    Function is vectorized and can be applied to a batch of pairs.
 
     Args:
         r: torch.Tensor of shape (n_atoms, n_atoms)
@@ -107,7 +123,6 @@ def f_cutoff(r: torch.Tensor, cutoff: float) -> torch.Tensor:
 def g1_function(r: torch.Tensor, cutoff: float) -> torch.Tensor:
     """
     Calculate G1 symmetry functions for a pair of atoms.
-    Function is vectorized and can be applied to a batch of pairs.
 
     Args:
         r: torch.Tensor of shape (batch_size, n_atoms, n_atoms)
@@ -128,7 +143,6 @@ def g1_function(r: torch.Tensor, cutoff: float) -> torch.Tensor:
 def g2_function(r: torch.Tensor, cutoff: float, eta: float, rs: float) -> torch.Tensor:
     """
     Calculate G2 symmetry functions for a pair of atoms.
-    Function is vectorized and can be applied to a batch of pairs.
 
     Args:
         r: torch.Tensor of shape (batch_size, n_atoms, n_atoms)

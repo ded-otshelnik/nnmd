@@ -1,8 +1,8 @@
 atomic_data:
-  reference_data: input/cu111.txt
+  reference_data: ../gpaw/Cu111.txt
   symmetry_functions_set: input/symm_cu111.json
 
-use_cuda: True
+use_cuda: False
 
 neural_network:
   atom_species: ['Cu']

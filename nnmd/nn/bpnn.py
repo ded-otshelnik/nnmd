@@ -52,7 +52,7 @@ class BPNN(torch.nn.Module):
 
         Args:
             dtype (torch.dtype): type of data in tensors
-            use_cuda (bool): flag to use CUDA for calculations
+            use_cuda (bool, optional): flag for CUDA usage. Defaults to True.
         """
         super().__init__()
         self.dtype = dtype
