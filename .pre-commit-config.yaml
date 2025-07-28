@@ -4,3 +4,26 @@ repos:
     hooks:
       - id: trailing-whitespace
       - id: check-yaml
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        args: [--check,
+               --verbose,
+               --diff,
+               --color,
+               --exclude=docs/,
+               --exclude=tests/,
+               --exclude=samples/,
+        ]
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.2.0
+    hooks:
+      - id: flake8
+        args: [
+            --max-line-length=89,
+            --extend-exclude=docs/*,  # Exclude docs directory
+            --extend-exclude=tests/*,  # Exclude tests directory
+            --extend-exclude=samples/*,  # Exclude samples directory
+        ]
+

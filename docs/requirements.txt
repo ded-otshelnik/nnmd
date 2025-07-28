@@ -1,0 +1,9 @@
+sphinx
+sphinxcontrib-bibtex
+sphinx-copybutton
+sphinx-design
+sphinx-rtd-theme
+sphinx-book-theme
+sphinx_design
+sphinx-intl
+sphinxcontrib-serializinghtml

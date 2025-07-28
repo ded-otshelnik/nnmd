@@ -18,25 +18,36 @@ jobs:
 
     # Define job steps
     steps:
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.12
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.12
 
-    - name: Check-out repository
-      uses: actions/checkout@v2
+      - name: Check-out repository
+        uses: actions/checkout@v2
 
-    - name: Install poetry
-      uses: snok/install-poetry@v1.4
+      - name: Clean up disk space
+        run: |
+          bash .github/scripts/cleanup.sh
 
-    - name: Install package and its dependencies
-      run: |
-        poetry install --no-interaction --no-root
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # when set to "true" but frees about 6 GB
+          tool-cache: true
 
-    - name: Run tests
-      run: |
-        poetry run pip install -r requirements.txt
-        poetry run tox run --verbose
+      - name: Install poetry
+        uses: snok/install-poetry@v1.4
+
+      - name: Install package and its dependencies
+        run: |
+          poetry install --no-interaction --no-root
+
+      - name: Run tests and linters
+        run: |
+          poetry run pip install -r requirements-dev.txt
+          poetry run tox run --verbose
 
   cd:
     permissions:

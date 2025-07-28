@@ -1,5 +1,6 @@
 from .atomic_nn import AtomicNN
-from .neural_network import BPNN
-from .dataset import TrainAtomicDataset, make_atomic_dataset
+from .bpnn import BPNN
+from .dataset import TrainAtomicDataset
+from .train_val_test_split import train_val_test_split
 
-__all__ = ["AtomicNN", "BPNN", "TrainAtomicDataset", "make_atomic_dataset"]
+__all__ = ["AtomicNN", "BPNN", "TrainAtomicDataset", "train_val_test_split"]

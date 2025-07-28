@@ -13,13 +13,9 @@ traj_file = "input/lennard_jones_trimer.traj"
 d = 0.96
 a = d / np.sqrt(2)
 
-positions = [
-    [0, 0, 0],
-    [a, a, 0],
-    [a, 0, a]
-]
+positions = [[0, 0, 0], [a, a, 0], [a, 0, a]]
 n_atoms = len(positions)
-atoms = Atoms(f'H{n_atoms}', positions=positions)
+atoms = Atoms(f"H{n_atoms}", positions=positions)
 
 # Set the initial velocities
 MaxwellBoltzmannDistribution(atoms, temperature_K=300)

@@ -1,0 +1,293 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-28 10:36+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/bpnn/index.rst:2
+msgid "Behler-Parrinello Neural Network"
+msgstr "Нейронная сеть Белера-Парринелло"
+
+#: ../../source/bpnn/index.rst:4
+msgid ""
+"**Behler-Parrinello Neural Network (BPNN)** is a type of neural network "
+"specifically designed to approximate potential energy surfaces in "
+"molecular dynamics simulations :cite:`bpnn, behler2021`."
+msgstr ""
+"Нейронная сеть Белера-Парринелло (Behler-Parrinello Neural Network - "
+"BPNN) представляет собой особый тип нейронных сетей, которые специально "
+"созданы, чтобы аппроксимировать межатомные потенциалы в "
+"молекулярно-динамических экспериментах :cite:`bpnn, behler2021`."
+
+#: ../../source/bpnn/index.rst:7
+msgid ""
+"It uses special architecture called **High-Dimensional Neural Network "
+"(HDNN)** that contains 2 main parts:"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:9
+#, fuzzy
+msgid ""
+"1. **Symmetry Functions** - to encode the local environment of atoms in a"
+" system. Must be unique descriptor of the local environment and invariant"
+" to translations, rotations, and permutations of atoms. These functions "
+"are used as input to the network. 2. Subnets - **Atomic Networks "
+"(AtomicNN)** - for each sort of atoms (chemical species) in the system. "
+"This nets are multilayer perceptrons (MLP) that take symmetry functions "
+"as input and output the energy contribution of each atom."
+msgstr ""
+"BPNN является **нейронной сетью высокой размерности (High-Dimensional "
+"Neural Network - HDNN)**, которая состоит из двух частей:1. **Функции "
+"симметрии** - для описания локального окружения атомов системы. 2. "
+"Подсети - **Атомные сети (AtomicNN)** - для каждого сорта атомов "
+"(химических элементов) в системе. Эти сети представляют собой "
+"многослойные перцептроны (MLP), которые принимают функции симметрии в "
+"качестве входных данных и выдают вклад энергии каждого атома."
+
+#: ../../source/bpnn/index.rst:14
+msgid "Plot of schematic Behler-Parrinello-Neural-Network architecture."
+msgstr "Схема архитектуры BPNN"
+
+#: ../../source/bpnn/index.rst:19
+msgid ""
+"Behler-Parrinello Neural Network can be used to calculate various atomic "
+"characteristics, such as:"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:21
+msgid "Atomic energy (sum of atomic contributions),"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:22
+msgid ""
+"Atomic forces (gradients of atomic energy with respect to atomic "
+"positions by chain rule),"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:23
+msgid ""
+"Atomic stress (gradients of atomic energy with respect to atomic "
+"positions and box vectors by chain rule),"
+msgstr ""
+
+#: ../../source/bpnn/index.rst:26
+#, fuzzy
+msgid ""
+"The BPNN architecture is a generalization of the Behler-Parrinello "
+"approach to neural networks, which allows for the representation of "
+"complex potential energy surfaces in high-dimensional spaces. Approach "
+"also makes possible to use different architectures, e.g,  graph "
+"convolutional neural networks (GCNN)."
+msgstr ""
+"Архитектура BPNN - генерализация подхода Белера-Парринелло к нейронным "
+"сетям, позволяющий представлять сложные поверхности потенциальной энергии"
+" в пространствах высокой размерности. Подход также позволяет использовать"
+" различные архитектуры, например, графовые свёрточные нейронные сети "
+"(Graph Convolutional Neural Networks - GCNN)."
+
+#: ../../source/bpnn/index.rst:31
+msgid "Atomic-Centered Symmetry Functions"
+msgstr "Атомно-центрированные функции симметрии"
+
+#: ../../source/bpnn/index.rst:33
+msgid ""
+"For the BPNN to work, it is necessary to encode the local environment of "
+"atoms in a system. This is done using **Atomic-Centered Symmetry "
+"Functions (ACSF)** :cite:`acsf` that is used as an input to the network."
+msgstr ""
+"Чтобы BPNN могла успешно применяться, необходимо описать локальное "
+"окружение атомов системы. Это достигается через применение "
+"**атомно-центрированных симметричных функций (функций "
+"Белера-Парринелло)** :cite:`acsf`, которые используются как входные "
+"значения нейронной сети."
+
+#: ../../source/bpnn/index.rst:36
+#, fuzzy
+msgid ""
+"ACSFs are designed to be invariant to translations, rotations, and "
+"permutations of atoms in the system so it encodes uniquely the local "
+"environment of each atom. There are two types of ACSFs:"
+msgstr ""
+"Функции Белера-Парринелло сделаны так, чтобы они были инвариантны "
+"относительно ротации, трансляции и перестановки атомов одного сорта и при"
+" этом уникальным образом описывали локальное окружение каждого атома. "
+"Существует два типа таких функций: 1. **Радиальные функции** - зависят "
+"только от межатомных расстояний."
+
+#: ../../source/bpnn/index.rst:39
+#, fuzzy
+msgid "**Radial Functions** - depend only on the distance between atoms."
+msgstr "**Радиальные функции** - учитываются только межатомные связи.\""
+
+#: ../../source/bpnn/index.rst:41
+msgid ""
+"G_1^i = \\sum_j^{N_{\\text{atoms}}} f_c (R_{ij}),\n"
+"\n"
+msgstr ""
+"G_1^i = \\sum_j^{N_{\\text{atoms}}} f_c (R_{ij}),\n"
+"\n"
+
+#: ../../source/bpnn/index.rst:42
+msgid ""
+"G_2^i = \\sum_j^{N_{\\text{atoms}}} e^{-\\eta (R_{ij} - R_s)^2} f_c "
+"(R_{ij}),\n"
+"\n"
+msgstr ""
+"G_2^i = \\sum_j^{N_{\\text{atoms}}} e^{-\\eta (R_{ij} - R_s)^2} f_c "
+"(R_{ij}),\n"
+"\n"
+
+#: ../../source/bpnn/index.rst:43
+msgid ""
+"G_3^i = \\sum_j^{N_{\\text{atoms}}} \\kappa \\cos(R_{ij}) f_c (R_{ij}),\n"
+"\n"
+msgstr ""
+"G_3^i = \\sum_j^{N_{\\text{atoms}}} \\kappa \\cos(R_{ij}) f_c (R_{ij}),\n"
+"\n"
+
+#: ../../source/bpnn/index.rst:45
+msgid "where :math:`f_c` is a cutoff function that can be defined as:"
+msgstr "где :math:`f_c` является функцией отсечки, определяемой следующим образом:"
+
+#: ../../source/bpnn/index.rst:47
+#, fuzzy
+msgid ""
+"f_c (R_{ij}) = \\begin{cases}\n"
+"\\frac{1}{2} \\left( 1 + \\cos\\left(\\frac{\\pi R_{ij}}{R_c}\\right) "
+"\\right), & \\text{for} R_{ij} < R_c \\\\\n"
+"0, & \\text{for} R_{ij} \\geq R_c \\\\\n"
+"\\end{cases}\n"
+"\n"
+msgstr ""
+"f_c (R_{ij}) = \\begin{cases}\n"
+"\\frac{1}{2} \\left( 1 + \\cos\\left(\\frac{\\pi R_{ij}}{R_c}\\right) "
+"\\right), & \\text{for} R_{ij} < R_c \\\\\n"
+"0, & \\text{for} R_{ij} \\geq R_c \\\\\n"
+"\\end{cases}\n"
+"\n"
+
+#: ../../source/bpnn/index.rst:52
+msgid "**Angular Functions** - depend on the angles between bonds."
+msgstr "**Угловые функции** - помимо расстояний учитываются углы между связями.\""
+
+#: ../../source/bpnn/index.rst:54
+#, fuzzy
+msgid ""
+"G_4^i = 2^{(1-\\zeta)} \\sum_{j,k \\ne j} \\left( 1 + \\lambda "
+"\\cos(\\theta_{ijk}) \\right)^{\\zeta} \\\\\n"
+"e^{-\\eta (R_{ij}^2 + R_{ik}^2  + R_{jk}^2)} f_c (R_{ij}) f_c (R_{ik}) "
+"f_c (R_{jk}),\n"
+"\n"
+msgstr ""
+"G_4^i = 2^{(1-\\zeta)} \\sum_{j,k \\ne j} \\\\\n"
+"\\left( 1 + \\lambda \\cos(\\theta_{ijk}) \\right)^{\\zeta} f_c (R_{ij}) "
+"f_c (R_{ik}) f_c (R_{jk}),\n"
+"\n"
+
+#: ../../source/bpnn/index.rst:56
+#, fuzzy
+msgid ""
+"G_5^i = 2^{(1-\\zeta)} \\sum_{j,k \\ne j} \\left( 1 + \\lambda "
+"\\cos(\\theta_{ijk}) \\right)^{\\zeta} \\\\\n"
+"e^{-\\eta (R_{ij}^2 + R_{ik}^2)} f_c (R_{ij}) f_c (R_{ik}),\n"
+"\n"
+msgstr ""
+"G_5^i = 2^{(1-\\zeta)} \\sum_{j,k \\ne j} \\left( 1 + \\lambda "
+"\\cos(\\theta_{ijk}) \\right)^{\\zeta} \\\\\n"
+"e^{-\\eta (R_{ij}^2 + R_{ik}^2)} f_c (R_{ij}) f_c (R_{ik}),\n"
+"\n"
+
+#: ../../source/bpnn/index.rst:59
+#, python-brace-format
+msgid ""
+"where :math:`\\theta_{ijk}` is the angle between the bonds :math:`ij` and"
+" :math:`ik` and can be defined as:"
+msgstr ""
+"где :math:`\\theta_{ijk}` - угол между связями :math:`ij` и :math:`ik`, "
+"который можно определить следующим образом:"
+
+#: ../../source/bpnn/index.rst:61
+msgid ""
+"\\theta_{ijk} = \\arccos\\left(\\frac{R_{ij}^2 + R_{ik}^2 - R_{jk}^2}{2 "
+"R_{ij} R_{ik}}\\right)\n"
+"\n"
+msgstr ""
+"\\theta_{ijk} = \\arccos\\left(\\frac{R_{ij}^2 + R_{ik}^2 - R_{jk}^2}{2 "
+"R_{ij} R_{ik}}\\right)\n"
+"\n"
+
+#: ../../source/bpnn/index.rst:63
+msgid ""
+"Set of symmetry functions defines the input of BPNN. Usually about 50 "
+"symmetry functions for each species are used."
+msgstr ""
+"Набор функций симметрии определяет входные данные BPNN. Обычно "
+"используется около 50 функций симметрии для каждого сорта атомов."
+
+#: ../../source/bpnn/index.rst:66
+msgid "Choice of ACSF parameters"
+msgstr "Выбор параметров функций симметрии"
+
+#: ../../source/bpnn/index.rst:68
+msgid ""
+"The choice of ACSF parameters is crucial for the performance of the BPNN."
+" The parameters include:"
+msgstr ""
+"Выбор параметров ACSF критически важен для производительности BPNN. "
+"Параметры включают в себя:"
+
+#: ../../source/bpnn/index.rst:70
+msgid ""
+"**Cutoff radius** :math:`R_c` - the distance beyond which the symmetry "
+"functions are zero."
+msgstr ""
+"**Радиус отсечки** :math:`R_c` - расстояние, за пределами которого функции "
+"симметрии равны нулю."
+
+#: ../../source/bpnn/index.rst:71
+msgid ""
+":math:`\\eta` - controls the width of the Gaussian functions in the "
+"symmetry functions."
+msgstr ""
+":math:`\\eta` - контролирует ширину гауссовых функций в функциях симметрии."
+
+#: ../../source/bpnn/index.rst:72
+msgid ""
+":math:`R_s` - the distance at which the Gaussian functions are centered "
+"in :math:`G_2`."
+msgstr ""
+":math:`R_s` - расстояние, на котором центрированы гауссовы функции в :math:`G_2`."
+
+#: ../../source/bpnn/index.rst:73
+msgid ""
+":math:`\\kappa` - controls the amplitude of the cosine functions in "
+":math:`G_3`."
+msgstr ""
+":math:`\\kappa` - контролирует амплитуду косинусных функций в :math:`G_3`."
+
+#: ../../source/bpnn/index.rst:74
+msgid ":math:`\\zeta` - controls the smoothness of the angular functions."
+msgstr ""
+":math:`\\zeta` - контролирует гладкость угловых функций."
+
+#: ../../source/bpnn/index.rst:75
+msgid ""
+":math:`\\lambda` - controls the sign of the angle to the symmetry "
+"functions. Usually set to 1 or -1."
+msgstr ""
+":math:`\\lambda` - контролирует знак угла в функциях симметрии. Обычно "
+"принимает значение 1 или -1."
+

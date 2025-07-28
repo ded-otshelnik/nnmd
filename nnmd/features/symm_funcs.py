@@ -6,12 +6,14 @@ from enum import Enum
 class SymmetryFunction(Enum):
     """
     Enumeration of implemented symmetry functions.
+    Each value corresponds to a specific type of symmetry function.
     """
 
     G1 = 1
     G2 = 2
     G4 = 4
     G5 = 5
+
 
 def _pairwise_filter(distances, r_cutoff):
     """
@@ -27,6 +29,7 @@ def _pairwise_filter(distances, r_cutoff):
     mask = (distances < r_cutoff) & (distances > 0)
 
     return mask
+
 
 def _triplets_filter(distances: torch.Tensor, r_cutoff: float) -> torch.Tensor:
     """
@@ -47,38 +50,56 @@ def _triplets_filter(distances: torch.Tensor, r_cutoff: float) -> torch.Tensor:
     return mask
 
 
-def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
+def map_positions_pbc(
+    positions: torch.Tensor, cell: torch.Tensor, pbc: torch.Tensor
+) -> torch.Tensor:
     """
-    Calculate pairwise distances and displacements with PBC.
+    Calculate positions with periodic boundary conditions (PBC).
 
     Args:
-        positions: torch.Tensor of shape (n_moleculs, n_atoms, 3)
+        positions: torch.Tensor of shape (batch_size, n_atoms, 3)
+        cell: torch.Tensor of shape (3, 3)
+        pbc: bool or list[bool] - periodic boundary conditions for each direction
+
+    Returns:
+        torch.Tensor of shape (n_atoms, 3)
+    """
+
+    # Step 1: convert coordinates from standard cartesian coordinate to unit
+    # cell coordinates
+    # if cell has zero determinant (no actual cell), return positions as it is
+    if torch.det(cell) == 0:
+        return positions
+
+    inv_cell = torch.linalg.inv(cell)
+    positions_cell = positions @ inv_cell
+
+    # Step 2: wrap cell coordinates into [0, 1)
+    positions_cell -= positions_cell.floor() * pbc.to(positions_cell.dtype)
+
+    # Step 3: convert from cell coordinates back to
+    # standard cartesian coordinates
+    return positions_cell @ cell
+
+
+def calculate_distances(
+    positions: torch.Tensor, cell: torch.Tensor, pbc: torch.Tensor
+) -> torch.Tensor:
+    """
+    Calculate pairwise distances with PBC.
+
+    Args:
+        positions: torch.Tensor of shape (batch_size, n_atoms, 3)
         cell: torch.Tensor of shape (3, 3)
         r_cutoff: float - cutoff radius
 
     Returns:
         torch.Tensor of shape (n_atoms, n_atoms)
     """
-    # Create pairwise displacement matrix (num_atoms x num_atoms x 3)
-    disp = positions.unsqueeze(2) - positions.unsqueeze(1)
+    positions_pbc = map_positions_pbc(positions, cell, pbc)
 
-    # Apply periodic boundary conditions if cell is provided (i.e., if it has a non-zero volume)
-    if cell.sum() > 0:
-        # Convert displacements to fractional coordinates
-        inv_cell = torch.linalg.inv(cell.T)
-        frac_disp = torch.matmul(disp, inv_cell.T)
-
-        # Apply the minimum image convention
-        frac_disp -= torch.round(frac_disp)
-
-        # Convert back to Cartesian coordinates
-        cart_disp = torch.matmul(frac_disp, cell)
-
-        # Compute distances
-        distances = torch.linalg.norm(cart_disp, dim=-1)  # (B, N, N)
-    else:
-        # Compute distances in Cartesian coordinates
-        distances = torch.linalg.norm(disp, dim=-1)
+    diff = positions_pbc.unsqueeze(1) - positions_pbc.unsqueeze(2)
+    distances = torch.norm(diff, dim=-1)
 
     return distances
 
@@ -86,7 +107,6 @@ def calculate_distances(positions: torch.Tensor, cell: torch.Tensor):
 def f_cutoff(r: torch.Tensor, cutoff: float) -> torch.Tensor:
     """
     Calculate the cutoff function for the pair of atoms.
-    Function is vectorized and can be applied to a batch of pairs.
 
     Args:
         r: torch.Tensor of shape (n_atoms, n_atoms)
@@ -103,7 +123,6 @@ def f_cutoff(r: torch.Tensor, cutoff: float) -> torch.Tensor:
 def g1_function(r: torch.Tensor, cutoff: float) -> torch.Tensor:
     """
     Calculate G1 symmetry functions for a pair of atoms.
-    Function is vectorized and can be applied to a batch of pairs.
 
     Args:
         r: torch.Tensor of shape (batch_size, n_atoms, n_atoms)
@@ -120,10 +139,10 @@ def g1_function(r: torch.Tensor, cutoff: float) -> torch.Tensor:
     G1 = G1.sum(dim=-1)
     return G1
 
+
 def g2_function(r: torch.Tensor, cutoff: float, eta: float, rs: float) -> torch.Tensor:
     """
     Calculate G2 symmetry functions for a pair of atoms.
-    Function is vectorized and can be applied to a batch of pairs.
 
     Args:
         r: torch.Tensor of shape (batch_size, n_atoms, n_atoms)
@@ -134,10 +153,10 @@ def g2_function(r: torch.Tensor, cutoff: float, eta: float, rs: float) -> torch.
     Returns:
         torch.Tensor of shape (batch_size, n_atoms)
     """
-     # exclude self-interaction
+    # exclude self-interaction
     mask = _pairwise_filter(r, cutoff)
 
-    G2 = torch.exp(-eta * (r - rs)**2) * f_cutoff(r, cutoff)
+    G2 = torch.exp(-eta * (r - rs) ** 2) * f_cutoff(r, cutoff)
     G2 = torch.where(mask, G2, torch.zeros_like(G2))
     G2 = G2.sum(dim=-1)
     return G2
@@ -166,12 +185,16 @@ def g4_function(
 
     # Valid triplets distances are cutoffs and more than 0
     mask = _triplets_filter(distances, cutoff)  # Shape: (B, N, N, N)
-    fc_triplet = fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)  # Shape: (B, N, N, N)
+    fc_triplet = (
+        fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)
+    )  # Shape: (B, N, N, N)
 
     # Cosine of the angle θ_ijk (refactor, can causes nans)
-    cos_theta = torch.where((torch.abs(2 * rij * rik) >= 10e-4),
-                             (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
-                             torch.zeros_like(mask))
+    cos_theta = torch.where(
+        (torch.abs(2 * rij * rik) >= 10e-4),
+        (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
+        torch.zeros_like(mask),
+    )
 
     exponent = 2 ** (1 - zeta) * torch.exp(
         -eta * (rij**2 + rik**2 + rjk**2)
@@ -179,10 +202,13 @@ def g4_function(
 
     # For pow with float power data is converted to complex
     # to avoid nan in pow
-    cosine_part = torch.where(torch.abs(cos_theta) > 10e-4,
-                              torch.pow((1 + lambd * torch.abs(cos_theta))
-                                        .to(dtype=torch.complex64), zeta).real,
-                              torch.zeros_like(cos_theta))
+    cosine_part = torch.where(
+        torch.abs(cos_theta) > 10e-4,
+        torch.pow(
+            (1 + lambd * torch.abs(cos_theta)).to(dtype=torch.complex64), zeta
+        ).real,
+        torch.zeros_like(cos_theta),
+    )
 
     # Angular symmetry function G^4
     G4 = cosine_part * exponent * fc_triplet
@@ -193,6 +219,7 @@ def g4_function(
     )  # Shape: (B, N)
 
     return G4
+
 
 def g5_function(
     distances: torch.Tensor, cutoff: float, eta: float, zeta: int, lambd: int
@@ -217,12 +244,16 @@ def g5_function(
 
     # Valid triplets distances are cutoffs and more than 0
     mask = _triplets_filter(distances, cutoff)  # Shape: (B, N, N, N)
-    fc_triplet = fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)  # Shape: (B, N, N, N)
+    fc_triplet = (
+        fc.unsqueeze(3) * fc.unsqueeze(2) * fc.unsqueeze(1)
+    )  # Shape: (B, N, N, N)
 
     # Cosine of the angle θ_ijk (refactor, can causes nans)
-    cos_theta = torch.where((torch.abs(2 * rij * rik) >= 10e-4),
-                             (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
-                             torch.zeros_like(mask))
+    cos_theta = torch.where(
+        (torch.abs(2 * rij * rik) >= 10e-4),
+        (rij**2 + rik**2 - rjk**2) / (2 * rij * rik).clamp(min=1e-8),
+        torch.zeros_like(mask),
+    )
 
     exponent = 2 ** (1 - zeta) * torch.exp(
         -eta * (rij**2 + rik**2)
@@ -230,10 +261,13 @@ def g5_function(
 
     # For pow with float power data is converted to complex
     # to avoid nan in pow
-    cosine_part = torch.where(torch.abs(cos_theta) > 10e-4,
-                              torch.pow((1 + lambd * torch.abs(cos_theta))
-                                        .to(dtype=torch.complex64), zeta).real,
-                              torch.zeros_like(cos_theta))
+    cosine_part = torch.where(
+        torch.abs(cos_theta) > 10e-4,
+        torch.pow(
+            (1 + lambd * torch.abs(cos_theta)).to(dtype=torch.complex64), zeta
+        ).real,
+        torch.zeros_like(cos_theta),
+    )
 
     # Angular symmetry function G^5
     G5 = cosine_part * exponent * fc_triplet

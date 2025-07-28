@@ -23,33 +23,41 @@ def _set_seed(seed):
 def calculate_sf(
     cartesians: torch.Tensor,
     cell: torch.Tensor,
+    pbc: torch.Tensor,
     symm_funcs_data: dict,
     **kwargs,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Calculate symmetry functions for a batch of molecules.
+    Calculate symmetry functions for a batch of atomic systems.
+
     Args:
-        cartesians: torch.Tensor of shape (n_molecules, n_atoms, 3)
+        cartesians: torch.Tensor of shape (n_batch, n_atoms, 3)
+        cell: torch.Tensor of shape (3, 3) - the three vectors defining unit cell
+        pbc: torch.Tensor of shape (3,) - periodic boundary conditions
         symm_funcs_data: dict - dictionary with symmetry functions data
-        cell: torch.Tensor of shape (3, 3)
+
     Returns:
         torch.Tensor of shape (n_molecules, n_atoms, n_symm_funcs)
     """
     torch.autograd.set_detect_anomaly(True)
 
     def closure(
-        cart: torch.Tensor, cell: torch.Tensor, symm_funcs_data: dict
+        cart: torch.Tensor, cell: torch.Tensor, pbc: torch.Tensor, symm_funcs_data: dict
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Calculate symmetry functions for a single molecule.
+
+
         Args:
-            cart: torch.Tensor of shape (n_atoms, 3)
-            cell: torch.Tensor of shape (3, 3)
+            cart: torch.Tensor of shape (n_atoms, 3) - cartesian coordinates of atoms
+            cell: torch.Tensor of shape (3, 3) - the three vectors defining unit cell
+            pbc: torch.Tensor of shape (3,) - periodic boundary conditions
             symm_funcs_data: dict - dictionary with symmetry functions data
+
         Returns:
             torch.Tensor of shape (n_atoms, n_symm_funcs)
         """
-        distances = calculate_distances(cart, cell)
+        distances = calculate_distances(cart, cell, pbc)
 
         g_struct = []
         dg_struct = []
@@ -58,22 +66,28 @@ def calculate_sf(
         ):
             match SymmetryFunction(g_func):
                 case SymmetryFunction.G1:
-                    # g_params = [cutoff]
+                    # Parameters: r_cutoff
                     g_values = g1_function(distances, *g_params)
                 case SymmetryFunction.G2:
-                    # g_params = [cutoff, eta, rs]
+                    # Parameters: r_cutoff, eta, rs
                     g_values = g2_function(distances, *g_params)
                 case SymmetryFunction.G4:
-                    # g_params = [cutoff, eta, zeta, lambd]
+                    # Parameters: r_cutoff, eta, zeta, lambda
                     g_values = g4_function(distances, *g_params)
                 case SymmetryFunction.G5:
-                    # g_params = [cutoff, eta, zeta, lambd]
+                    # Parameters: r_cutoff, eta, zeta, lambda
                     g_values = g5_function(distances, *g_params)
                 case _:
                     raise ValueError(f"Unknown symmetry function number: {g_func}")
-            dg_values = torch.autograd.grad(g_values, cart,
-                                            grad_outputs=torch.ones_like(g_values),
-                                            create_graph=True)[0]
+
+            # Gradients of the symmetry functions
+            # will be used for forces calculation
+            dg_values = torch.autograd.grad(
+                g_values,
+                cart,
+                grad_outputs=torch.ones_like(g_values),
+                create_graph=True,
+            )[0]
 
             g_struct.append(g_values.detach())
             dg_struct.append(dg_values.detach())
@@ -83,6 +97,7 @@ def calculate_sf(
         g_struct = torch.stack(g_struct, dim=-1)
         dg_struct = torch.stack(dg_struct, dim=-1)
 
+        # Normalize the symmetry functions
         g_struct = g_struct / torch.norm(g_struct, p=2, dim=-1, keepdim=True)
 
         # Permute to the shape (n_batch, n_atoms, n_symm_funcs, 3)
@@ -95,20 +110,21 @@ def calculate_sf(
 
         return g_struct, dg_struct
 
-    op = functools.partial(closure, cell=cell, symm_funcs_data=symm_funcs_data)
+    op = functools.partial(closure, cell=cell, pbc=pbc, symm_funcs_data=symm_funcs_data)
 
-    # for reproducibility setting a seed is essential
     _set_seed(42)
 
     cartesians.requires_grad = True
-    cartesians_chunks = torch.chunk(cartesians, len(cartesians) // 100 + 1, dim=0)
+    cartesians_chunks = torch.chunk(cartesians, len(cartesians) // 2 + 1, dim=0)
 
     r = [
         op(cart)
-        for cart in tqdm(cartesians_chunks,
-                          desc="Calculating symmetry functions",
-                          total=len(cartesians_chunks),
-                          disable=kwargs.get("disable_tqdm", False))
+        for cart in tqdm(
+            cartesians_chunks,
+            desc="Calculating symmetry functions",
+            total=len(cartesians),
+            disable=kwargs.get("disable_tqdm", False),
+        )
     ]
     g, dg = zip(*r)
 
