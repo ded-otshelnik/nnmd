@@ -10,7 +10,7 @@ Welcome to the NNMD documentation! This documentation provides a comprehensive g
 including its features, API, and usage examples.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
    introduction.rst
    basics/index.rst
