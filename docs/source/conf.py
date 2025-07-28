@@ -31,6 +31,9 @@ extensions = [
     "sphinx_design",
 ]
 
+# Mock imports for autodoc
+# https://stackoverflow.com/questions/67485175/docstrings-are-not-included-in-read-the-docs-sphinx-build
+
 templates_path = ["_templates"]
 exclude_patterns = []
 source_suffix = ['.rst', '.md']
